@@ -136,3 +136,5 @@ dmypy.json
 
 # Data Location
 data/*
+
+samples/
