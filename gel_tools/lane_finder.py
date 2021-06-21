@@ -62,7 +62,6 @@ class LaneFinder:
         return markers
 
     def find_lanes(self):
-
         # Apply thresholding, try messing around with other thresholding methods
         # ret, thresh = cv2.threshold(self.image, 90, 255, cv2.THRESH_BINARY)
 
@@ -78,44 +77,43 @@ class LaneFinder:
         ret, thresh = cv2.threshold(self.image, 90, 255,
                                     cv2.THRESH_BINARY)
 
+        # Visualize thresholding
         plt.figure()
         plt.imshow(thresh, cmap="gray")
 
+        # Split bands which are overlapping
         markers = self.split_bands(thresh)
-        return
+        # Bypass split_bands() for testing (disable one or the other)
+        # markers = thresh
 
-        # Separate bands in lanes that happen to overlap but shouldn't
-        # kernel = np.ones((1, 1), np.uint8)
-        # print(kernel)
-        # erosion = cv2.erode(thresh, kernel, iterations = 1)
+        # Convert the 32-bit image from split_bands() to 8-bit
+        img_8bit = markers.astype(np.uint8)
 
-        # plt.imshow(erosion, cmap="gray")
-        # plt.figure()
-        # plt.imshow(thresh, c map='gray')
+        # Attempt to threshold again
+        ret, thresh2 = cv2.threshold(img_8bit, 0, 255, cv2.THRESH_BINARY|cv2.THRESH_OTSU)
+
+        # Show image
+        plt.figure()
+        plt.imshow(thresh2)
 
         # Find contours, different methods/parameters might give better results
-        contours, hierarchy = cv2.findContours(markers,
-                                               cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+        contours, hierarchy = cv2.findContours(thresh2,
+                                               cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
+        # print(contours)
 
-        markers = cv2.cvtColor(markers, cv2.COLOR_GRAY2BGR)
-        cv2.drawContours(markers, contours, -1, (0, 255, 0), 3)
+        # color_img = cv2.cvtColor(img_8bit, cv2.COLOR_GRAY2BGR)
+        cnt = cv2.drawContours(self.image, contours, -1, (0, 255, 0), 3)
 
+        # Show image
         plt.figure()
-        # plt.imshow(markers, cmap="gray")
-        return
+        plt.imshow(cnt)
 
-
-        s_cnt = [cnt for cnt in contours if cv2.contourArea(cnt) > 200]
+        # Eliminate small contours which are not bands
+        s_cnt = [cnt for cnt in contours if cv2.contourArea(cnt) > 50]
 
         contours = s_cnt
+        # print(contours)
 
-
-
-
-
-
-        # To see what contours look like - added 15/06/21
-        # cv2.drawContours(self.image, contours, -1, (255, 255, 0), 3)
 
         tot = np.zeros([len(contours), 3])
 
