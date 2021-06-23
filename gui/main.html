@@ -5,8 +5,6 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    
-
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css">
     
@@ -32,34 +30,38 @@
   </head>
   <body>
   
+    <!-- Top menu -->
     <nav class="navbar navbar-dark bg-dark fixed-top">
       <div class="container-fluid justify-content-start">
         <div class="col-1"></div>
+        <!-- General buttons -->
         <button class="btn btn-dark me-2 new" type="button"><span class="fas fa-file"></span></button>
         <button class="btn btn-dark me-2 open" type="button"><span class="fas fa-folder-open"></span></button>
         <button class="btn btn-dark me-2 save" type="button"><span class="fas fa-save"></span></button>
         <button class="btn btn-dark me-2 export" type="button"><span class="fas fa-file-export"></span></button>
         <div class="col-1"></div>
-        
-        
+        <!-- Band buttons -->
         <button class="btn btn-dark me-2 find" type="button"><span class="fas fa-search"></span></button>
         <button class="btn btn-dark me-2 add-bands" type="button"><span class="fas fa-plus"></span></button>
         <button class="btn btn-dark me-2 remove-bands" type="button"><span class="fas fa-times"></span></button>
-        
-        
-        
       </div>
     </nav>
     
-    <div class="container mt-5 p-4 bg-dark col-5 rounded-3 border border-2">
+    <!-- Loaded image display (this is hidden until the user selects an image -->
+    <div id="loadedImg" style="display: none" class="container mt-5 p-2 bg-dark col-5 border border-2">
+      <img id="previewImg" src="/examples/images/transparent.png" alt="" class ="img-fluid mx-auto d-float" width="100%"/>
+    </div>
+    
+    <!-- Open an image section (this is displayed until an image is loaded, then hidden) -->
+    <div id="loadImgCont" class="container mt-5 p-4 bg-dark col-5 rounded-3 border border-2">
       <h3>Choose an image to analyze</h3>
-      <form action="/action_page.php">
+      <form id="form1">
         <div class="custom-file">
-          <input type="file" class="custom-file-input" id="customFile">
+          <input type="file" class="custom-file-input" name="photo" onchange="previewFile(this);" required>
+          
         </div>
       </form>
     </div>
-    
     
   </body>
 </html>
