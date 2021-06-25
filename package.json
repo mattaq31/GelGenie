@@ -1,0 +1,25 @@
+{
+  "name": "automatic-gel-analysis",
+  "version": "1.0.0",
+  "description": "A image analysis program for gels.",
+  "main": "gui/main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "dependencies": {
+  },
+  "devDependencies": {
+    "electron": "^1.7.6",
+    "electron-packager": "^9.0.1"
+  }
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mattaq31/Automatic-Gel-Analysis.git"
+  },
+  "author": "Filip Busic, Matthew Aquilina, Katherine Dunn",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mattaq31/Automatic-Gel-Analysis/issues"
+  },
+  "homepage": "https://github.com/mattaq31/Automatic-Gel-Analysis#readme"
+}
