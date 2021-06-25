@@ -21,3 +21,6 @@ app.router.add_static('/', 'static')
 # We kick off our server
 if __name__ == '__main__':
     web.run_app(app)
+
+async def button_find_bands(request):
+    return web.Response()
