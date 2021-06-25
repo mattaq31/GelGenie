@@ -6,7 +6,9 @@
   "scripts": {
     "start": "electron ."
   },
-  "dependencies": {},
+  "dependencies": {
+    "socket.io": "^4.1.2"
+  },
   "devDependencies": {
     "electron": "^1.7.6",
     "electron-packager": "^9.0.1"
