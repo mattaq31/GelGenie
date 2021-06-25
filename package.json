@@ -6,12 +6,11 @@
   "scripts": {
     "start": "electron ."
   },
-  "dependencies": {
-  },
+  "dependencies": {},
   "devDependencies": {
     "electron": "^1.7.6",
     "electron-packager": "^9.0.1"
-  }
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/mattaq31/Automatic-Gel-Analysis.git"
