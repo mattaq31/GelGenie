@@ -59,7 +59,7 @@ class LaneFinder:
         markers = cv2.watershed(water_image, markers)
         water_image[markers == -1] = [255, 0, 0]
         plt.imshow(markers)
-        return markers
+        return markers 
 
     def find_lanes(self):
         # Apply thresholding, try messing around with other thresholding methods
@@ -82,9 +82,9 @@ class LaneFinder:
         plt.imshow(thresh, cmap="gray")
 
         # Split bands which are overlapping
-        markers = self.split_bands(thresh)
+        # markers = self.split_bands(thresh)
         # Bypass split_bands() for testing (disable one or the other)
-        # markers = thresh
+        markers = thresh
 
         # Convert the 32-bit image from split_bands() to 8-bit
         img_8bit = markers.astype(np.uint8)
@@ -113,6 +113,7 @@ class LaneFinder:
 
         contours = s_cnt
         # print(contours)
+        return contours
 
 
         tot = np.zeros([len(contours), 3])
