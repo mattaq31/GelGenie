@@ -1,3 +1,5 @@
+
+
 // Initialize tooltips
 $(document).ready(function() {
     $('.open').tooltip({trigger: 'hover', title: 'Open image', placement: 'bottom'});
@@ -5,6 +7,7 @@ $(document).ready(function() {
     // TO DO: Add the rest of the tooltips
 });
 
+/*
 // Open the image
 function previewFile() {
   var preview = document.querySelector('img');
@@ -17,7 +20,7 @@ function previewFile() {
 
   if (file) {
     reader.readAsDataURL(file);
-    
+    socket.emit("imageToRead", file);
     var loadImgCont = document.getElementById("loadImgCont");
     loadImgCont.style.display = "none";  // Hide the select image container
     loadedImg.style.display = "block";   // Show the container with image
@@ -25,6 +28,7 @@ function previewFile() {
     preview.src = "";
   }
 }
+*/
 
 /*
 // Socket io

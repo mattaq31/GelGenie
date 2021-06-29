@@ -30,6 +30,39 @@
   </head>
   <body>
   
+    <script src="https://cdn.socket.io/4.1.2/socket.io.min.js" integrity="sha384-toS6mmwu70G0fw54EGlWWeA4z3dyJ+dlXBtSURSKN4vyRFOcxd3Bzjj/AoOwY+Rg" crossorigin="anonymous"></script>
+    <script>
+      const socket = io("http://localhost:8080");
+      
+      function previewFile() {
+        
+        var preview = document.querySelector('img');
+        var file    = document.querySelector('input[type=file]').files[0];
+        var reader  = new FileReader();
+        
+        socket.emit("imageToRead", file.name);
+
+        reader.onloadend = function () {
+          preview.src = reader.result;
+        }
+
+        if (file) {
+          reader.readAsDataURL(file);
+          
+          var loadImgCont = document.getElementById("loadImgCont");
+          loadImgCont.style.display = "none";  // Hide the select image container
+          loadedImg.style.display = "block";   // Show the container with image
+        } else {
+          preview.src = "";
+        }
+      }
+      /*
+      socket.on("viewResult", function(data) {
+        var reader  = new FileReader();
+        reader.readAsDataURL("result.jpg");
+      }); */
+    </script>
+  
     <!-- Top menu -->
     <nav class="navbar navbar-dark bg-dark fixed-top">
       <div class="container-fluid justify-content-start">
