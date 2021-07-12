@@ -23,7 +23,7 @@ os.chdir(os.path.abspath(os.path.join(__file__, os.path.pardir)))
 
 
 # Create an async aiohttp server
-sio = socketio.AsyncServer()
+sio = socketio.AsyncServer(cors_allowed_origins='*')
 app = web.Application()
 sio.attach(app)
 
