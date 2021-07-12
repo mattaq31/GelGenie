@@ -9,6 +9,7 @@ from matplotlib import pyplot as plt
 import skimage
 from PIL import Image
 import json
+import numpy as np
 
 import base64
 from io import BytesIO
@@ -38,11 +39,13 @@ async def imageToRead(sid, file):
     # skimage.io.imsave("results/result1.jpg", result)
     # cv2.imwrite("results/result1.jpg", result)
 
-    pil_img = Image.fromarray(result[0], "RGB")
+    pil_img = Image.fromarray(np.uint8(result[0]*255))
     # pil_img = pil_img.convert('RGB')
     buff = BytesIO()
     pil_img.save(buff, format="JPEG")
-    new_image_string = base64.b64encode(buff.getvalue()).decode("utf-8")
+    new_image_string = base64.b64encode(buff.getvalue()).decode("ascii")
+
+
     # print(new_image_string)
     print(result[1])
     band_props = jsonpickle.encode(result[1])

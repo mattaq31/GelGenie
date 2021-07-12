@@ -60,6 +60,9 @@
         preview.src = 'data:image/png;base64,'.concat(data["file"]);
         band_props = JSON.parse(data.props)
         console.log(band_props)
+        console.log('data:image/png;base64,'.concat(data["file"]))
+        var base64_string = data["file"];
+        console.log(base64_string);
         
         /*
         // var reader  = new FileReader();
