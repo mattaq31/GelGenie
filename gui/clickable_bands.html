@@ -24,7 +24,10 @@
     <link href="stylesheet.css" type="text/css" rel="stylesheet">
 
     <!-- Own Javascript -->
-    <script src="main.js"></script> 
+    <script src="static/main.js"></script> 
+    
+    <link href="static/stylesheet.css" type="text/css" rel="stylesheet">
+    
     
     <title>Automatic Gel Analysis</title>
   </head>
@@ -34,32 +37,7 @@
     
     
     <script>
-      const socket = io("http://localhost:8080");
-      
-      function previewFile() {
-        var preview = document.querySelector('img');
-        var file    = document.querySelector('input[type=file]').files[0];
-        var reader  = new FileReader();
-        socket.emit("imageToRead", file.name);
-        reader.onloadend = function () {
-          preview.src = reader.result;
-        }
-        if (file) {
-          reader.readAsDataURL(file);
-          var loadImgCont = document.getElementById("loadImgCont");
-          loadImgCont.style.display = "none";  // Hide the select image container
-          loadedImg.style.display = "block";   // Show the container with image
-        } else {
-          preview.src = "";
-        }
-      }
-      
-      
-      socket.on("viewResult", function(data) {
-        var preview = document.getElementById('previewImg');
-        preview.src = 'data:image/png;base64,'.concat(data["file"]);
-        band_props = JSON.parse(data.props)
-        console.log(band_props)
+
         
         /*
         // var reader  = new FileReader();
@@ -94,20 +72,48 @@
       </div>
     </nav>
     
-    <!-- Loaded image display (this is hidden until the user selects an image -->
-    <div id="loadedImg" style="display: none" class="container mt-5 p-2 bg-dark col-5 border border-2">
-      <img id="previewImg" src="/examples/images/transparent.png" alt="" class ="img-fluid mx-auto d-float" width="100%"/>
-    </div>
-    
-    <!-- Open an image section (this is displayed until an image is loaded, then hidden) -->
-    <div id="loadImgCont" class="container mt-5 p-4 bg-dark col-5 rounded-3 border border-2">
-      <h3>Choose an image to analyze</h3>
-      <form id="form1">
-        <div class="custom-file">
-          <input type="file" class="custom-file-input" name="photo" onchange="previewFile(this);" required>
+    <!-- Loaded image display -->
+    <div class="container">
+      <div class="row">
+        <div id="loadedImg" class="card container mt-5 p-2 bg-dark col-7 border border-2">
+          <img id="previewImg" src="2_A_result.jpg" alt="" class ="card-img img-fluid mx-auto d-float" width="100%"/>
+          <div class="card-img-overlay">
           
+            <button type="button" class="btn btn-outline-primary" style = "position:relative; left:85px; top:210px; width:40px"></button>
+            <button type="button" class="btn btn-outline-primary" style = "position:relative; left:95px; top:195px; width:40px"></button>
+            <button type="button" class="btn btn-outline-primary" style = "position:relative; left:100px; top:195px; width:40px"></button>
+            <button type="button" class="btn btn-outline-primary" style = "position:relative; left:105px; top:195px; width:40px"></button>
+            
+            <button type="button" class="btn btn-outline-primary" style = "position:relative; left:210px; top:175px; width:40px"></button>
+            <button type="button" class="btn btn-outline-primary" style = "position:relative; left:215px; top:175px; width:40px"></button>
+            <button type="button" class="btn btn-outline-primary" style = "position:relative; left:220px; top:170px; width:40px"></button>
+            <button type="button" class="btn btn-outline-primary" style = "position:relative; left:230px; top:170px; width:40px"></button>
+            <button type="button" class="btn btn-outline-primary" style = "position:relative; left:237px; top:177px; width:40px"></button>
+     
+            
+
+          </div>
         </div>
-      </form>
+        <div id="analysis_windows" class="col-2">
+          <div id="zoomedBand" class="container mt-5 p-2 bg-dark row border border-2" syle="height: 100px;">
+            Zoomed in image goes here
+          </div>
+          <div id="intensityGraph" class="container mt-5 p-2 bg-dark row border border-2" syle="height: 100px;">
+            Intensity graph goes here
+          </div>
+          <div id="bandData" class="container mt-5 p-4 bg-dark row border border-2" syle="height: 100px;">
+            <div class="row border mt-1 p-1">
+              Raw band area
+            </div>
+            <div class="row">
+              
+            </div>
+            <div class="row border mt-1 p-1">
+              Volume of DNA in band
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
     
   </body>

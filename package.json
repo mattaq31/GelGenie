@@ -22,5 +22,12 @@
   "bugs": {
     "url": "https://github.com/mattaq31/Automatic-Gel-Analysis/issues"
   },
-  "homepage": "https://github.com/mattaq31/Automatic-Gel-Analysis#readme"
+  "homepage": "https://github.com/mattaq31/Automatic-Gel-Analysis#readme",
+  "directories": {
+    "test": "tests"
+  },
+  "keywords": [
+    "gel",
+    "electrophoresis"
+  ]
 }

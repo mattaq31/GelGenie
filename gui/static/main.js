@@ -7,6 +7,11 @@ $(document).ready(function() {
     // TO DO: Add the rest of the tooltips
 });
 
+
+
+
+
+
 /*
 // Open the image
 function previewFile() {

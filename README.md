@@ -4,7 +4,9 @@ Full Description TBD
 
 Setting up Environment
 ==============================
-To install package run the following command from the home directory:
+To install package, navigate to the Automatic-Gel-Analysis directory
+and run the following commands:
 
-`pip install -e .`
+pip install -r requirements.txt
+npm install 
 
