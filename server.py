@@ -59,7 +59,7 @@ async def imageToRead(sid, file):
             band_areas.append(region_object.area.item())
 
             # Calculate and append weighted area
-            weighted_area = region_object.mean_intensity.item() * region_object.area.item()
+            weighted_area = round(region_object.mean_intensity.item() * region_object.area.item() / 255)
             band_weighted_areas.append(weighted_area)
 
     print(band_centroids)

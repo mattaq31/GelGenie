@@ -48,7 +48,7 @@
           reader.readAsDataURL(file);
           var loadImgCont = document.getElementById("loadImgCont");
           loadImgCont.style.display = "none";  // Hide the select image container
-          loadedImg.style.display = "block";   // Show the container with image
+          secondScreen.style.display = "block";   // Show the container with image
         } else {
           preview.src = "";
         }
@@ -114,6 +114,8 @@
       
       function bandClick(bandNo){
         console.log("The band area is " + band_areas[bandNo]);
+        $("#band-area").html(band_areas[bandNo]);
+        $("#w-band-area").html(band_w_areas[bandNo]);
       }
       
     </script>
@@ -138,9 +140,30 @@
     </nav>
     
     <!-- Loaded image display (this is hidden until the user selects an image -->
-    <div id="loadedImg" style="display: none; position: relative" class="container mt-5 p-2 bg-dark col-5 border border-2">
-      <img id="previewImg" src="/examples/images/transparent.png" alt="" class ="img-fluid mx-auto d-float" width="100%"/>
-      <div id="band-rectangles" style="position: absolute; top:0px; left: 0; bottom: 0; right: 0; width: 100%">
+    <div id="secondScreen" style="display: none" class="container">
+      <div class="row justify-content-around">
+        <div id="loadedImg" style="position: relative" class="mt-5 p-2 bg-dark col-7 border border-2">
+          <img id="previewImg" src="/examples/images/transparent.png" alt="" class ="img-fluid mx-auto d-float" width="100%"/>
+          <div id="band-rectangles" style="position: absolute; top:0px; left: 0; bottom: 0; right: 0; width: 100%">
+          </div>
+        </div>
+        <div class="mt-5 p-2 col-2">
+          <table id="bandData" class="table table-dark">
+            <thead></thead>
+            <tbody>
+              <tr>
+                <th scope="row">Band Area</th>
+                <td id="band-area"></td>
+                <td>px</td>
+              </tr>
+              <tr>
+                <th scope="row">Weighted Band Area</th>
+                <td id="w-band-area"></td>
+                <td>px</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
     
