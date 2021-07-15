@@ -2,7 +2,7 @@ from aiohttp import web
 import socketio
 import os
 from gui.lane_finder import LaneFinder
-from gel_tools.band_finder import find_bands, load_image
+from gel_tools.band_finder import find_bands, load_image, load_image_b64
 import cv2
 from matplotlib import image
 from matplotlib import pyplot as plt
@@ -29,11 +29,18 @@ app = web.Application()
 sio.attach(app)
 
 @sio.on("imageToRead")
-async def imageToRead(sid, file):
-    print("Finding bands in ", file)
-    image = load_image(file)
+async def imageToRead(sid, source_b64):
+    # print("Finding bands in ", file)
+    # print(source_b64)
+    (image, non_np_image, width, height) = load_image_b64(source_b64)
+
+    buff = BytesIO()
+    non_np_image.save(buff, format="PNG")
+    source_image_jpg = base64.b64encode(buff.getvalue()).decode("ascii")
+    await sio.emit('sourceInJpg', source_image_jpg)
+
     result = find_bands(image)
-    saved_file = plt.imsave("results/result1.jpg", result[0])
+    # saved_file = plt.imsave("results/result1.jpg", result[0])
     # im = Image.fromarray(result)
     # im.save("results/result1.jpg")
     # skimage.io.imsave("results/result1.jpg", result)
@@ -41,9 +48,10 @@ async def imageToRead(sid, file):
 
     pil_img = Image.fromarray(np.uint8(result[0]*255))
     # pil_img = pil_img.convert('RGB')
-    buff = BytesIO()
-    pil_img.save(buff, format="JPEG")
-    new_image_string = base64.b64encode(buff.getvalue()).decode("ascii")
+
+    buff2 = BytesIO()
+    pil_img.save(buff2, format="JPEG")
+    new_image_string = base64.b64encode(buff2.getvalue()).decode("ascii")
 
 
     # print(new_image_string)
@@ -67,7 +75,7 @@ async def imageToRead(sid, file):
     encoded_areas = json.dumps(band_areas)
     encoded_w_areas = json.dumps(band_weighted_areas)
     band_props = jsonpickle.encode(result[1])
-    await sio.emit('viewResult', {'file': new_image_string, 'props': band_props, 'centroids': encoded_centroids,
+    await sio.emit('viewResult', {'file': new_image_string, 'im_width': width, 'im_height': height, 'props': band_props, 'centroids': encoded_centroids,
                                   'areas': encoded_areas, 'w_areas': encoded_w_areas})
 
 # Define aiohttp endpoints

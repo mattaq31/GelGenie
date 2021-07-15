@@ -10,6 +10,9 @@ from skimage.color import rgb2gray
 from scipy import ndimage as ndi
 from matplotlib import image
 from skimage.color import label2rgb
+import base64
+import io
+from PIL import Image
 
 
 def load_image(path):
@@ -22,6 +25,24 @@ def load_image(path):
     img = img_as_ubyte(img)
     # Return image as 2D numpy array
     return img
+
+def load_image_b64(b64_string):
+    """Load input image"""
+    print(b64_string)
+    base64_decoded = base64.b64decode(b64_string)
+    img_1 = Image.open(io.BytesIO(base64_decoded))
+    img = np.array(img_1)
+    # Read image
+    # img = image.imread(path)
+    # Convert to grayscale
+    img = rgb2gray(img)
+    # Convert to 2D array with values from 0 to 255
+    img = img_as_ubyte(img)
+
+    width, height = img_1.size
+    # Return image as 2D numpy array
+    return (img, img_1, width, height)
+
 
 # Create histogram of gray values in image
 # Can be used to determine bg and fg values in testing
@@ -125,8 +146,8 @@ def find_bands(img):
     ### img = load_image(file)
 
     # Set starting fg and bg values
-    sure_fg = 120
-    sure_bg = 100
+    sure_fg = 150
+    sure_bg = 120
 
     # Create copy of loaded image to apply mask to
     working_img = img.copy()

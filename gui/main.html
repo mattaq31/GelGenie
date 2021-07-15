@@ -40,12 +40,14 @@
         var preview = document.querySelector('img');
         var file    = document.querySelector('input[type=file]').files[0];
         var reader  = new FileReader();
-        socket.emit("imageToRead", file.name);
+        
+        
         reader.onloadend = function () {
           let sourceImage = reader.result;
           preview.src = sourceImage;
           let base64Img = sourceImage.substr(23);
           console.log(base64Img);
+          socket.emit("imageToRead", base64Img);
         }
         if (file) {
           reader.readAsDataURL(file);
@@ -54,8 +56,15 @@
           secondScreen.style.display = "block";   // Show the container with image
         } else {
           preview.src = "";
-        }
+        }        
       }
+      
+      socket.on("sourceInJpg", function(data) {
+        var preview = document.getElementById('previewImg');
+        preview.src = 'data:image/png;base64,'.concat(data);
+        console.log("SOURCE IN JPG IS ACTIVE");
+      });
+      
       
       // When bands have been found
       socket.on("viewResult", function(data) {
@@ -71,8 +80,10 @@
         
         
         // Find image size
-        var image_height = document.getElementById("previewImg").naturalHeight;
-        var image_width = document.getElementById("previewImg").naturalWidth;
+        var image_height = data.im_height;
+        console.log(image_height);
+        var image_width = data.im_width;
+        console.log(image_width);
         
         // Create band rectangles for each band
         for (let i = 0; i < band_centroids.length; i++){
@@ -81,7 +92,7 @@
           let band_y_px = band_centroids[i][0];
           let band_x_px = band_centroids[i][1];
           
-          let band_y_100 = ((band_y_px-20) / image_height * 100).toString()
+          let band_y_100 = ((band_y_px-10) / image_height * 100).toString()
           band_y_100 = band_y_100.concat("%");
           
           let band_x_100 = ((band_x_px-20) / image_width * 100).toString();
