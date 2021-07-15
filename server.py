@@ -48,8 +48,16 @@ async def imageToRead(sid, file):
 
     # print(new_image_string)
     print(result[1])
+    band_centroids = []
+    for region_object in result[1]:
+        if region_object.area < 50:
+            continue
+        else:
+            band_centroids.append(region_object.centroid)
+    print(band_centroids)
+    encoded_centroids = json.dumps(band_centroids)
     band_props = jsonpickle.encode(result[1])
-    await sio.emit('viewResult', {'file': new_image_string, 'props': band_props})
+    await sio.emit('viewResult', {'file': new_image_string, 'props': band_props, 'centroids': encoded_centroids})
 
 # Define aiohttp endpoints
 # This will deliver the main.html file to the client once connected.

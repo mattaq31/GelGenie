@@ -54,15 +54,46 @@
         }
       }
       
-      
+      // When bands have been found
       socket.on("viewResult", function(data) {
+        // Show the image with found bands in the browser
         var preview = document.getElementById('previewImg');
         preview.src = 'data:image/png;base64,'.concat(data["file"]);
-        band_props = JSON.parse(data.props)
-        console.log(band_props)
-        console.log('data:image/png;base64,'.concat(data["file"]))
+        band_props = JSON.parse(data.props);
+        band_centroids = JSON.parse(data.centroids);
+        console.log(band_props);
         var base64_string = data["file"];
-        console.log(base64_string);
+        
+        
+        // Find image size
+        var image_height = document.getElementById("previewImg").naturalHeight;
+        var image_width = document.getElementById("previewImg").naturalWidth;
+        
+        // Create band rectangles for each band
+        for (let i = 0; i < band_centroids.length; i++){
+          console.log(band_centroids[i][0]);
+          // Find x and y coords of band centroids
+          let band_y_px = band_centroids[i][0];
+          let band_x_px = band_centroids[i][1];
+          
+          let band_y_100 = ((band_y_px-20) / image_height * 100).toString()
+          band_y_100 = band_y_100.concat("%");
+          
+          let band_x_100 = ((band_x_px-20) / image_width * 100).toString();
+          band_x_100 = band_x_100.concat("%");
+          
+          current_id = "band_".concat(i);
+          // Create the button
+          $("#band-rectangles").append('<button type="button" id="' + current_id + '"  class="btn btn-outline-primary" style = "width:20px"></button>');
+          // Find the button's position
+                    
+          
+          // Position the button
+          console.log(band_y_100);
+          $("#" + current_id).css({top: band_y_100, left: band_x_100, position:'absolute'});
+        }
+        
+        
         
         /*
         // var reader  = new FileReader();
@@ -98,8 +129,10 @@
     </nav>
     
     <!-- Loaded image display (this is hidden until the user selects an image -->
-    <div id="loadedImg" style="display: none" class="container mt-5 p-2 bg-dark col-5 border border-2">
+    <div id="loadedImg" style="display: none; position: relative" class="container mt-5 p-2 bg-dark col-5 border border-2">
       <img id="previewImg" src="/examples/images/transparent.png" alt="" class ="img-fluid mx-auto d-float" width="100%"/>
+      <div id="band-rectangles" style="position: absolute; top:0px; left: 0; bottom: 0; right: 0; width: 100%">
+      </div>
     </div>
     
     <!-- Open an image section (this is displayed until an image is loaded, then hidden) -->
