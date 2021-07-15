@@ -61,6 +61,8 @@
         preview.src = 'data:image/png;base64,'.concat(data["file"]);
         band_props = JSON.parse(data.props);
         band_centroids = JSON.parse(data.centroids);
+        band_areas = JSON.parse(data.areas);
+        band_w_areas = JSON.parse(data.w_areas);
         console.log(band_props);
         var base64_string = data["file"];
         
@@ -87,14 +89,17 @@
           $("#band-rectangles").append('<button type="button" id="' + current_id + '"  class="btn btn-outline-primary" style = "width:20px"></button>');
           // Find the button's position
                     
-          
           // Position the button
           console.log(band_y_100);
           $("#" + current_id).css({top: band_y_100, left: band_x_100, position:'absolute'});
+          
+          // Add event listener to button
+          $("#" + current_id).click(function(){
+            bandClick(i);
+            })
         }
         
-        
-        
+                        
         /*
         // var reader  = new FileReader();
         // reader.readAsDataURL("../results/result1.jpg");
@@ -105,8 +110,12 @@
           
         } */
         
-        
       });
+      
+      function bandClick(bandNo){
+        console.log("The band area is " + band_areas[bandNo]);
+      }
+      
     </script>
     
     

@@ -163,7 +163,7 @@ def find_bands(img):
     final_overlay = label2rgb(labeled_fbands, image=img)
 
     # Find properties of bands
-    props = skimage.measure.regionprops(labeled_fbands)
+    props = skimage.measure.regionprops(labeled_fbands, img)
 
     # Show final result
     plt.figure()
