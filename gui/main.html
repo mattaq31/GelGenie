@@ -42,7 +42,10 @@
         var reader  = new FileReader();
         socket.emit("imageToRead", file.name);
         reader.onloadend = function () {
-          preview.src = reader.result;
+          let sourceImage = reader.result;
+          preview.src = sourceImage;
+          let base64Img = sourceImage.substr(23);
+          console.log(base64Img);
         }
         if (file) {
           reader.readAsDataURL(file);
