@@ -39,19 +39,21 @@ async def imageToRead(sid, source_b64):
     source_image_jpg = base64.b64encode(buff.getvalue()).decode("ascii")
     await sio.emit('sourceInJpg', source_image_jpg)
 
+    # Find the bands using watershed segmentation
     result = find_bands(image)
-    # saved_file = plt.imsave("results/result1.jpg", result[0])
-    # im = Image.fromarray(result)
-    # im.save("results/result1.jpg")
-    # skimage.io.imsave("results/result1.jpg", result)
-    # cv2.imwrite("results/result1.jpg", result)
 
+    # Convert numpy image to PIL image
     pil_img = Image.fromarray(np.uint8(result[0]*255))
-    # pil_img = pil_img.convert('RGB')
+    # Convert inverted numpy image to PIL image
+    pil_img_inverted = Image.fromarray(np.uint8(result[2]*255))
 
     buff2 = BytesIO()
     pil_img.save(buff2, format="JPEG")
     new_image_string = base64.b64encode(buff2.getvalue()).decode("ascii")
+
+    buff3 = BytesIO()
+    pil_img_inverted.save(buff3, format="JPEG")
+    inverted_image_string = base64.b64encode(buff3.getvalue()).decode("ascii")
 
 
     # print(new_image_string)
@@ -75,7 +77,7 @@ async def imageToRead(sid, source_b64):
     encoded_areas = json.dumps(band_areas)
     encoded_w_areas = json.dumps(band_weighted_areas)
     band_props = jsonpickle.encode(result[1])
-    await sio.emit('viewResult', {'file': new_image_string, 'im_width': width, 'im_height': height, 'props': band_props, 'centroids': encoded_centroids,
+    await sio.emit('viewResult', {'file': new_image_string, 'inverted_file': inverted_image_string, 'im_width': width, 'im_height': height, 'props': band_props, 'centroids': encoded_centroids,
                                   'areas': encoded_areas, 'w_areas': encoded_w_areas})
 
 # Define aiohttp endpoints

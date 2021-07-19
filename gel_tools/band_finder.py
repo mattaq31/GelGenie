@@ -6,6 +6,7 @@ import imagecodecs
 from skimage.filters import sobel
 from skimage import morphology
 from skimage.util import img_as_uint
+import skimage.util as util
 from skimage.color import rgb2gray
 from scipy import ndimage as ndi
 from matplotlib import image
@@ -183,6 +184,11 @@ def find_bands(img):
     # Overlay found bands on original image
     final_overlay = label2rgb(labeled_fbands, image=img, bg_label=0, bg_color=[0, 0, 0])
 
+    # Invert image
+    inverted_img = util.invert(img)
+    # Overlay found bands on inverted image
+    overlay_inverted = label2rgb(labeled_fbands, image=inverted_img, bg_label=0, bg_color=[1, 1, 1])
+
     # Find properties of bands
     props = skimage.measure.regionprops(labeled_fbands, img)
 
@@ -190,4 +196,4 @@ def find_bands(img):
     plt.figure()
     plt.title("After all passes")
     plt.imshow(final_overlay)
-    return (final_overlay, props)
+    return (final_overlay, props, overlay_inverted)
