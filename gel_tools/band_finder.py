@@ -5,7 +5,7 @@ import skimage
 import imagecodecs
 from skimage.filters import sobel
 from skimage import morphology
-from skimage.util import img_as_ubyte
+from skimage.util import img_as_uint
 from skimage.color import rgb2gray
 from scipy import ndimage as ndi
 from matplotlib import image
@@ -21,8 +21,8 @@ def load_image(path):
     img = image.imread(path)
     # Convert to grayscale
     img = rgb2gray(img)
-    # Convert to 2D array with values from 0 to 255
-    img = img_as_ubyte(img)
+    # Convert to a 16-bit 2D array (values from 0 to 65535)
+    img = img_as_uint(img)
     # Return image as 2D numpy array
     return img
 
@@ -36,8 +36,8 @@ def load_image_b64(b64_string):
     # img = image.imread(path)
     # Convert to grayscale
     img = rgb2gray(img)
-    # Convert to 2D array with values from 0 to 255
-    img = img_as_ubyte(img)
+    # Convert to a 16-bit 2D array (values from 0 to 65535)
+    img = img_as_uint(img)
 
     width, height = img_1.size
     # Return image as 2D numpy array
@@ -127,7 +127,7 @@ def expand_areas(original_image, labeled_image, sure_bg):
         # Initialize flooding image as full of zeros
         image_for_flood = np.zeros_like(original_image)
         # Set every pixel in flooding image that could possibly make a new band next pass to 1
-        image_for_flood[original_image > sure_bg - 20] = 1
+        image_for_flood[original_image > sure_bg - 20*255] = 1
         # Use floodfill on the flooding image using the found bands
         # This will ideally exclude any areas that neighbour found bands from being considered as bands
         output_image_part = skimage.segmentation.flood(image_for_flood, seed_point, tolerance=None)
@@ -146,8 +146,8 @@ def find_bands(img):
     ### img = load_image(file)
 
     # Set starting fg and bg values
-    sure_fg = 150
-    sure_bg = 120
+    sure_fg = 90*255
+    sure_bg = 50*255
 
     # Create copy of loaded image to apply mask to
     working_img = img.copy()
@@ -169,8 +169,8 @@ def find_bands(img):
         plt.title("Masked")
         plt.imshow(working_img)
         # Reduce fg and bg values on each pass
-        sure_fg -= 20
-        sure_bg -= 20
+        sure_fg -= 20*255
+        sure_bg -= 20*255
         plt.figure()
         plt.imshow(label_set)
 
@@ -181,7 +181,7 @@ def find_bands(img):
     # Relabel bands to ensure correct labelling
     labeled_fbands, _ = ndi.label(final_labels)
     # Overlay found bands on original image
-    final_overlay = label2rgb(labeled_fbands, image=img)
+    final_overlay = label2rgb(labeled_fbands, image=img, bg_label=0, bg_color=[0, 0, 0])
 
     # Find properties of bands
     props = skimage.measure.regionprops(labeled_fbands, img)
