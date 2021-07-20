@@ -61,6 +61,7 @@ async def imageToRead(sid, source_b64):
     band_centroids = []
     band_areas = []
     band_weighted_areas = []
+    bboxs = []
     for region_object in result[1]:
         if region_object.area < 50:
             continue
@@ -72,12 +73,17 @@ async def imageToRead(sid, source_b64):
             weighted_area = round(region_object.mean_intensity.item() * region_object.area.item() / (255*255))
             band_weighted_areas.append(weighted_area)
 
+            bboxs.append(region_object.bbox)
+
     print(band_centroids)
     encoded_centroids = json.dumps(band_centroids)
     encoded_areas = json.dumps(band_areas)
     encoded_w_areas = json.dumps(band_weighted_areas)
     band_props = jsonpickle.encode(result[1])
-    await sio.emit('viewResult', {'file': new_image_string, 'inverted_file': inverted_image_string, 'im_width': width, 'im_height': height, 'props': band_props, 'centroids': encoded_centroids,
+    encoded_bboxs = json.dumps(bboxs)
+    await sio.emit('viewResult', {'file': new_image_string, 'inverted_file': inverted_image_string,
+                                  'im_width': width, 'im_height': height, 'props': band_props,
+                                  'centroids': encoded_centroids, 'bboxs': encoded_bboxs,
                                   'areas': encoded_areas, 'w_areas': encoded_w_areas})
 
 # Define aiohttp endpoints

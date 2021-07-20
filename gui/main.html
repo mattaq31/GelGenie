@@ -76,9 +76,19 @@
         band_centroids = JSON.parse(data.centroids);
         band_areas = JSON.parse(data.areas);
         band_w_areas = JSON.parse(data.w_areas);
+        band_bboxs = JSON.parse(data.bboxs);
         console.log(band_props);
         base64_string = data["file"];
         inv_base64_string = data["inverted_file"];
+        
+        // Position band rectangle div in same position as displayed image (to make sure bands display in proper positions)
+        let actual_im_height = $("#previewImg").css("height");
+        let actual_im_width = $("#previewImg").css("width");
+        $("#band-rectangles").height(actual_im_height);
+        $("#band-rectangles").width(actual_im_width);
+        let im_position = $("#previewImg").position();
+        $("#band-rectangles").css({top: im_position.top, left: im_position.left, position:'absolute'});
+        
         
         
         // Find image size
@@ -89,24 +99,32 @@
         
         // Create band rectangles for each band
         for (let i = 0; i < band_centroids.length; i++){
-          console.log(band_centroids[i][0]);
+        
+          // Find width of each band
+          let band_height_100 = ((band_bboxs[i][2] - band_bboxs[i][0])*0.8 / image_height * 100).toString();
+          let band_width_100 = ((band_bboxs[i][3] - band_bboxs[i][1])*0.8 / image_height * 100).toString();
+          band_height_100 = band_height_100.concat("%");
+          band_width_100 = band_width_100.concat("%");
+          console.log(band_width_100);
+          console.log(band_height_100);
+        
+        
           // Find x and y coords of band centroids
           let band_y_px = band_centroids[i][0];
           let band_x_px = band_centroids[i][1];
           
-          let band_y_100 = ((band_y_px-10) / image_height * 100).toString()
+          let band_y_100 = (band_bboxs[i][0] / image_height * 100).toString();
           band_y_100 = band_y_100.concat("%");
           
-          let band_x_100 = ((band_x_px-20) / image_width * 100).toString();
+          let band_x_100 = (band_bboxs[i][1] / image_width * 100).toString();
           band_x_100 = band_x_100.concat("%");
           
           current_id = "band_".concat(i);
           // Create the button
-          $("#band-rectangles").append('<button type="button" id="' + current_id + '"  class="btn btn-outline-primary" style = "width:20px"></button>');
+          $("#band-rectangles").append('<button type="button" id="' + current_id + '"  class="btn btn-outline-primary" style = "width:' + band_width_100 + '; height:' + band_height_100 + '"></button>');
           // Find the button's position
                     
           // Position the button
-          console.log(band_y_100);
           $("#" + current_id).css({top: band_y_100, left: band_x_100, position:'absolute'});
           
           // Add event listener to button
@@ -184,13 +202,13 @@
     <div id="secondScreen" style="display: none" class="container">
       <div class="row justify-content-around">
         <div id="loadedImg" style="position: relative" class="mt-5 p-2 bg-dark col-7 border border-2">
-          <img id="previewImg" src="/examples/images/transparent.png" alt="" class ="img-fluid mx-auto d-float" width="100%"/>
-          <div id="band-rectangles" style="position: absolute; top:0px; left: 0; bottom: 0; right: 0; width: 100%">
+          <img id="previewImg" src="/examples/images/transparent.png" alt="" class ="img-fluid" height="100%"/>
+          <div id="band-rectangles" style="position: absolute; top:0px; left: 0; bottom: 0; right: 0; height: 100%">
           </div>
         </div>
         
         <div id="lanePlot" class="mt-5 p-2 col-2 bg-light">
-          <img id="intPlot" src="http://localhost:8080/mockup_intplot.png" class="img-fluid mx-auto d-float" width="100%"/>
+          <img id="intPlot" src="http://localhost:8080/mockup_intplot.png" class="img-fluid mx-auto d-float" height="100%"/>
         </div>
         
         <div class="mt-5 p-2 col-2">

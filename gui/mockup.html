@@ -75,6 +75,7 @@
         band_centroids = JSON.parse(data.centroids);
         band_areas = JSON.parse(data.areas);
         band_w_areas = JSON.parse(data.w_areas);
+        band_bboxs = JSON.parse(data.bboxs);
         console.log(band_props);
         var base64_string = data["file"];
         
@@ -87,6 +88,12 @@
         
         // Create band rectangles for each band
         for (let i = 0; i < band_centroids.length; i++){
+        
+          // Find width of each band
+          let band_width = band_bboxs[2] - band_bboxs[0];
+          let band_height = band_bboxs[3] - band_bboxs[1];
+        
+        
           console.log(band_centroids[i][0]);
           // Find x and y coords of band centroids
           let band_y_px = band_centroids[i][0];
@@ -100,7 +107,7 @@
           
           current_id = "band_".concat(i);
           // Create the button
-          $("#band-rectangles").append('<button type="button" id="' + current_id + '"  class="btn btn-outline-primary" style = "width:20px"></button>');
+          $("#band-rectangles").append('<button type="button" id="' + current_id + '"  class="btn btn-outline-primary" style = "width:' + band_width + ', height:' + band_height + '"></button>');
           // Find the button's position
                     
           // Position the button
