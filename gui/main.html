@@ -146,6 +146,11 @@
           var preview = document.getElementById('previewImg');
           preview.src = 'data:image/png;base64,'.concat(base64_string);
         });
+        
+        
+        // Set source of lane graph (temporary)
+        
+        
       });
       
       
@@ -183,6 +188,11 @@
           <div id="band-rectangles" style="position: absolute; top:0px; left: 0; bottom: 0; right: 0; width: 100%">
           </div>
         </div>
+        
+        <div id="lanePlot" class="mt-5 p-2 col-2 bg-light">
+          <img id="intPlot" src="http://localhost:8080/mockup_intplot.png" class="img-fluid mx-auto d-float" width="100%"/>
+        </div>
+        
         <div class="mt-5 p-2 col-2">
           <table id="bandData" class="table table-dark">
             <thead></thead>
@@ -196,6 +206,16 @@
                 <th scope="row">Weighted Band Area</th>
                 <td id="w-band-area"></td>
                 <td>px</td>
+              </tr>
+              <tr>
+                <th scope="row">Calibrated Band Area</th>
+                <td id="w-band-area" contenteditable="true">0.100</td>
+                <td>ml</td>
+              </tr>
+              <tr>
+                <th scope="row"><button class="btn btn-light me-2" type="button">Set known quantity</button></th>
+                <td id="w-band-area"></td>
+                <td>ml</td>
               </tr>
             </tbody>
           </table>
