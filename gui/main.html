@@ -63,7 +63,11 @@
         var preview = document.getElementById('previewImg');
         preview.src = 'data:image/png;base64,'.concat(data);
         console.log("SOURCE IN JPG IS ACTIVE");
+        original_b64 = data;
       });
+      
+      
+      
       
       var inv_base64_string = "";
       
@@ -80,6 +84,7 @@
         console.log(band_props);
         base64_string = data["file"];
         inv_base64_string = data["inverted_file"];
+        console.log(data["file"]);
         
         // Position band rectangle div in same position as displayed image (to make sure bands display in proper positions)
         let actual_im_height = $("#previewImg").css("height");
@@ -154,8 +159,9 @@
       
       
       
-      // Toggle background color
+      
       $( document ).ready(function() {
+        // Toggle background color
         $("#white_bg").click(function(){
           var preview = document.getElementById('previewImg');
           preview.src = 'data:image/png;base64,'.concat(inv_base64_string);
@@ -165,8 +171,12 @@
           preview.src = 'data:image/png;base64,'.concat(base64_string);
         });
         
+        // Initiate band finding
+        $("#find_bands").click(function(){
+          socket.emit("findBands", original_b64);
+        });
         
-        // Set source of lane graph (temporary)
+        
         
         
       });
@@ -188,7 +198,7 @@
         <button class="btn btn-dark me-2 export" type="button"><span class="fas fa-file-export"></span></button>
         <div class="col-1"></div>
         <!-- Band buttons -->
-        <button class="btn btn-dark me-2 find" type="button"><span class="fas fa-search"></span></button>
+        <button id="find_bands" class="btn btn-dark me-2 find" type="button"><span class="fas fa-search"></span></button>
         <button class="btn btn-dark me-2 add-bands" type="button"><span class="fas fa-plus"></span></button>
         <button class="btn btn-dark me-2 remove-bands" type="button"><span class="fas fa-times"></span></button>
         

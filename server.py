@@ -15,8 +15,8 @@ import base64
 from io import BytesIO
 
 import jsonpickle
-
-
+from collections import defaultdict
+import pandas as pd
 
 
 # allows one to run server from any base filepath
@@ -30,14 +30,24 @@ sio.attach(app)
 
 @sio.on("imageToRead")
 async def imageToRead(sid, source_b64):
-    # print("Finding bands in ", file)
-    # print(source_b64)
+    """Takes a user-selected image from JS, finds bands and properties, and returns these to JS"""
+
+    # Load image from b64 received from JS, giving width and height
     (image, non_np_image, width, height) = load_image_b64(source_b64)
 
+
+    # Encode original image to b64 to display while bands are found
+    # Essentially to convert .tif from JS into .jpg which browsers can show
     buff = BytesIO()
     non_np_image.save(buff, format="PNG")
     source_image_jpg = base64.b64encode(buff.getvalue()).decode("ascii")
     await sio.emit('sourceInJpg', source_image_jpg)
+
+
+@sio.on("findBands")
+async def findBands(sid, source_b64):
+    # Load image from b64 received from JS, giving width and height
+    (image, non_np_image, width, height) = load_image_b64(source_b64)
 
     # Find the bands using watershed segmentation
     result = find_bands(image)
@@ -47,40 +57,102 @@ async def imageToRead(sid, source_b64):
     # Convert inverted numpy image to PIL image
     pil_img_inverted = Image.fromarray(np.uint8(result[2]*255))
 
+    # Attempts at converting to 16 bit images follow
+    """
+    _, imagebytes = cv2.imencode('.jpg', np.uint16(result[0]*65535))
+    new_image_string = base64.b64encode(imagebytes)
+    print("This is the b64 encoded string")
+    print(new_image_string)
+    _, imagebytes2 = cv2.imencode('.jpg', np.uint16(result[2] * 65535))
+    inverted_image_string = base64.b64encode(imagebytes2)
+    """
+
+    """
+    retval, buffer10 = cv2.imencode('.jpg', np.uint16(result[0]*65535))
+    im_bytes10 = buffer10.tobytes()
+    str10 = cv2.imencode('.jpg', np.uint16(result[0]*65535))[1].tostring()
+    new_image_string = base64.b64encode(str10)
+    retval2, buffer11 = cv2.imencode('.jpg', np.uint16(result[2] * 65535))
+    im_bytes11 = buffer11.tobytes()
+    inverted_image_string = base64.b64encode(im_bytes11)
+    """
+
+    """
+    bytesio = BytesIO()
+    np.savetxt(bytesio, np.uint16(result[0]*65535))  # Only supports 1D or 2D arrays, numpy arrays are converted into byte streams
+    content = bytesio.getvalue()  # Get string representation
+    print(content)
+    new_image_string = base64.b64encode(content)
+
+    bytesio2 = BytesIO()
+    np.savetxt(bytesio2, np.uint16(result[2] * 65535))  # Only supports 1D or 2D arrays, numpy arrays are converted into byte streams
+    content2 = bytesio2.getvalue()  # Get string representation
+    print(content2)
+    inverted_image_string = base64.b64encode(content2)
+    """
+
+
+    # Encode image to b64
     buff2 = BytesIO()
     pil_img.save(buff2, format="JPEG")
     new_image_string = base64.b64encode(buff2.getvalue()).decode("ascii")
-
+    # Encode inverted image to b64
     buff3 = BytesIO()
     pil_img_inverted.save(buff3, format="JPEG")
     inverted_image_string = base64.b64encode(buff3.getvalue()).decode("ascii")
-
-
-    # print(new_image_string)
     print(result[1])
+
+
+    # Create lists of props to pass to JS
     band_centroids = []
     band_areas = []
     band_weighted_areas = []
     bboxs = []
+
+    # Create band dictionary
+    band_keys = ["id", "label", "center_x", "center_y", "area", "w_area", "bbox"]
+    band_dict = defaultdict(list)
+
+    band_no = 1
+    # Filter bands with area less than 50, and find props of those larger than 50
     for region_object in result[1]:
         if region_object.area < 50:
             continue
         else:
+            # Add relevant band props to lists (to be deprecated)
             band_centroids.append(region_object.centroid)
             band_areas.append(region_object.area.item())
-
             # Calculate and append weighted area
             weighted_area = round(region_object.mean_intensity.item() * region_object.area.item() / (255*255))
             band_weighted_areas.append(weighted_area)
-
             bboxs.append(region_object.bbox)
 
-    print(band_centroids)
+            # Add relevant props to dictionary
+            band_dict["id"].append(band_no)
+            band_dict["center_x"].append(region_object.centroid[1])
+            band_dict["center_y"].append(region_object.centroid[0])
+            band_dict["area"].append(region_object.area.item())
+            band_dict["w_area"].append(weighted_area)
+            band_dict["bbox"].append(region_object.bbox)
+            band_no += 1
+
+    print(band_dict)
+    indexes = ["id"]  # place your main indices here (for example, it could be the band number)
+
+    # converts dictionary into a dataframe, and sets your selected indices as your row references
+    full_results = pd.DataFrame.from_dict(band_dict).set_index(indexes)
+
+    print(full_results)
+    # Export pandas table to csv
+    full_results.to_csv("test_metrics.csv")
+
+    # Encode selected band props to json
     encoded_centroids = json.dumps(band_centroids)
     encoded_areas = json.dumps(band_areas)
     encoded_w_areas = json.dumps(band_weighted_areas)
     band_props = jsonpickle.encode(result[1])
     encoded_bboxs = json.dumps(bboxs)
+    # Send image and band props to JS
     await sio.emit('viewResult', {'file': new_image_string, 'inverted_file': inverted_image_string,
                                   'im_width': width, 'im_height': height, 'props': band_props,
                                   'centroids': encoded_centroids, 'bboxs': encoded_bboxs,
