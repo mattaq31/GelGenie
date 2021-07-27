@@ -73,6 +73,10 @@
       
       // When bands have been found
       socket.on("viewResult", function(data) {
+        // Remove spinner from find bands button
+        let spinnerHTML = '<span class="fas fa-search"></span>';
+        $("#find_bands").html(spinnerHTML);
+      
         // Show the image with found bands in the browser
         var preview = document.getElementById('previewImg');
         preview.src = 'data:image/png;base64,'.concat(data["file"]);
@@ -81,6 +85,8 @@
         band_areas = JSON.parse(data.areas);
         band_w_areas = JSON.parse(data.w_areas);
         band_bboxs = JSON.parse(data.bboxs);
+        band_labels = JSON.parse(data.labels);
+        
         console.log(band_props);
         base64_string = data["file"];
         inv_base64_string = data["inverted_file"];
@@ -153,13 +159,38 @@
       
       function bandClick(bandNo){
         console.log("The band area is " + band_areas[bandNo]);
+        console.log("The band label is " + band_labels[bandNo]);
+        $("#band-label").html(band_labels[bandNo]);
         $("#band-area").html(band_areas[bandNo]);
         $("#w-band-area").html(band_w_areas[bandNo]);
+        
+        // Editing band labels
+        let bandLabel = $("#band-label");
+        let editBtn = $("#label-btn");
+        editBtn.off(); // Removes the event listener from previous band, thus avoiding modifying label for all previously modified bands
+        editBtn.click(function(){
+          if (bandLabel.attr('contenteditable') !== 'true') {
+            bandLabel.attr('contenteditable', 'true');
+            editBtn.html('Save');
+            bandLabel.css("backgroundColor", "#6F9");
+          } else {
+            bandLabel.attr('contenteditable','false');
+            // Change Button Text and Color
+            editBtn.html('Edit');
+            bandLabel.css("backgroundColor", "#F96");
+            // Save the data to Python
+            updatedLabel = bandLabel.html();
+            console.log(updatedLabel);
+            socket.emit("updateBandLabel", (bandNo+1), updatedLabel); // Bands start at 0 in JS but at 1 in the Pandas table
+            
+          }
+        });
+        
       }
       
       
       
-      
+      // Toolbar buttons
       $( document ).ready(function() {
         // Toggle background color
         $("#white_bg").click(function(){
@@ -174,12 +205,27 @@
         // Initiate band finding
         $("#find_bands").click(function(){
           socket.emit("findBands", original_b64);
+          // Show modal while finding bands 
+          // $('#loading-bands').modal('show');
+          
+          // Turn button into loading spinner
+          let spinnerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span><span class="sr-only">Loading...</span>';
+          $("#find_bands").html(spinnerHTML);
+        });
+        
+        // Export to CSV
+        $("#export-btn").click(function(){
+          socket.emit("exportToCsv");
         });
         
         
         
+
         
       });
+      
+      
+      
       
       
       
@@ -195,7 +241,7 @@
         <button class="btn btn-dark me-2 new" type="button"><span class="fas fa-file"></span></button>
         <button class="btn btn-dark me-2 open" type="button"><span class="fas fa-folder-open"></span></button>
         <button class="btn btn-dark me-2 save" type="button"><span class="fas fa-save"></span></button>
-        <button class="btn btn-dark me-2 export" type="button"><span class="fas fa-file-export"></span></button>
+        <button id="export-btn" class="btn btn-dark me-2 export" type="button"><span class="fas fa-file-export"></span></button>
         <div class="col-1"></div>
         <!-- Band buttons -->
         <button id="find_bands" class="btn btn-dark me-2 find" type="button"><span class="fas fa-search"></span></button>
@@ -225,6 +271,11 @@
           <table id="bandData" class="table table-dark">
             <thead></thead>
             <tbody>
+              <tr>
+                <th scope="row">Band Label</th>
+                <td id="band-label"></td>
+                <td id=""><button id="label-btn" class="btn btn-light me-2" type="button">Edit</button></td>
+              </tr>
               <tr>
                 <th scope="row">Band Area</th>
                 <td id="band-area"></td>
@@ -260,6 +311,20 @@
           
         </div>
       </form>
+    </div>
+    
+    
+    <!-- Modal -->
+    <div class="modal fade" id="loading-bands" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-body">
+            <div class="spinner-border" role="status">
+              <span class="sr-only">Loading...</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
     
   </body>

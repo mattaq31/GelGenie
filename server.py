@@ -28,6 +28,8 @@ sio = socketio.AsyncServer(cors_allowed_origins='*')
 app = web.Application()
 sio.attach(app)
 
+full_results = None;
+
 @sio.on("imageToRead")
 async def imageToRead(sid, source_b64):
     """Takes a user-selected image from JS, finds bands and properties, and returns these to JS"""
@@ -66,6 +68,12 @@ async def findBands(sid, source_b64):
     _, imagebytes2 = cv2.imencode('.jpg', np.uint16(result[2] * 65535))
     inverted_image_string = base64.b64encode(imagebytes2)
     """
+    _, imagebytes = cv2.imencode('.png', np.uint16(result[0] * 65535))
+    new_image_string = base64.b64encode(imagebytes).decode('utf-8')
+    # print("This is the b64 encoded string")
+    # print(new_image_string)
+    _, imagebytes2 = cv2.imencode('.png', np.uint16(result[2] * 65535))
+    inverted_image_string = base64.b64encode(imagebytes2).decode('utf-8')
 
     """
     retval, buffer10 = cv2.imencode('.jpg', np.uint16(result[0]*65535))
@@ -91,7 +99,7 @@ async def findBands(sid, source_b64):
     inverted_image_string = base64.b64encode(content2)
     """
 
-
+    """
     # Encode image to b64
     buff2 = BytesIO()
     pil_img.save(buff2, format="JPEG")
@@ -101,13 +109,15 @@ async def findBands(sid, source_b64):
     pil_img_inverted.save(buff3, format="JPEG")
     inverted_image_string = base64.b64encode(buff3.getvalue()).decode("ascii")
     print(result[1])
-
+    """
 
     # Create lists of props to pass to JS
     band_centroids = []
     band_areas = []
     band_weighted_areas = []
     bboxs = []
+    band_labels = []
+    band_indices = []
 
     # Create band dictionary
     band_keys = ["id", "label", "center_x", "center_y", "area", "w_area", "bbox"]
@@ -126,9 +136,12 @@ async def findBands(sid, source_b64):
             weighted_area = round(region_object.mean_intensity.item() * region_object.area.item() / (255*255))
             band_weighted_areas.append(weighted_area)
             bboxs.append(region_object.bbox)
+            band_indices.append(band_no)
+            band_labels.append(band_no)
 
             # Add relevant props to dictionary
-            band_dict["id"].append(band_no)
+            band_dict["id"].append(band_no) # cannot be changed by user
+            band_dict["label"].append(band_no) # default label is band number, but can be changed
             band_dict["center_x"].append(region_object.centroid[1])
             band_dict["center_y"].append(region_object.centroid[0])
             band_dict["area"].append(region_object.area.item())
@@ -140,11 +153,12 @@ async def findBands(sid, source_b64):
     indexes = ["id"]  # place your main indices here (for example, it could be the band number)
 
     # converts dictionary into a dataframe, and sets your selected indices as your row references
+    global full_results
     full_results = pd.DataFrame.from_dict(band_dict).set_index(indexes)
 
     print(full_results)
     # Export pandas table to csv
-    full_results.to_csv("test_metrics.csv")
+    # full_results.to_csv("test_metrics.csv")
 
     # Encode selected band props to json
     encoded_centroids = json.dumps(band_centroids)
@@ -152,11 +166,27 @@ async def findBands(sid, source_b64):
     encoded_w_areas = json.dumps(band_weighted_areas)
     band_props = jsonpickle.encode(result[1])
     encoded_bboxs = json.dumps(bboxs)
+    encoded_indices = json.dumps(band_indices)
+    encoded_labels = json.dumps(band_labels)
     # Send image and band props to JS
     await sio.emit('viewResult', {'file': new_image_string, 'inverted_file': inverted_image_string,
                                   'im_width': width, 'im_height': height, 'props': band_props,
                                   'centroids': encoded_centroids, 'bboxs': encoded_bboxs,
-                                  'areas': encoded_areas, 'w_areas': encoded_w_areas})
+                                  'areas': encoded_areas, 'w_areas': encoded_w_areas,
+                                  'indices': encoded_indices, 'labels': encoded_labels})
+
+@sio.on("updateBandLabel")
+def updateBandLabel(sid, band_id, updated_label):
+    full_results.loc[band_id, "label"] = updated_label
+    print("The band id is: ", band_id, " and the updated label is ", updated_label)
+
+
+@sio.on("exportToCsv")
+async def exportToCsv(sid):
+    # Export pandas table to csv
+    full_results.to_csv("test_metrics.csv")
+
+
 
 # Define aiohttp endpoints
 # This will deliver the main.html file to the client once connected.
