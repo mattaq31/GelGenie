@@ -192,8 +192,13 @@
         socket.emit("laneProfile", band_centroids[bandNo][1], image_height);
         
         // Export image with lane profile of single selected lane
-        $("#save-profile-graph").click(function(){
+        $("#profile-to-tif").click(function(){
           socket.emit("exportProfileGraph", bandNo);
+        });
+        
+        // Export csv with lane profile of single selected lane
+        $("#profile-to-csv").click(function(){
+          socket.emit("exportProfileCsv", bandNo);
         });
         
         // Calibrate band volume
@@ -245,12 +250,12 @@
         });
         
         // Export to CSV
-        $("#export-btn").click(function(){
+        $("#data-to-csv").click(function(){
           socket.emit("exportToCsv");
         });
         
         // Export image with found bands
-        $("#save-btn").click(function(){
+        $("#image-to-tif").click(function(){
           socket.emit("exportToBandImage");
         });
         
@@ -290,18 +295,30 @@
         <div class="col-1"></div>
         <!-- Band image buttons -->
         <button class="btn btn-dark me-2 open" type="button"><span class="fas fa-folder-open"></span></button>
-        <button id="save-btn" class="btn btn-dark me-2 save" type="button"><span class="fas fa-save"></span></button>
         <div class="col-1"></div>
         <!-- Band finding buttons -->
         <button id="find_bands" class="btn btn-dark me-2 find" type="button"><span class="fas fa-search"></span></button>
         <button class="btn btn-dark me-2 add-bands" type="button"><span class="fas fa-plus"></span></button>
         <button class="btn btn-dark me-2 remove-bands" type="button"><span class="fas fa-times"></span></button>
         <div class="col-1"></div>
+        <!-- Export dropdown -->
+        <div class="dropdown">
+          <button class="btn btn-secondary dropdown-toggle" type="button" id="export-dd" data-bs-toggle="dropdown" aria-expanded="false">
+            <span class="fas fa-file-export"></span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="dropdownMenuButton2">
+            <li><a id="image-to-tif" class="dropdown-item" href="#">Band image to .tif</a></li>
+            <li><a id="profile-to-tif" class="dropdown-item" href="#">Lane profile to .tif</a></li>
+            <li><a id="profile-to-csv" class="dropdown-item" href="#">Lane profile to .csv</a></li>
+            <li><a id="data-to-csv" class="dropdown-item active" href="#">Band data to .csv</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="#">Separated link</a></li>
+          </ul>
+        </div>
+        
         <!-- Band data buttons -->
-        <button id="export-btn" class="btn btn-dark me-2 export" type="button"><span class="fas fa-file-export"></span></button>
         <button id="white_bg" class="btn btn-dark me-2 toggle-bg" type="button"><span class="fas fa-sun"></span></button>
         <button id="black_bg" class="btn btn-dark me-2 toggle-bg" type="button"><span class="fas fa-moon"></span></button>
-        <button id="save-profile-graph" class="btn btn-dark me-2 save" type="button"><span class="fas fa-save"></span></button>
       </div>
     </nav>
     
