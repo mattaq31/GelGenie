@@ -191,6 +191,11 @@
         // Finding lane profile
         socket.emit("laneProfile", band_centroids[bandNo][1], image_height);
         
+        // Export image with lane profile of single selected lane
+        $("#save-profile-graph").click(function(){
+          socket.emit("exportProfileGraph", bandNo);
+        });
+        
         // Calibrate band volume
         let calAreaBox = $("#c-band-area");
         let calibBtn = $("#calibrate-btn"); 
@@ -244,6 +249,12 @@
           socket.emit("exportToCsv");
         });
         
+        // Export image with found bands
+        $("#save-btn").click(function(){
+          socket.emit("exportToBandImage");
+        });
+        
+        
         // Find lane profile
         socket.on("foundLaneProfile", function(b64String) {
           var laneProfile = document.getElementById('intPlot');
@@ -277,20 +288,20 @@
     <nav class="navbar navbar-dark bg-dark fixed-top">
       <div class="container-fluid justify-content-start">
         <div class="col-1"></div>
-        <!-- General buttons -->
-        <button class="btn btn-dark me-2 new" type="button"><span class="fas fa-file"></span></button>
+        <!-- Band image buttons -->
         <button class="btn btn-dark me-2 open" type="button"><span class="fas fa-folder-open"></span></button>
-        <button class="btn btn-dark me-2 save" type="button"><span class="fas fa-save"></span></button>
-        <button id="export-btn" class="btn btn-dark me-2 export" type="button"><span class="fas fa-file-export"></span></button>
+        <button id="save-btn" class="btn btn-dark me-2 save" type="button"><span class="fas fa-save"></span></button>
         <div class="col-1"></div>
-        <!-- Band buttons -->
+        <!-- Band finding buttons -->
         <button id="find_bands" class="btn btn-dark me-2 find" type="button"><span class="fas fa-search"></span></button>
         <button class="btn btn-dark me-2 add-bands" type="button"><span class="fas fa-plus"></span></button>
         <button class="btn btn-dark me-2 remove-bands" type="button"><span class="fas fa-times"></span></button>
-        
         <div class="col-1"></div>
+        <!-- Band data buttons -->
+        <button id="export-btn" class="btn btn-dark me-2 export" type="button"><span class="fas fa-file-export"></span></button>
         <button id="white_bg" class="btn btn-dark me-2 toggle-bg" type="button"><span class="fas fa-sun"></span></button>
         <button id="black_bg" class="btn btn-dark me-2 toggle-bg" type="button"><span class="fas fa-moon"></span></button>
+        <button id="save-profile-graph" class="btn btn-dark me-2 save" type="button"><span class="fas fa-save"></span></button>
       </div>
     </nav>
     
@@ -353,10 +364,18 @@
     <div class="modal fade" id="loading-bands" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
       <div class="modal-dialog" role="document">
         <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLabel">Find bands</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
           <div class="modal-body">
-            <div class="spinner-border" role="status">
-              <span class="sr-only">Loading...</span>
-            </div>
+            ...
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary">Find</button>
           </div>
         </div>
       </div>

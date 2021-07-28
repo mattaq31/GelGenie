@@ -28,8 +28,12 @@ sio = socketio.AsyncServer(cors_allowed_origins='*')
 app = web.Application()
 sio.attach(app)
 
-full_results = None;
-original_image = None;
+full_results = None
+original_image = None
+tif_black = None
+tif_white = None
+profile = None
+profile_graph = None
 
 @sio.on("imageToRead")
 async def imageToRead(sid, source_b64):
@@ -61,6 +65,11 @@ async def findBands(sid, source_b64):
     pil_img = Image.fromarray(np.uint8(result[0]*255))
     # Convert inverted numpy image to PIL image
     pil_img_inverted = Image.fromarray(np.uint8(result[2]*255))
+
+    # For saving images as .tif file
+    global tif_black, tif_white
+    tif_black = np.uint16(result[0] * 65535)
+    tif_white = np.uint16(result[2] * 65535)
 
     # Attempts at converting to 16 bit images follow
     """
@@ -189,11 +198,12 @@ async def updateBandLabel(sid, band_id, updated_label):
 @sio.on("exportToCsv")
 async def exportToCsv(sid):
     # Export pandas table to csv
-    full_results.to_csv("test_metrics.csv")
+    full_results.to_csv("results/test_metrics.csv")
 
 @sio.on("laneProfile")
 async def laneProfile(sid, x_pos, y_end):
     img = original_image
+    global profile
     profile = skimage.measure.profile_line(img, [0, x_pos], [y_end, x_pos], linewidth=7, reduce_func=np.mean)
     plt.figure(figsize=(4, 11), facecolor='black')
     plt.plot(profile, range(len(profile)))
@@ -202,16 +212,37 @@ async def laneProfile(sid, x_pos, y_end):
     my_stringIObytes = BytesIO()
     plt.savefig(my_stringIObytes, format='jpg')
     my_stringIObytes.seek(0)
+    global profile_graph
+    profile_graph = my_stringIObytes
     my_base64_jpgData = base64.b64encode(my_stringIObytes.read()).decode('utf-8')
     print("Found lane profile")
     await sio.emit('foundLaneProfile', my_base64_jpgData)
-
 
 @sio.on("calibrateArea")
 async def calibrateArea(sid, factor):
     full_results["c_area"] = round(factor * full_results["w_area"], 2)
     new_c_areas = json.dumps(full_results["c_area"].tolist())
     await sio.emit("areaCalibrated", new_c_areas)
+
+@sio.on("exportToBandImage")
+async def exportToBandImage(sid):
+    global tif_black, tif_white
+    cv2.imwrite("results/bands_on_dark.tif", tif_black)
+    cv2.imwrite("results/bands_on_light.tif", tif_white)
+    return
+
+@sio.on("exportProfileGraph")
+async def exportProfileGraph(sid, bandNo):
+    global profile_graph
+    with open("results/lane_profile_" + str(bandNo) + ".tif", "wb") as outfile:
+        # Copy the BytesIO stream to the output file
+        outfile.write(profile_graph.getbuffer())
+
+@sio.on("exportProfileCsv")
+async def exportProfileCsv(sid, bandNo):
+    global profile
+    pd_profile = pd.DataFrame(profile)
+    pd_profile.to_csv("results/lane_profile_" + str(bandNo) + ".csv")
 
 # Define aiohttp endpoints
 # This will deliver the main.html file to the client once connected.
