@@ -4,6 +4,9 @@
 $(document).ready(function() {
     $('.open').tooltip({trigger: 'hover', title: 'Open image', placement: 'bottom'});
     $('.find').tooltip({trigger: 'hover', title: 'Find bands', placement: 'bottom'});
+    $('#export-btn').tooltip({trigger: 'hover', title: 'Export', placement: 'bottom'});
+    $('#white_bg').tooltip({trigger: 'hover', title: 'Light mode', placement: 'bottom'});
+    $('#black_bg').tooltip({trigger: 'hover', title: 'Dark mode', placement: 'bottom'});
     // TO DO: Add the rest of the tooltips
 });
 

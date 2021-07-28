@@ -29,6 +29,7 @@ app = web.Application()
 sio.attach(app)
 
 full_results = None;
+original_image = None;
 
 @sio.on("imageToRead")
 async def imageToRead(sid, source_b64):
@@ -50,6 +51,8 @@ async def imageToRead(sid, source_b64):
 async def findBands(sid, source_b64):
     # Load image from b64 received from JS, giving width and height
     (image, non_np_image, width, height) = load_image_b64(source_b64)
+    global original_image
+    original_image = image
 
     # Find the bands using watershed segmentation
     result = find_bands(image)
@@ -146,6 +149,7 @@ async def findBands(sid, source_b64):
             band_dict["center_y"].append(region_object.centroid[0])
             band_dict["area"].append(region_object.area.item())
             band_dict["w_area"].append(weighted_area)
+            band_dict["c_area"].append(weighted_area)
             band_dict["bbox"].append(region_object.bbox)
             band_no += 1
 
@@ -176,17 +180,38 @@ async def findBands(sid, source_b64):
                                   'indices': encoded_indices, 'labels': encoded_labels})
 
 @sio.on("updateBandLabel")
-def updateBandLabel(sid, band_id, updated_label):
+async def updateBandLabel(sid, band_id, updated_label):
     full_results.loc[band_id, "label"] = updated_label
     print("The band id is: ", band_id, " and the updated label is ", updated_label)
-
+    new_labels = json.dumps(full_results["label"].tolist())
+    await sio.emit("labelUpdated", new_labels)
 
 @sio.on("exportToCsv")
 async def exportToCsv(sid):
     # Export pandas table to csv
     full_results.to_csv("test_metrics.csv")
 
+@sio.on("laneProfile")
+async def laneProfile(sid, x_pos, y_end):
+    img = original_image
+    profile = skimage.measure.profile_line(img, [0, x_pos], [y_end, x_pos], linewidth=7, reduce_func=np.mean)
+    plt.figure(figsize=(4, 11), facecolor='black')
+    plt.plot(profile, range(len(profile)))
+    plt.gca().invert_yaxis()
+    plt.axis("off")
+    my_stringIObytes = BytesIO()
+    plt.savefig(my_stringIObytes, format='jpg')
+    my_stringIObytes.seek(0)
+    my_base64_jpgData = base64.b64encode(my_stringIObytes.read()).decode('utf-8')
+    print("Found lane profile")
+    await sio.emit('foundLaneProfile', my_base64_jpgData)
 
+
+@sio.on("calibrateArea")
+async def calibrateArea(sid, factor):
+    full_results["c_area"] = round(factor * full_results["w_area"], 2)
+    new_c_areas = json.dumps(full_results["c_area"].tolist())
+    await sio.emit("areaCalibrated", new_c_areas)
 
 # Define aiohttp endpoints
 # This will deliver the main.html file to the client once connected.

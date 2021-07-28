@@ -176,9 +176,6 @@ def find_bands(img):
         plt.imshow(label_set)
 
 
-
-
-
     # Relabel bands to ensure correct labelling
     labeled_fbands, _ = ndi.label(final_labels)
     # Overlay found bands on original image
@@ -198,3 +195,5 @@ def find_bands(img):
     plt.title("After all passes")
     plt.imshow(final_overlay)
     return (final_overlay, props, overlay_inverted, props_table)
+
+

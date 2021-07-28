@@ -68,7 +68,7 @@
       
       
       
-      
+      var image_height;
       var inv_base64_string = "";
       
       // When bands have been found
@@ -86,6 +86,7 @@
         band_w_areas = JSON.parse(data.w_areas);
         band_bboxs = JSON.parse(data.bboxs);
         band_labels = JSON.parse(data.labels);
+        band_c_areas = band_w_areas;
         
         console.log(band_props);
         base64_string = data["file"];
@@ -103,7 +104,7 @@
         
         
         // Find image size
-        var image_height = data.im_height;
+        image_height = data.im_height;
         console.log(image_height);
         var image_width = data.im_width;
         console.log(image_width);
@@ -163,6 +164,7 @@
         $("#band-label").html(band_labels[bandNo]);
         $("#band-area").html(band_areas[bandNo]);
         $("#w-band-area").html(band_w_areas[bandNo]);
+        $("#c-band-area").html(band_c_areas[bandNo]);
         
         // Editing band labels
         let bandLabel = $("#band-label");
@@ -172,12 +174,12 @@
           if (bandLabel.attr('contenteditable') !== 'true') {
             bandLabel.attr('contenteditable', 'true');
             editBtn.html('Save');
-            bandLabel.css("backgroundColor", "#6F9");
+            bandLabel.addClass("table-active");
           } else {
             bandLabel.attr('contenteditable','false');
             // Change Button Text and Color
             editBtn.html('Edit');
-            bandLabel.css("backgroundColor", "#F96");
+            bandLabel.removeClass("table-active");
             // Save the data to Python
             updatedLabel = bandLabel.html();
             console.log(updatedLabel);
@@ -186,6 +188,30 @@
           }
         });
         
+        // Finding lane profile
+        socket.emit("laneProfile", band_centroids[bandNo][1], image_height);
+        
+        // Calibrate band volume
+        let calAreaBox = $("#c-band-area");
+        let calibBtn = $("#calibrate-btn"); 
+        calibBtn.click(function(){
+          if (calAreaBox.attr('contenteditable') !== 'true') {
+            calAreaBox.attr('contenteditable', 'true');
+            calibBtn.html('Set');
+            calAreaBox.addClass("table-active");
+          } else {
+            calAreaBox.attr('contenteditable','false');
+            calibBtn.html('Edit');
+            calAreaBox.removeClass("table-active");
+            // Save the data to Python
+            calArea = calAreaBox.html();
+            let factor = calArea / band_w_areas[bandNo]; // Set conversion factor between cal area and weighted area
+            console.log("factor calculated");
+            socket.emit("calibrateArea", factor);
+            
+          }        
+          
+        });
       }
       
       
@@ -218,7 +244,21 @@
           socket.emit("exportToCsv");
         });
         
+        // Find lane profile
+        socket.on("foundLaneProfile", function(b64String) {
+          var laneProfile = document.getElementById('intPlot');
+          laneProfile.src = 'data:image/png;base64,'.concat(b64String);
+        });
         
+        // When the band label is modified
+        socket.on("labelUpdated", function(jsonLabels) {
+          band_labels = JSON.parse(jsonLabels)
+        });
+        
+        // When the band areas are calibrated
+        socket.on("areaCalibrated", function(jsonCArea) {
+          band_c_areas = JSON.parse(jsonCArea)
+        });
         
 
         
@@ -288,13 +328,8 @@
               </tr>
               <tr>
                 <th scope="row">Calibrated Band Area</th>
-                <td id="w-band-area" contenteditable="true">0.100</td>
-                <td>ml</td>
-              </tr>
-              <tr>
-                <th scope="row"><button class="btn btn-light me-2" type="button">Set known quantity</button></th>
-                <td id="w-band-area"></td>
-                <td>ml</td>
+                <td id="c-band-area"></td>
+                <td><button id="calibrate-btn" class="btn btn-light me-2" type="button">Edit</button></td>
               </tr>
             </tbody>
           </table>
