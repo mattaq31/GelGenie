@@ -139,16 +139,10 @@ def expand_areas(original_image, labeled_image, sure_bg):
         #plt.imshow(output_image_part)
     return output_image
 
-def find_bands(img):
-    # Amount of times to repeat watershed algorithm
-    repetitions = 2
-
-    # Load image
-    ### img = load_image(file)
-
-    # Set starting fg and bg values
-    sure_fg = 90*255
-    sure_bg = 50*255
+def find_bands(img, sure_fg, sure_bg, repetitions):
+    print("sure fg: ", sure_fg)
+    print("sure bg: ", sure_bg)
+    print("repetitions: ", repetitions)
 
     # Create copy of loaded image to apply mask to
     working_img = img.copy()

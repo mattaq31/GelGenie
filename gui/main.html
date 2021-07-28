@@ -240,14 +240,25 @@
         
         // Initiate band finding
         $("#find_bands").click(function(){
-          socket.emit("findBands", original_b64);
-          // Show modal while finding bands 
-          // $('#loading-bands').modal('show');
+          // socket.emit("findBands", original_b64);
+          // Show modal with parameter selection
+          $('#loading-bands').modal('show');
+          
+        });
+        // When the user selects the band finding parameters
+        $("#find_bands_ready").click(function(){
+          let sure_fg = $("#fg-value").val();
+          let sure_bg = $("#bg-value").val();
+          let repetitions = $("#repetitions").val();
+          socket.emit("findBands", original_b64, sure_fg, sure_bg, repetitions);
+          // Hide modal 
+          $('#loading-bands').modal('hide');
           
           // Turn button into loading spinner
           let spinnerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span><span class="sr-only">Loading...</span>';
           $("#find_bands").html(spinnerHTML);
         });
+        
         
         // Export to CSV
         $("#data-to-csv").click(function(){
@@ -380,7 +391,7 @@
     <!-- Modal -->
     <div class="modal fade" id="loading-bands" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
       <div class="modal-dialog" role="document">
-        <div class="modal-content">
+        <div class="modal-content" style="background-color:black;">
           <div class="modal-header">
             <h5 class="modal-title" id="exampleModalLabel">Find bands</h5>
             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
@@ -388,11 +399,20 @@
             </button>
           </div>
           <div class="modal-body">
-            ...
+            <label for="fg-value" class="form-label">Foreground value</label>
+            <output style="float: right">90</output>
+            <input type="range" class="form-range" id="fg-value" value="90" min="30" max="240" oninput="this.previousElementSibling.value = this.value">
+            <label for="bg-value" class="form-label">Background value</label>
+            <output style="float: right">70</output>
+            <input type="range" class="form-range" id="bg-value" value="70" min="10" max="220" oninput="this.previousElementSibling.value = this.value">
+            <label for="repetitions" class="form-label">Repetitions</label>
+            <output style="float: right">2</output>
+            <input type="range" class="form-range" id="repetitions" value="2" min="1" max="5" oninput="this.previousElementSibling.value = this.value">
+            
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-            <button type="button" class="btn btn-primary">Find</button>
+            <button id="find_bands_ready" type="button" class="btn btn-primary">Find</button>
           </div>
         </div>
       </div>

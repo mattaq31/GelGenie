@@ -52,14 +52,14 @@ async def imageToRead(sid, source_b64):
 
 
 @sio.on("findBands")
-async def findBands(sid, source_b64):
+async def findBands(sid, source_b64, sure_fg, sure_bg, repetitions):
     # Load image from b64 received from JS, giving width and height
     (image, non_np_image, width, height) = load_image_b64(source_b64)
     global original_image
     original_image = image
 
     # Find the bands using watershed segmentation
-    result = find_bands(image)
+    result = find_bands(image, int(sure_fg)*255, int(sure_bg)*255, int(repetitions)) # 90*255, 50*255, 2
 
     # Convert numpy image to PIL image
     pil_img = Image.fromarray(np.uint8(result[0]*255))
