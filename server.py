@@ -107,6 +107,7 @@ async def findBands(sid, source_b64, sure_fg, sure_bg, repetitions):
     # Filter bands with area less than 50, and find props of those larger than 50
     for region_object in result[1]:
         if region_object.area < 50:
+            band_no += 1
             continue
         else:
             # Add relevant band props to lists (to be deprecated)

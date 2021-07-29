@@ -36,7 +36,6 @@
     <script>
       // Initialize the socket.io connection on port 8080
       const socket = io("http://localhost:8080");
-      
       // Load file
       function previewFile() {
         var preview = document.querySelector('img'); // Get HTML img element
@@ -70,7 +69,7 @@
         var preview = document.getElementById('preview_img'); 
         preview.src = 'data:image/png;base64,'.concat(data["image"]);
         original_b64 = data["image"];
-        console.log(original_b64);
+        // console.log(original_b64);
         var lowerTh = data["otsu"];
         var higherTh = data["otsu"] + 25;
         document.getElementById("bg_value").value = lowerTh;
@@ -102,6 +101,7 @@
         band_w_areas = JSON.parse(data.w_areas);
         band_bboxs = JSON.parse(data.bboxs);
         band_labels = JSON.parse(data.labels);
+        band_indices = JSON.parse(data.indices);
         band_c_areas = band_w_areas;
         // console.log(band_props);
         base64_string = data["file"];
@@ -136,9 +136,9 @@
           band_y_100 = band_y_100.concat("%");
           let band_x_100 = (band_bboxs[i][1] / image_width * 100).toString();
           band_x_100 = band_x_100.concat("%");
-          
+          console.log(band_indices)
           // Give each band a unique ID
-          current_id = "band_".concat(i);
+          current_id = "band_".concat(band_indices[i]);
           // Create the button with found width and height
           $("#band_rectangles").append('<button type="button" id="' + current_id + '"  class="btn btn-outline-primary band-rect" style = "width:' + band_width_100 + '; height:' + band_height_100 + '"></button>');
           // Position the button
@@ -146,9 +146,10 @@
           // Add event listener to button
           $("#" + current_id).click(function(){
             if (removeMode){
-              removeClick(i);
+              console.log(band_indices[i])
+              removeClick(band_indices[i]);
             } else {
-              bandClick(i);
+              bandClick(band_indices[i]);
             }
           });
         }        
@@ -182,7 +183,7 @@
             bandLabel.removeClass("table-active");
             // Save the data to Python
             updatedLabel = bandLabel.html();
-            console.log(updatedLabel);
+            // console.log(updatedLabel);
             socket.emit("updateBandLabel", (bandNo+1), updatedLabel); // Bands start at 0 in JS but at 1 in the Pandas table
           }
         });
@@ -224,9 +225,10 @@
       
       function removeClick(bandNo){
         // Get band ID
+        console.log(bandNo)
         current_id = "#band_".concat(bandNo);
         $(current_id).remove();
-        socket.emit("removeBand", bandNo+1);
+        socket.emit("removeBand", bandNo);
       }
       
       
