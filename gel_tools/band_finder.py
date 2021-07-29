@@ -128,7 +128,7 @@ def expand_areas(original_image, labeled_image, sure_bg):
         # Initialize flooding image as full of zeros
         image_for_flood = np.zeros_like(original_image)
         # Set every pixel in flooding image that could possibly make a new band next pass to 1
-        image_for_flood[original_image > sure_bg - 20*255] = 1
+        image_for_flood[original_image > sure_bg - 30*255] = 1
         # Use floodfill on the flooding image using the found bands
         # This will ideally exclude any areas that neighbour found bands from being considered as bands
         output_image_part = skimage.segmentation.flood(image_for_flood, seed_point, tolerance=None)
@@ -164,8 +164,8 @@ def find_bands(img, sure_fg, sure_bg, repetitions):
         plt.title("Masked")
         plt.imshow(working_img)
         # Reduce fg and bg values on each pass
-        sure_fg -= 20*255
-        sure_bg -= 20*255
+        sure_fg -= 30*255
+        sure_bg -= 30*255
         plt.figure()
         plt.imshow(label_set)
 

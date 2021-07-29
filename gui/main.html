@@ -29,28 +29,34 @@
     <title>Automatic Gel Analysis</title>
   </head>
   <body>
-  
+    <!-- Socket.io protocol for communicating with Python server -->
     <script src="https://cdn.socket.io/4.1.2/socket.io.min.js" integrity="sha384-toS6mmwu70G0fw54EGlWWeA4z3dyJ+dlXBtSURSKN4vyRFOcxd3Bzjj/AoOwY+Rg" crossorigin="anonymous"></script>
     
     
     <script>
+      // Initialize the socket.io connection on port 8080
       const socket = io("http://localhost:8080");
       
+      // Load file
       function previewFile() {
-        var preview = document.querySelector('img');
-        var file    = document.querySelector('input[type=file]').files[0];
-        var reader  = new FileReader();
+        var preview = document.querySelector('img'); // Get HTML img element
+        var file    = document.querySelector('input[type=file]').files[0]; // Get HTML file element (interface to allow user to select a file from disk)
+        var reader  = new FileReader(); // Create new file reader
         
-        
+        // When the user has chosen a file
         reader.onloadend = function () {
+          // Set the chosen image to be displayed
           let sourceImage = reader.result;
           preview.src = sourceImage;
+          // Get the base64 representation of the chosen image by removing initial string that is identical across images
           let base64Img = sourceImage.substr(23);
-          console.log(base64Img);
+          // console.log(base64Img);
+          // Emit a socket.io event which can be caught in Python, telling Python to read the image
+          // This is because the prior code will not read .tif files correctly, and so we must use Python to convert the image to another format first
           socket.emit("imageToRead", base64Img);
         }
         if (file) {
-          reader.readAsDataURL(file);
+          reader.readAsDataURL(file); // Read image
           var loadImgCont = document.getElementById("loadImgCont");
           loadImgCont.style.display = "none";  // Hide the select image container
           secondScreen.style.display = "block";   // Show the container with image
@@ -59,8 +65,9 @@
         }        
       }
       
+      // Listen for Python returning the source image in HTML displayable format
       socket.on("sourceInJpg", function(data) {
-        var preview = document.getElementById('previewImg');
+        var preview = document.getElementById('previewImg'); 
         preview.src = 'data:image/png;base64,'.concat(data);
         console.log("SOURCE IN JPG IS ACTIVE");
         original_b64 = data;
@@ -292,10 +299,6 @@
       });
       
       
-      
-      
-      
-      
     </script>
     
     
@@ -310,7 +313,7 @@
         <!-- Band finding buttons -->
         <button id="find_bands" class="btn btn-dark me-2 find" type="button"><span class="fas fa-search"></span></button>
         <button class="btn btn-dark me-2 add-bands" type="button"><span class="fas fa-plus"></span></button>
-        <button class="btn btn-dark me-2 remove-bands" type="button"><span class="fas fa-times"></span></button>
+        <button id="remove_bands" class="btn btn-dark me-2 remove-bands" type="button"><span class="fas fa-times"></span></button>
         <div class="col-1"></div>
         <!-- Export dropdown -->
         <div class="dropdown">
@@ -382,7 +385,6 @@
       <form id="form1">
         <div class="custom-file">
           <input type="file" class="custom-file-input" name="photo" onchange="previewFile(this);" required>
-          
         </div>
       </form>
     </div>
@@ -401,14 +403,13 @@
           <div class="modal-body">
             <label for="fg-value" class="form-label">Foreground value</label>
             <output style="float: right">90</output>
-            <input type="range" class="form-range" id="fg-value" value="90" min="30" max="240" oninput="this.previousElementSibling.value = this.value">
+            <input type="range" class="form-range" id="fg-value" min="30" max="240" value="90" oninput="this.previousElementSibling.value = this.value">
             <label for="bg-value" class="form-label">Background value</label>
             <output style="float: right">70</output>
-            <input type="range" class="form-range" id="bg-value" value="70" min="10" max="220" oninput="this.previousElementSibling.value = this.value">
+            <input type="range" class="form-range" id="bg-value" min="10" max="220" value="70" oninput="this.previousElementSibling.value = this.value">
             <label for="repetitions" class="form-label">Repetitions</label>
             <output style="float: right">2</output>
-            <input type="range" class="form-range" id="repetitions" value="2" min="1" max="5" oninput="this.previousElementSibling.value = this.value">
-            
+            <input type="range" class="form-range" id="repetitions" min="1" max="5" value="2" oninput="this.previousElementSibling.value = this.value">
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
