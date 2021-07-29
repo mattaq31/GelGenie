@@ -18,8 +18,11 @@ import jsonpickle
 from collections import defaultdict
 import pandas as pd
 
+from skimage.color import label2rgb
+import skimage.util as util
 
-# allows one to run server from any base filepath
+
+# Allows one to run server from any base filepath
 os.chdir(os.path.abspath(os.path.join(__file__, os.path.pardir)))
 
 
@@ -34,32 +37,40 @@ tif_black = None
 tif_white = None
 profile = None
 profile_graph = None
+labeled_image = None
 
 @sio.on("imageToRead")
 async def imageToRead(sid, source_b64):
-    """Takes a user-selected image from JS, finds bands and properties, and returns these to JS"""
+    """Takes a user-selected image from JS, converts it to png and also finds otsu threshold value."""
 
     # Load image from b64 received from JS, giving width and height
     (image, non_np_image, width, height) = load_image_b64(source_b64)
-
 
     # Encode original image to b64 to display while bands are found
     # Essentially to convert .tif from JS into .jpg which browsers can show
     buff = BytesIO()
     non_np_image.save(buff, format="PNG")
     source_image_jpg = base64.b64encode(buff.getvalue()).decode("ascii")
-    await sio.emit('sourceInJpg', source_image_jpg)
+
+    # Get otsu threshold value to estimate band finding parameters
+    otsu_th = skimage.filters.threshold_otsu(image)
+    otsu_percent = otsu_th/65535 * 100
+    print("The otsu th is: ", otsu_th)
+
+    await sio.emit('sourceInPng', {"image": source_image_jpg, "otsu": otsu_percent})
 
 
 @sio.on("findBands")
 async def findBands(sid, source_b64, sure_fg, sure_bg, repetitions):
+    """Finds bands on an image with user-defined parameters"""
+
     # Load image from b64 received from JS, giving width and height
     (image, non_np_image, width, height) = load_image_b64(source_b64)
     global original_image
     original_image = image
 
     # Find the bands using watershed segmentation
-    result = find_bands(image, int(sure_fg)*255, int(sure_bg)*255, int(repetitions)) # 90*255, 50*255, 2
+    result = find_bands(image, int(sure_fg)/100*65535, int(sure_bg)/100*65535, int(repetitions)) # 90*255, 50*255, 2
 
     # Convert numpy image to PIL image
     pil_img = Image.fromarray(np.uint8(result[0]*255))
@@ -71,57 +82,14 @@ async def findBands(sid, source_b64, sure_fg, sure_bg, repetitions):
     tif_black = np.uint16(result[0] * 65535)
     tif_white = np.uint16(result[2] * 65535)
 
-    # Attempts at converting to 16 bit images follow
-    """
-    _, imagebytes = cv2.imencode('.jpg', np.uint16(result[0]*65535))
-    new_image_string = base64.b64encode(imagebytes)
-    print("This is the b64 encoded string")
-    print(new_image_string)
-    _, imagebytes2 = cv2.imencode('.jpg', np.uint16(result[2] * 65535))
-    inverted_image_string = base64.b64encode(imagebytes2)
-    """
+    # For saving labeled image to be used in removing bands
+    global labeled_image
+    labeled_image = result[4]
+
     _, imagebytes = cv2.imencode('.png', np.uint16(result[0] * 65535))
     new_image_string = base64.b64encode(imagebytes).decode('utf-8')
-    # print("This is the b64 encoded string")
-    # print(new_image_string)
     _, imagebytes2 = cv2.imencode('.png', np.uint16(result[2] * 65535))
     inverted_image_string = base64.b64encode(imagebytes2).decode('utf-8')
-
-    """
-    retval, buffer10 = cv2.imencode('.jpg', np.uint16(result[0]*65535))
-    im_bytes10 = buffer10.tobytes()
-    str10 = cv2.imencode('.jpg', np.uint16(result[0]*65535))[1].tostring()
-    new_image_string = base64.b64encode(str10)
-    retval2, buffer11 = cv2.imencode('.jpg', np.uint16(result[2] * 65535))
-    im_bytes11 = buffer11.tobytes()
-    inverted_image_string = base64.b64encode(im_bytes11)
-    """
-
-    """
-    bytesio = BytesIO()
-    np.savetxt(bytesio, np.uint16(result[0]*65535))  # Only supports 1D or 2D arrays, numpy arrays are converted into byte streams
-    content = bytesio.getvalue()  # Get string representation
-    print(content)
-    new_image_string = base64.b64encode(content)
-
-    bytesio2 = BytesIO()
-    np.savetxt(bytesio2, np.uint16(result[2] * 65535))  # Only supports 1D or 2D arrays, numpy arrays are converted into byte streams
-    content2 = bytesio2.getvalue()  # Get string representation
-    print(content2)
-    inverted_image_string = base64.b64encode(content2)
-    """
-
-    """
-    # Encode image to b64
-    buff2 = BytesIO()
-    pil_img.save(buff2, format="JPEG")
-    new_image_string = base64.b64encode(buff2.getvalue()).decode("ascii")
-    # Encode inverted image to b64
-    buff3 = BytesIO()
-    pil_img_inverted.save(buff3, format="JPEG")
-    inverted_image_string = base64.b64encode(buff3.getvalue()).decode("ascii")
-    print(result[1])
-    """
 
     # Create lists of props to pass to JS
     band_centroids = []
@@ -163,10 +131,9 @@ async def findBands(sid, source_b64, sure_fg, sure_bg, repetitions):
             band_no += 1
 
     print(band_dict)
-    indexes = ["id"]  # place your main indices here (for example, it could be the band number)
-
-    # converts dictionary into a dataframe, and sets your selected indices as your row references
+    indexes = ["id"]  # The pd dataframe will be indexed by id
     global full_results
+    # Converts dictionary into a dataframe, and sets selected indices as row references
     full_results = pd.DataFrame.from_dict(band_dict).set_index(indexes)
 
     print(full_results)
@@ -188,20 +155,28 @@ async def findBands(sid, source_b64, sure_fg, sure_bg, repetitions):
                                   'areas': encoded_areas, 'w_areas': encoded_w_areas,
                                   'indices': encoded_indices, 'labels': encoded_labels})
 
+
 @sio.on("updateBandLabel")
 async def updateBandLabel(sid, band_id, updated_label):
+    """Updates band label of a single band"""
+
     full_results.loc[band_id, "label"] = updated_label
     print("The band id is: ", band_id, " and the updated label is ", updated_label)
     new_labels = json.dumps(full_results["label"].tolist())
     await sio.emit("labelUpdated", new_labels)
 
+
 @sio.on("exportToCsv")
 async def exportToCsv(sid):
+    """Exports band data to .csv format."""
     # Export pandas table to csv
     full_results.to_csv("results/test_metrics.csv")
 
+
 @sio.on("laneProfile")
 async def laneProfile(sid, x_pos, y_end):
+    """Draws and returns lane profile of selected band."""
+
     img = original_image
     global profile
     profile = skimage.measure.profile_line(img, [0, x_pos], [y_end, x_pos], linewidth=7, reduce_func=np.mean)
@@ -218,14 +193,20 @@ async def laneProfile(sid, x_pos, y_end):
     print("Found lane profile")
     await sio.emit('foundLaneProfile', my_base64_jpgData)
 
+
 @sio.on("calibrateArea")
 async def calibrateArea(sid, factor):
+    """Sets calibration factor for area."""
+
     full_results["c_area"] = round(factor * full_results["w_area"], 2)
     new_c_areas = json.dumps(full_results["c_area"].tolist())
     await sio.emit("areaCalibrated", new_c_areas)
 
+
 @sio.on("exportToBandImage")
 async def exportToBandImage(sid):
+    """Exports found band images"""
+
     global tif_black, tif_white
     cv2.imwrite("results/bands_on_dark.tif", tif_black)
     cv2.imwrite("results/bands_on_light.tif", tif_white)
@@ -233,6 +214,8 @@ async def exportToBandImage(sid):
 
 @sio.on("exportProfileGraph")
 async def exportProfileGraph(sid, bandNo):
+    """Exports lane profile in image/graph form for use in a report/paper."""
+
     global profile_graph
     with open("results/lane_profile_" + str(bandNo) + ".tif", "wb") as outfile:
         # Copy the BytesIO stream to the output file
@@ -240,9 +223,39 @@ async def exportProfileGraph(sid, bandNo):
 
 @sio.on("exportProfileCsv")
 async def exportProfileCsv(sid, bandNo):
+    """Exports lane profile in csv form for further use in another program."""
+
     global profile
     pd_profile = pd.DataFrame(profile)
     pd_profile.to_csv("results/lane_profile_" + str(bandNo) + ".csv")
+
+
+@sio.on("removeBand")
+async def removeBand(sid, band_no):
+    """Removes a band from everything."""
+
+    # Remove band from pd dataframe
+    global full_results
+    full_results = full_results.drop(band_no)
+
+    # Remove band from image
+    global labeled_image, original_image
+    # print(labeled_image.tolist())
+    # labeled_image[labeled_image == int(bandNo)] = 0
+    labeled_image = np.where(labeled_image == band_no, 0, labeled_image)
+    updated_image = label2rgb(labeled_image, image=original_image, bg_label=0, bg_color=[0, 0, 0])
+
+    # Invert updated image
+    updated_image_inv = util.invert(updated_image)
+
+    # Encode updated image
+    _, imagebytes = cv2.imencode('.png', np.uint16(updated_image * 65535))
+    new_image_string = base64.b64encode(imagebytes).decode('utf-8')
+    _, imagebytes2 = cv2.imencode('.png', np.uint16(updated_image_inv * 65535))
+    inverted_image_string = base64.b64encode(imagebytes2).decode('utf-8')
+    print("updated images sent")
+    await sio.emit("imageUpdated", {"non_inv": new_image_string, "inv": inverted_image_string})
+
 
 # Define aiohttp endpoints
 # This will deliver the main.html file to the client once connected.

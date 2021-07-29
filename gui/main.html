@@ -57,36 +57,45 @@
         }
         if (file) {
           reader.readAsDataURL(file); // Read image
-          var loadImgCont = document.getElementById("loadImgCont");
-          loadImgCont.style.display = "none";  // Hide the select image container
-          secondScreen.style.display = "block";   // Show the container with image
+          var load_img_cont = document.getElementById("load_img_cont");
+          load_img_cont.style.display = "none";  // Hide the select image container
+          second_screen.style.display = "block";   // Show the container with image
         } else {
           preview.src = "";
         }        
       }
       
       // Listen for Python returning the source image in HTML displayable format
-      socket.on("sourceInJpg", function(data) {
-        var preview = document.getElementById('previewImg'); 
-        preview.src = 'data:image/png;base64,'.concat(data);
-        console.log("SOURCE IN JPG IS ACTIVE");
-        original_b64 = data;
+      socket.on("sourceInPng", function(data) {
+        var preview = document.getElementById('preview_img'); 
+        preview.src = 'data:image/png;base64,'.concat(data["image"]);
+        original_b64 = data["image"];
+        console.log(original_b64);
+        var lowerTh = data["otsu"];
+        var higherTh = data["otsu"] + 25;
+        document.getElementById("bg_value").value = lowerTh;
+        document.getElementById("fg_value").value = higherTh;
+        
       });
       
       
-      
+      // Initialize variables
       var image_height;
-      var inv_base64_string = "";
+      inv_base64_string = "";
+      removeMode = false;
       
       // When bands have been found
       socket.on("viewResult", function(data) {
+      
         // Remove spinner from find bands button
         let spinnerHTML = '<span class="fas fa-search"></span>';
         $("#find_bands").html(spinnerHTML);
       
         // Show the image with found bands in the browser
-        var preview = document.getElementById('previewImg');
+        var preview = document.getElementById('preview_img');
         preview.src = 'data:image/png;base64,'.concat(data["file"]);
+        
+        // Decode variables
         band_props = JSON.parse(data.props);
         band_centroids = JSON.parse(data.centroids);
         band_areas = JSON.parse(data.areas);
@@ -94,87 +103,71 @@
         band_bboxs = JSON.parse(data.bboxs);
         band_labels = JSON.parse(data.labels);
         band_c_areas = band_w_areas;
-        
-        console.log(band_props);
+        // console.log(band_props);
         base64_string = data["file"];
         inv_base64_string = data["inverted_file"];
-        console.log(data["file"]);
+        // console.log(data["file"]);
         
         // Position band rectangle div in same position as displayed image (to make sure bands display in proper positions)
-        let actual_im_height = $("#previewImg").css("height");
-        let actual_im_width = $("#previewImg").css("width");
-        $("#band-rectangles").height(actual_im_height);
-        $("#band-rectangles").width(actual_im_width);
-        let im_position = $("#previewImg").position();
-        $("#band-rectangles").css({top: im_position.top, left: im_position.left, position:'absolute'});
+        let actual_im_height = $("#preview_img").css("height");
+        let actual_im_width = $("#preview_img").css("width");
+        $("#band_rectangles").height(actual_im_height);
+        $("#band_rectangles").width(actual_im_width);
+        let im_position = $("#preview_img").position();
+        $("#band_rectangles").css({top: im_position.top, left: im_position.left, position:'absolute'});
         
-        
-        
-        // Find image size
+        // Find original image size
         image_height = data.im_height;
-        console.log(image_height);
-        var image_width = data.im_width;
-        console.log(image_width);
+        // console.log(image_height);
+        image_width = data.im_width;
+        // console.log(image_width);
         
         // Create band rectangles for each band
         for (let i = 0; i < band_centroids.length; i++){
         
-          // Find width of each band
+          // Find width and height of each band in percent
           let band_height_100 = ((band_bboxs[i][2] - band_bboxs[i][0])*0.8 / image_height * 100).toString();
           let band_width_100 = ((band_bboxs[i][3] - band_bboxs[i][1])*0.8 / image_height * 100).toString();
           band_height_100 = band_height_100.concat("%");
-          band_width_100 = band_width_100.concat("%");
-          console.log(band_width_100);
-          console.log(band_height_100);
+          band_width_100 = band_width_100.concat("%");     
         
-        
-          // Find x and y coords of band centroids
-          let band_y_px = band_centroids[i][0];
-          let band_x_px = band_centroids[i][1];
-          
+          // Find the top left corner of each band in percent
           let band_y_100 = (band_bboxs[i][0] / image_height * 100).toString();
           band_y_100 = band_y_100.concat("%");
-          
           let band_x_100 = (band_bboxs[i][1] / image_width * 100).toString();
           band_x_100 = band_x_100.concat("%");
           
+          // Give each band a unique ID
           current_id = "band_".concat(i);
-          // Create the button
-          $("#band-rectangles").append('<button type="button" id="' + current_id + '"  class="btn btn-outline-primary" style = "width:' + band_width_100 + '; height:' + band_height_100 + '"></button>');
-          // Find the button's position
-                    
+          // Create the button with found width and height
+          $("#band_rectangles").append('<button type="button" id="' + current_id + '"  class="btn btn-outline-primary band-rect" style = "width:' + band_width_100 + '; height:' + band_height_100 + '"></button>');
           // Position the button
           $("#" + current_id).css({top: band_y_100, left: band_x_100, position:'absolute'});
-          
           // Add event listener to button
           $("#" + current_id).click(function(){
-            bandClick(i);
-            })
-        }
-        
-                        
-        /*
-        // var reader  = new FileReader();
-        // reader.readAsDataURL("../results/result1.jpg");
-        
-        reader.onloadend = function () {
-          // preview.src = reader.result;
-          // var image = new Image();
-          
-        } */
-        
+            if (removeMode){
+              removeClick(i);
+            } else {
+              bandClick(i);
+            }
+          });
+        }        
       });
       
+      // When the user clicks on a band rectangle
       function bandClick(bandNo){
-        console.log("The band area is " + band_areas[bandNo]);
-        console.log("The band label is " + band_labels[bandNo]);
-        $("#band-label").html(band_labels[bandNo]);
-        $("#band-area").html(band_areas[bandNo]);
-        $("#w-band-area").html(band_w_areas[bandNo]);
-        $("#c-band-area").html(band_c_areas[bandNo]);
+      
+        // console.log("The band area is " + band_areas[bandNo]);
+        // console.log("The band label is " + band_labels[bandNo]);
         
-        // Editing band labels
-        let bandLabel = $("#band-label");
+        // Show the band details for this band in the band data table
+        $("#band_label").html(band_labels[bandNo]);
+        $("#band_area").html(band_areas[bandNo]);
+        $("#w_band_area").html(band_w_areas[bandNo]);
+        $("#c_band_area").html(band_c_areas[bandNo]);
+        
+        // Edit band labels
+        let bandLabel = $("#band_label");
         let editBtn = $("#label-btn");
         editBtn.off(); // Removes the event listener from previous band, thus avoiding modifying label for all previously modified bands
         editBtn.click(function(){
@@ -191,26 +184,25 @@
             updatedLabel = bandLabel.html();
             console.log(updatedLabel);
             socket.emit("updateBandLabel", (bandNo+1), updatedLabel); // Bands start at 0 in JS but at 1 in the Pandas table
-            
           }
         });
         
-        // Finding lane profile
+        // Find lane profile
         socket.emit("laneProfile", band_centroids[bandNo][1], image_height);
         
         // Export image with lane profile of single selected lane
-        $("#profile-to-tif").click(function(){
+        $("#profile_to_tif").click(function(){
           socket.emit("exportProfileGraph", bandNo);
         });
         
         // Export csv with lane profile of single selected lane
-        $("#profile-to-csv").click(function(){
+        $("#profile_to_csv").click(function(){
           socket.emit("exportProfileCsv", bandNo);
         });
         
         // Calibrate band volume
-        let calAreaBox = $("#c-band-area");
-        let calibBtn = $("#calibrate-btn"); 
+        let calAreaBox = $("#c_band_area");
+        let calibBtn = $("#calibrate_btn"); 
         calibBtn.click(function(){
           if (calAreaBox.attr('contenteditable') !== 'true') {
             calAreaBox.attr('contenteditable', 'true');
@@ -225,23 +217,29 @@
             let factor = calArea / band_w_areas[bandNo]; // Set conversion factor between cal area and weighted area
             console.log("factor calculated");
             socket.emit("calibrateArea", factor);
-            
           }        
-          
         });
       }
       
       
+      function removeClick(bandNo){
+        // Get band ID
+        current_id = "#band_".concat(bandNo);
+        $(current_id).remove();
+        socket.emit("removeBand", bandNo+1);
+      }
+      
       
       // Toolbar buttons
       $( document ).ready(function() {
+        
         // Toggle background color
         $("#white_bg").click(function(){
-          var preview = document.getElementById('previewImg');
+          var preview = document.getElementById('preview_img');
           preview.src = 'data:image/png;base64,'.concat(inv_base64_string);
         });
         $("#black_bg").click(function(){
-          var preview = document.getElementById('previewImg');
+          var preview = document.getElementById('preview_img');
           preview.src = 'data:image/png;base64,'.concat(base64_string);
         });
         
@@ -249,82 +247,108 @@
         $("#find_bands").click(function(){
           // socket.emit("findBands", original_b64);
           // Show modal with parameter selection
-          $('#loading-bands').modal('show');
-          
+          $('#loading_bands').modal('show');
         });
+        
         // When the user selects the band finding parameters
         $("#find_bands_ready").click(function(){
-          let sure_fg = $("#fg-value").val();
-          let sure_bg = $("#bg-value").val();
+          // Get the user selected parameters from sliders
+          let sure_fg = $("#fg_value").val();
+          let sure_bg = $("#bg_value").val();
           let repetitions = $("#repetitions").val();
+          // Remove all previous band rectangles (if using find bands feature again, this erases previous results so as not to interfere)
+          $( ".band-rect" ).remove();
+          // Call Python to find bands, passing parameters
           socket.emit("findBands", original_b64, sure_fg, sure_bg, repetitions);
           // Hide modal 
-          $('#loading-bands').modal('hide');
-          
+          $('#loading_bands').modal('hide');
           // Turn button into loading spinner
           let spinnerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span><span class="sr-only">Loading...</span>';
           $("#find_bands").html(spinnerHTML);
         });
         
+        // If the user selects cancel on band finding modal
+        $("#close_modal").click(function(){
+          $('#loading_bands').modal('hide');
+        });
+        
         
         // Export to CSV
-        $("#data-to-csv").click(function(){
+        $("#data_to_csv").click(function(){
           socket.emit("exportToCsv");
         });
         
         // Export image with found bands
-        $("#image-to-tif").click(function(){
+        $("#image_to_tif").click(function(){
           socket.emit("exportToBandImage");
         });
         
-        
         // Find lane profile
         socket.on("foundLaneProfile", function(b64String) {
-          var laneProfile = document.getElementById('intPlot');
+          var laneProfile = document.getElementById('int_plot');
           laneProfile.src = 'data:image/png;base64,'.concat(b64String);
         });
         
         // When the band label is modified
         socket.on("labelUpdated", function(jsonLabels) {
-          band_labels = JSON.parse(jsonLabels)
+          band_labels = JSON.parse(jsonLabels);
         });
         
         // When the band areas are calibrated
         socket.on("areaCalibrated", function(jsonCArea) {
-          band_c_areas = JSON.parse(jsonCArea)
+          band_c_areas = JSON.parse(jsonCArea);
         });
         
-
+        // Go into remove bands mode
+        $("#remove_bands").click(function(){
+          if (removeMode == false){
+            $(".band-rect").removeClass("btn-outline-primary");
+            $(".band-rect").addClass("btn-outline-danger");
+            removeMode = true;
+          } else {
+            $(".band-rect").removeClass("btn-outline-danger");
+            $(".band-rect").addClass("btn-outline-primary");
+            removeMode = false;
+          }
+        });
         
+        socket.on("imageUpdated", function(data) {
+          base64_string = data["non_inv"];
+          inv_base64_string = data["inv"];
+        });
+
       });
       
       
     </script>
     
-    
+    <!-- Main HTML -->
   
     <!-- Top menu -->
     <nav class="navbar navbar-dark bg-dark fixed-top">
       <div class="container-fluid justify-content-start">
         <div class="col-1"></div>
+        
         <!-- Band image buttons -->
         <button class="btn btn-dark me-2 open" type="button"><span class="fas fa-folder-open"></span></button>
         <div class="col-1"></div>
+        
         <!-- Band finding buttons -->
         <button id="find_bands" class="btn btn-dark me-2 find" type="button"><span class="fas fa-search"></span></button>
         <button class="btn btn-dark me-2 add-bands" type="button"><span class="fas fa-plus"></span></button>
         <button id="remove_bands" class="btn btn-dark me-2 remove-bands" type="button"><span class="fas fa-times"></span></button>
         <div class="col-1"></div>
+        
         <!-- Export dropdown -->
         <div class="dropdown">
-          <button class="btn btn-secondary dropdown-toggle" type="button" id="export-dd" data-bs-toggle="dropdown" aria-expanded="false">
+          <button class="btn btn-secondary dropdown-toggle" type="button" id="export_dd" data-bs-toggle="dropdown" aria-expanded="false">
             <span class="fas fa-file-export"></span>
           </button>
           <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="dropdownMenuButton2">
-            <li><a id="image-to-tif" class="dropdown-item" href="#">Band image to .tif</a></li>
-            <li><a id="profile-to-tif" class="dropdown-item" href="#">Lane profile to .tif</a></li>
-            <li><a id="profile-to-csv" class="dropdown-item" href="#">Lane profile to .csv</a></li>
-            <li><a id="data-to-csv" class="dropdown-item active" href="#">Band data to .csv</a></li>
+            <li><a id="image_to_tif" class="dropdown-item" href="#">Band image to .tif</a></li>
+            <li><a id="profile_to_tif" class="dropdown-item" href="#">Lane profile to .tif</a></li>
+            <li><a id="profile_to_csv" class="dropdown-item" href="#">Lane profile to .csv</a></li>
+            <li><a id="data_to_csv" class="dropdown-item" href="#">Band data to .csv</a></li>
             <li><hr class="dropdown-divider"></li>
             <li><a class="dropdown-item" href="#">Separated link</a></li>
           </ul>
@@ -337,41 +361,45 @@
     </nav>
     
     <!-- Loaded image display (this is hidden until the user selects an image -->
-    <div id="secondScreen" style="display: none" class="container">
+    <div id="second_screen" style="display: none" class="container">
       <div class="row justify-content-around">
-        <div id="loadedImg" style="position: relative" class="mt-5 p-2 bg-dark col-7 border border-2">
-          <img id="previewImg" src="/examples/images/transparent.png" alt="" class ="img-fluid" height="100%"/>
-          <div id="band-rectangles" style="position: absolute; top:0px; left: 0; bottom: 0; right: 0; height: 100%">
+      
+        <!-- Main gel image with bands -->
+        <div id="loaded_img" style="position: relative" class="mt-5 p-2 bg-dark col-7 border border-2">
+          <img id="preview_img" src="/examples/images/transparent.png" alt="" class ="img-fluid" height="100%"/>
+          <div id="band_rectangles" style="position: absolute; top:0px; left: 0; bottom: 0; right: 0; height: 100%">
           </div>
         </div>
         
-        <div id="lanePlot" class="mt-5 p-2 col-2 bg-light">
-          <img id="intPlot" src="http://localhost:8080/mockup_intplot.png" class="img-fluid mx-auto d-float" height="100%"/>
+        <!-- Band profile -->
+        <div id="lane_plot" class="mt-5 p-2 col-2 bg-light">
+          <img id="int_plot" src="" class="img-fluid mx-auto d-float" height="100%"/>
         </div>
         
+        <!-- Band data table -->
         <div class="mt-5 p-2 col-2">
-          <table id="bandData" class="table table-dark">
+          <table id="band_data" class="table table-dark">
             <thead></thead>
             <tbody>
               <tr>
                 <th scope="row">Band Label</th>
-                <td id="band-label"></td>
+                <td id="band_label"></td>
                 <td id=""><button id="label-btn" class="btn btn-light me-2" type="button">Edit</button></td>
               </tr>
               <tr>
                 <th scope="row">Band Area</th>
-                <td id="band-area"></td>
+                <td id="band_area"></td>
                 <td>px</td>
               </tr>
               <tr>
                 <th scope="row">Weighted Band Area</th>
-                <td id="w-band-area"></td>
+                <td id="w_band_area"></td>
                 <td>px</td>
               </tr>
               <tr>
                 <th scope="row">Calibrated Band Area</th>
-                <td id="c-band-area"></td>
-                <td><button id="calibrate-btn" class="btn btn-light me-2" type="button">Edit</button></td>
+                <td id="c_band_area"></td>
+                <td><button id="calibrate_btn" class="btn btn-light me-2" type="button">Edit</button></td>
               </tr>
             </tbody>
           </table>
@@ -380,7 +408,7 @@
     </div>
     
     <!-- Open an image section (this is displayed until an image is loaded, then hidden) -->
-    <div id="loadImgCont" class="container mt-5 p-4 bg-dark col-5 rounded-3 border border-2">
+    <div id="load_img_cont" class="container mt-5 p-4 bg-dark col-5 rounded-3 border border-2">
       <h3>Choose an image to analyze</h3>
       <form id="form1">
         <div class="custom-file">
@@ -389,30 +417,26 @@
       </form>
     </div>
     
-    
-    <!-- Modal -->
-    <div class="modal fade" id="loading-bands" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <!-- Modal for band finding parameters -->
+    <div class="modal fade" id="loading_bands" tabindex="-1" role="dialog" aria-labelledby="example_modal_label" aria-hidden="true">
       <div class="modal-dialog" role="document">
         <div class="modal-content" style="background-color:black;">
           <div class="modal-header">
-            <h5 class="modal-title" id="exampleModalLabel">Find bands</h5>
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
+            <h5 class="modal-title" id="example_modal_label">Find bands</h5>
           </div>
           <div class="modal-body">
-            <label for="fg-value" class="form-label">Foreground value</label>
-            <output style="float: right">90</output>
-            <input type="range" class="form-range" id="fg-value" min="30" max="240" value="90" oninput="this.previousElementSibling.value = this.value">
-            <label for="bg-value" class="form-label">Background value</label>
-            <output style="float: right">70</output>
-            <input type="range" class="form-range" id="bg-value" min="10" max="220" value="70" oninput="this.previousElementSibling.value = this.value">
+            <label for="fg_value" class="form-label">Foreground value</label>
+            <output style="float: right"></output>
+            <input type="range" class="form-range" id="fg_value" autocomplete="off" min="0" max="100" value="35" oninput="this.previousElementSibling.value = this.value">
+            <label for="bg_value" class="form-label">Background value</label>
+            <output style="float: right"></output>
+            <input type="range" class="form-range" id="bg_value" autocomplete="off" min="0" max="100" value="27" oninput="this.previousElementSibling.value = this.value">
             <label for="repetitions" class="form-label">Repetitions</label>
-            <output style="float: right">2</output>
-            <input type="range" class="form-range" id="repetitions" min="1" max="5" value="2" oninput="this.previousElementSibling.value = this.value">
+            <output style="float: right"></output>
+            <input type="range" class="form-range" id="repetitions" autocomplete="off" min="1" max="5" value="1" oninput="this.previousElementSibling.value = this.value">
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+            <button id="close_modal" type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
             <button id="find_bands_ready" type="button" class="btn btn-primary">Find</button>
           </div>
         </div>
