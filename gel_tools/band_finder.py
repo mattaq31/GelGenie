@@ -90,9 +90,11 @@ def watershed_seg(image, sure_fg, sure_bg):
     return labeled_bands
 
 
-# Not actually used, will take a few years to execute
-# Note overlapp is deliberately mispelled to enable usage of overlap() elsewhere
 def overlapp(label1, label2):
+    """
+    # Not actually used, will take a few years to execute
+    # Note overlapp is deliberately mispelled to enable usage of overlap() elsewhere
+    """
     discarded_label_values = []
     for r in range(0, len(label2)):
         if (label2[r] == label2[0]).all():
@@ -108,7 +110,6 @@ def overlapp(label1, label2):
                 item = 0
                 print(row, item)
     return label2
-
 
 
 def expand_areas(original_image, labeled_image, sure_bg):
@@ -139,7 +140,13 @@ def expand_areas(original_image, labeled_image, sure_bg):
         #plt.imshow(output_image_part)
     return output_image
 
+
 def find_bands(img, sure_fg, sure_bg, repetitions):
+    """
+    # Function which brings it all together and actually finds bands.
+    # Takes the source image and watershed segmentation algorithm parameters.
+    # Returns white-on-black and black-on-white images with colored bands, and band properties.
+    """
     print("sure fg: ", sure_fg)
     print("sure bg: ", sure_bg)
     print("repetitions: ", repetitions)
@@ -172,6 +179,8 @@ def find_bands(img, sure_fg, sure_bg, repetitions):
 
     # Relabel bands to ensure correct labelling
     labeled_fbands, _ = ndi.label(final_labels)
+    print(final_labels)
+    print(labeled_fbands)
     # Overlay found bands on original image
     final_overlay = label2rgb(labeled_fbands, image=img, bg_label=0, bg_color=[0, 0, 0])
 
@@ -188,6 +197,6 @@ def find_bands(img, sure_fg, sure_bg, repetitions):
     plt.figure()
     plt.title("After all passes")
     plt.imshow(final_overlay)
-    return (final_overlay, props, overlay_inverted, props_table)
+    return (final_overlay, props, overlay_inverted, props_table, labeled_fbands)
 
 
