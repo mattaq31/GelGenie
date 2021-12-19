@@ -47,8 +47,9 @@
           // Set the chosen image to be displayed
           let sourceImage = reader.result;
           preview.src = sourceImage;
+          // console.log(sourceImage.substr(0)) TODO: the substring cannot be hard-coded!
           // Get the base64 representation of the chosen image by removing initial string that is identical across images
-          let base64Img = sourceImage.substr(23);
+          let base64Img = sourceImage.substr(22);
           // console.log(base64Img);
           // Emit a socket.io event which can be caught in Python, telling Python to read the image
           // This is because the prior code will not read .tif files correctly, and so we must use Python to convert the image to another format first
