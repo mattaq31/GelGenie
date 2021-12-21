@@ -1,10 +1,5 @@
 Gel Electrophoresis Automatic Analyzer
 ==============================
+Python analysis component located in ./gel_tools.
+Electron frontend located in ./frontend.
 Full Description TBD
-
-Setting up Environment
-==============================
-To install package run the following command from the home directory:
-
-`pip install -e .`
-
