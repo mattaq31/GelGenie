@@ -4,11 +4,19 @@
 const {app, BrowserWindow, dialog, ipcMain} = require('electron')
 const path = require('path')
 const io = require('socket.io-client');
-const {PythonShell} = require('python-shell');
+const exec = require('child_process').exec;
 
 const socket = io("http://localhost:9111");
 
-app.commandLine.appendSwitch('remote-debugging-port', '9222')
+if (!app.isPackaged){ // turn debugging on when in development only
+    app.commandLine.appendSwitch('remote-debugging-port', '9222')
+}
+function execute(command, callback) { // command line execution
+    exec(command, (error, stdout, stderr) => {
+        callback(stdout);
+    });
+}
+
 function createWindow () {
     // Create the browser window.
     const mainWindow = new BrowserWindow({
@@ -74,7 +82,15 @@ ipcMain.on( 'export', (e, args) => {
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
 
-    createWindow()
+    if (app.isPackaged){
+        // starts up the python gel server
+        execute(path.join(path.dirname(__dirname), 'PythonServer','gel_server', 'gel_server'), (output) => {
+            console.log(output);
+        });
+        // TODO: make sure this child process is always killed when app is closed.
+    }
+
+    createWindow();  // creates the main window
 
     app.on('activate', function () {
         // On macOS it's common to re-create a window in the app when the

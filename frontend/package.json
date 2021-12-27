@@ -40,6 +40,13 @@
   "build": {
     "appId": "com.dunngrp.autogel",
     "copyright": "Copyright TBC",
+    "extraResources": [{
+      "from": "./build/",
+      "to": "PythonServer",
+      "filter": [
+        "**/*"
+      ]
+    }],
     "mac": {
       "category": "public.app-category.productivity",
       "target": "dmg"

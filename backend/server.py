@@ -10,8 +10,6 @@ import jsonpickle
 import cv2
 from matplotlib import pyplot as plt
 
-import skimage
-
 import pandas as pd
 import numpy as np
 
