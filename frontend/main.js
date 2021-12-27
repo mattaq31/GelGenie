@@ -1,28 +1,79 @@
-// Modules to control application life and create native browser window
-const {app, BrowserWindow} = require('electron')
-const path = require('path')
+// TODO: update appID and other build options including app signing
 
+// Modules to control application life and create native browser window
+const {app, BrowserWindow, dialog, ipcMain} = require('electron')
+const path = require('path')
+const io = require('socket.io-client');
+const {PythonShell} = require('python-shell');
+
+const socket = io("http://localhost:9111");
+
+app.commandLine.appendSwitch('remote-debugging-port', '9222')
 function createWindow () {
     // Create the browser window.
     const mainWindow = new BrowserWindow({
-        width: 1000,
-        height: 600,
+        width: 1200,
+        height: 1000,
         webPreferences: {
-            preload: path.join(__dirname, 'preload.js')
+            preload: path.join(__dirname, 'preload.js'),
+            contextIsolation: true
         }
     })
 
     // and load the index.html of the app.
     mainWindow.loadFile('html/index.html')
+    // mainWindow.setResizable(false)
 
     // Open the DevTools.
     // mainWindow.webContents.openDevTools()
 }
 
+ipcMain.on( 'export', (e, args) => {
+
+        if (args === 'main_data_csv'){
+            dialog.showSaveDialog({
+                title: 'Define output name and location',
+                filters: [{ name: 'CSV file', extensions: ['csv'] }],
+                properties: ['createDirectory']
+            }).then( result => {
+                socket.emit("exportToCsv", result.filePath);
+            })
+        }
+        else if (args === 'profile_csv'){
+            dialog.showSaveDialog({
+                title: 'Define output name and location',
+                filters: [{ name: 'CSV file', extensions: ['csv'] }],
+                properties: ['createDirectory']
+            }).then( result => {
+                socket.emit("exportProfileCsv", result.filePath);
+            })
+        }
+        else if (args === 'profile_image'){
+            dialog.showSaveDialog({
+                title: 'Define output name and location',
+                filters: [{ name: 'Image file', extensions: ['tif', 'png'] }],
+                properties: ['createDirectory']
+            }).then( result => {
+                socket.emit("exportProfileGraph", result.filePath);
+            })
+        }
+        else if (args.includes('main_image')){
+            dialog.showSaveDialog({
+                title: 'Define output name and location',
+                filters: [{ name: 'Image file', extensions: ['tif', 'png'] }],
+                properties: ['createDirectory']
+            }).then( result => {
+                socket.emit("exportToBandImage", result.filePath, args === 'main_image_light');
+            })
+        }
+
+})
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
+
     createWindow()
 
     app.on('activate', function () {

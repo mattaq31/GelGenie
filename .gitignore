@@ -136,6 +136,7 @@ dmypy.json
 
 # Data Location
 data/*
+scratch_data/*
 
 samples/
 node_modules/

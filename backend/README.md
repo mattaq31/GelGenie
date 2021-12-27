@@ -8,3 +8,5 @@ To install package run the following command from the home directory:
 
 `pip install -e .`
 
+TODO: add correct packages to requirements.txt
+

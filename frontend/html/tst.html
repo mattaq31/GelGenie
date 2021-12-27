@@ -59,10 +59,14 @@
           <span class="fas fa-file-export"></span>
         </button>
         <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="dropdownMenuButton2">
-          <li><a id="image_to_tif" class="dropdown-item" href="#">Save segmented image</a></li>
-          <li><a id="profile_to_tif" class="dropdown-item" href="#">Save lane profile</a></li>
-          <li><a id="profile_to_csv" class="dropdown-item" href="#">Save lane profile to .csv</a></li>
-          <li><a id="data_to_csv" class="dropdown-item" href="#">Save band data to .csv</a></li>
+          <li><a id="image_to_tif" class="dropdown-item" href="#">Band image to .tif</a></li>
+          <li><a id="profile_to_tif" class="dropdown-item" href="#">Lane profile to .tif</a></li>
+          <li><a id="profile_to_csv" class="dropdown-item" href="#">Lane profile to .csv</a></li>
+          <li><a id="data_to_csv" class="dropdown-item" href="#">Band data to .csv</a></li>
+          <li>
+            <hr class="dropdown-divider">
+          </li>
+          <li><a class="dropdown-item" href="#">Separated link</a></li>
         </ul>
       </div>
 
@@ -71,17 +75,20 @@
       <button id="black_bg" class="btn btn-dark me-2 toggle-bg" type="button"><span class="fas fa-moon"></span></button>
     </div>
   </nav>
-
   <!-- Loaded image display (this is hidden until the user selects an image) -->
-  <div id="second_screen" style="display: none" class="container">
-    <div class="row justify-content-around">
-
+  <div id="second_screen" style="display: block" class="container">
+    <div class="row">
       <!-- Main gel image with bands -->
-      <div class="mt-5 p-2 bg-dark col-8 border border-2">
+      <div style="position: relative" class="mt-5 bg-dark col-8 p-2 border border-2">
         <div id="loaded_img" style="position: relative; display: inline-block;">
-            <img id="preview_img" src="data:," alt="" class="img-fluid" height="100%"/>
-            <div id="band_rectangles"  style="position: absolute; top:0; left: 0; bottom: 0; right: 0">
-            </div>
+          <img id="preview_img" src="../../scratch_data/tbe_2_2_lod_v6.png" alt="" class="img-fluid" style="width: 100%; height: 100%"/>
+          <div id="band_rectangles"  style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; ">
+            <button type="button" id="band_7" class="btn btn-outline-primary band-rect" style="width: 2.03125%; height: 0.546875%; top: 0.585938%; left: 31.6176%; position: absolute;"></button>
+            <button type="button" id="band_16" class="btn btn-outline-primary band-rect" style="width: 3.125%; height: 13.3594%; top: 5.27344%; left: 30.9559%; position: absolute;"></button>
+            <button type="button" id="band_35" class="btn btn-outline-primary band-rect" style="width: 2.34375%; height: 1.25%; top: 22.6562%; left: 31.6176%; position: absolute;"></button>
+            <button type="button" id="band_40" class="btn btn-outline-primary band-rect" style="width: 5.46875%; height: 5.39062%; top: 24.5117%; left: 40.4412%; position: absolute;"></button>
+            <button type="button" id="band_168" class="btn btn-outline-primary band-rect" style="width: 5.46875%; height: 1.17188%; top: 79.8828%; left: 52.5%; position: absolute;"></button>
+          </div>
         </div>
       </div>
 
@@ -126,7 +133,7 @@
   </div>
 
   <!-- Open an image section (this is displayed until an image is loaded, then hidden) -->
-  <div id="load_img_cont" class="container mt-5 p-4 bg-dark col-5 rounded-3 border border-2">
+  <div id="load_img_cont" class="container mt-5 p-4 bg-dark col-5 rounded-3 border border-2" style="display: none">
     <h3>Choose an image to analyze</h3>
     <form id="form1">
       <div class="custom-file">
@@ -145,15 +152,15 @@
         </div>
         <div class="modal-body">
           <label for="fg_value" class="form-label">Foreground value</label>
-          <output style="float: right" id="out_foreground">35</output>
+          <output style="float: right"></output>
           <input type="range" class="form-range" id="fg_value" autocomplete="off" min="0" max="100" value="35"
                  oninput="this.previousElementSibling.value = this.value">
           <label for="bg_value" class="form-label">Background value</label>
-          <output style="float: right" id="out_background">27</output>
+          <output style="float: right"></output>
           <input type="range" class="form-range" id="bg_value" autocomplete="off" min="0" max="100" value="27"
                  oninput="this.previousElementSibling.value = this.value">
           <label for="repetitions" class="form-label">Repetitions</label>
-          <output style="float: right" id="out_repetitions">1</output>
+          <output style="float: right"></output>
           <input type="range" class="form-range" id="repetitions" autocomplete="off" min="1" max="5" value="1"
                  oninput="this.previousElementSibling.value = this.value">
         </div>
