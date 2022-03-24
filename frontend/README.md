@@ -1,6 +1,6 @@
 Gel Electrophoresis Automatic Analyzer Frontend
 ==============================
-##Development
+## Development
 
 To install necessary packages for running electron app, run:
 
@@ -12,7 +12,7 @@ To start system in development mode, run:
 
 The python server will need to be initialized separately.
 
-##Build/Distribution
+## Build/Distribution
 
 To package the app for distribution, run one of the build commands in package.json.
 
