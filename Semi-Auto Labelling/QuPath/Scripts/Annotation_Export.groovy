@@ -32,6 +32,6 @@ for (annotation in getAnnotationObjects()) {
     def region = RegionRequest.createInstance(
         labelServer.getPath(), downsample, annotation.getROI())
     i++
-    def outputPath = buildFilePath(pathOutput, 'Region ' + i + '.png')
+    def outputPath = buildFilePath(pathOutput, 'Region ' + i + '.tif')
     writeImageRegion(labelServer, region, outputPath)
 }
