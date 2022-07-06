@@ -4,14 +4,16 @@ def imageData = getCurrentImageData()
 
 // Define output path (relative to project)
 def name = GeneralTools.getNameWithoutExtension(imageData.getServer().getMetadata().getName())
-def pathOutput = buildFilePath(PROJECT_BASE_DIR, 'Annotaton_Export', name)
-mkdirs(pathOutput)
+def pathOutput = buildFilePath(PROJECT_BASE_DIR, 'Edited SegMaps', name)
+mkdirs(buildFilePath(PROJECT_BASE_DIR, 'Edited SegMaps'))
 
 // Define output resolution
-double requestedPixelSize = 2.0
+// double requestedPixelSize = 2.0
 
 // Convert to downsample
-double downsample = requestedPixelSize / imageData.getServer().getPixelCalibration().getAveragedPixelSize()
+// double downsample = requestedPixelSize / imageData.getServer().getPixelCalibration().getAveragedPixelSize()
+
+downsample = 1
 
 // Create an ImageServer where the pixels are derived from annotations
 def labelServer = new LabeledImageServer.Builder(imageData)
@@ -20,7 +22,7 @@ def labelServer = new LabeledImageServer.Builder(imageData)
     .addLabel('Gel Band', 1)      // Choose output labels (the order matters!)
     // .addLabel('Stroma', 2)
     // .addLabel('Other', 3)
-    .lineThickness(2)          // Optionally export annotation boundaries with another label
+    //.lineThickness(2)          // Optionally export annotation boundaries with another label
     //.setBoundaryLabel('Boundary*', 4) // Define annotation boundary label
     .multichannelOutput(false) // If true, each label refers to the channel of a multichannel binary image (required for multiclass probability)
     .build()
@@ -28,10 +30,10 @@ def labelServer = new LabeledImageServer.Builder(imageData)
 
 // Export each region
 int i = 0
-for (annotation in getAnnotationObjects()) {
-    def region = RegionRequest.createInstance(
-        labelServer.getPath(), downsample, annotation.getROI())
-    i++
-    def outputPath = buildFilePath(pathOutput, 'Region ' + i + '.tif')
-    writeImageRegion(labelServer, region, outputPath)
-}
+
+def gelband = getAnnotationObjects()[1] // Which is the background annotation, if this is chosen, the image output will have the correct size
+
+def region = RegionRequest.createInstance(
+    labelServer.getPath(), downsample, gelband.getROI())
+    
+    writeImageRegion(labelServer, region, pathOutput + ' edited segmap.tif')
