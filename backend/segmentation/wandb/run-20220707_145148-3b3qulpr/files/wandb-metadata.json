@@ -1,0 +1,16 @@
+{
+    "os": "Windows-10-10.0.19041-SP0",
+    "python": "3.7.13",
+    "heartbeatAt": "2022-07-07T13:51:50.538101",
+    "startedAt": "2022-07-07T13:51:48.990269",
+    "docker": null,
+    "cpu_count": 12,
+    "cuda": null,
+    "args": null,
+    "state": "running",
+    "program": "Automatic-Gel-Analysis/backend/segmentation/Unet_Training.ipynb",
+    "root": "C:\\2022_Summer_Intern",
+    "host": "ENG-6956",
+    "username": "s2137314",
+    "executable": "C:\\Users\\s2137314\\Anaconda3\\envs\\gel_env\\python.exe"
+}

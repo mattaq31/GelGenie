@@ -40,7 +40,7 @@ class BasicDataset(Dataset):
             else:
                 img_ndarray = img_ndarray.transpose((2, 0, 1))
 
-            img_ndarray = img_ndarray / 255
+        img_ndarray = img_ndarray / 255
 
         return img_ndarray
 
