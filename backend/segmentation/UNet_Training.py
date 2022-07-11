@@ -34,6 +34,7 @@ dir_checkpoint = Path('/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summe
 # Functions
 #######################################################################################################################
 
+
 def evaluate(net, dataloader, device):
     net.eval()
     num_val_batches = len(dataloader)
@@ -109,6 +110,7 @@ def evaluate(net, dataloader, device):
     if num_val_batches == 0:
         return dice_score
     return dice_score / num_val_batches
+
 
 def train_net(net,
               device,
@@ -273,9 +275,6 @@ train_net(net=net,
           img_scale=scale,
           val_percent=val / 100,
           amp=amp)
-
-
-pass
 
 #######################################################################################################################
 # To evaluate the trained weights

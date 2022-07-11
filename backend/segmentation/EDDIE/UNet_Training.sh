@@ -18,8 +18,13 @@
 #$ -l h_vmem=6G
 
 # Load all modules/environment/python
-/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/Automatic-Gel-Analysis/backend/EDDIE/prerequisites.sh
+module load anaconda/5.3.1
+module load cuda/11.0.2
+source activate gel_env
+
+# Set cuda in interactive session
+source /exports/applications/support/set_cuda_visible_devices.sh
 
 # Run the program
-/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/Automatic-Gel-Analysis/backend/UNet_Training.py
+python -u /exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/Automatic-Gel-Analysis/backend/segmentation/UNet_Training.py
 
