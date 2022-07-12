@@ -100,16 +100,16 @@ def train_net(  net,
                                   val_percent=val_percent, save_checkpoint=save_checkpoint, img_scale=img_scale,
                                   amp=amp))
 
-    logging.info(f'''Starting training:
-        Epochs:          {epochs}
-        Batch size:      {batch_size}
-        Learning rate:   {learning_rate}
-        Training size:   {n_train}
-        Validation size: {n_val}
-        Checkpoints:     {save_checkpoint}
-        Device:          {device.type}
-        Images scaling:  {img_scale}
-        Mixed Precision: {amp}''')
+    print("Starting training:\n",
+          f"Epochs:          {epochs}\n",
+          f"Batch size:      {batch_size}\n",
+          f"Learning rate:   {learning_rate}\n",
+          f"Training size:   {n_train}\n",
+          f"Validation size: {n_val}\n",
+          f"Checkpoints:     {save_checkpoint}\n",
+          f"Device:          {device.type}\n",
+          f"Images scaling:  {img_scale}\n",
+          f"Mixed Precision: {amp}")
 
 
 
