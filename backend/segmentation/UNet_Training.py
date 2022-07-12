@@ -74,7 +74,7 @@ def evaluate(net, dataloader, device):
 def train_net(  net,
                 device,
                 epochs = 5,
-                batch_size = 1,
+                batch_size = 8,
                 learning_rate = 1e-5,
                 val_percent = 0.1,
                 save_checkpoint = True,
@@ -90,9 +90,9 @@ def train_net(  net,
     train_set, val_set = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(0))
 
     # 3. Create data loaders
-    loader_args = dict(batch_size=batch_size, num_workers=0, pin_memory=True) # num_workers=4
+    loader_args = dict(batch_size=batch_size, num_workers=4, pin_memory=True) # num_workers=4
     train_loader = DataLoader(train_set, shuffle=True, **loader_args)
-    val_loader = DataLoader(val_set, shuffle=False, drop_last=True, **loader_args)
+    val_loader = DataLoader(val_set, shuffle=False, drop_last=True, batch_size = 1, num_workers=1, pin_memory=True)
 
     # (Initialize logging)
     experiment = wandb.init(project='U-Net', resume='allow', anonymous='must')

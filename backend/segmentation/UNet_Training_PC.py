@@ -30,6 +30,7 @@ dir_mask = Path('C:/2022_Summer_Intern/UNet_Training_With_Images/Carvana/Target/
 # dir_checkpoint = Path('/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/UNet_Training_With_Images/checkpoints/')
 dir_checkpoint = Path('C:/2022_Summer_Intern/UNet_Training_With_Images/checkpoints')
 
+
 #######################################################################################################################
 # Functions
 #######################################################################################################################
@@ -77,7 +78,7 @@ def evaluate(net, dataloader, device):
 def train_net(net,
               device,
               epochs: int = 5,
-              batch_size: int = 1,
+              batch_size: int = 8,
               learning_rate: float = 1e-5,
               val_percent: float = 0.1,
               save_checkpoint: bool = True,
@@ -92,9 +93,9 @@ def train_net(net,
     train_set, val_set = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(0))
 
     # 3. Create data loaders
-    loader_args = dict(batch_size=batch_size, num_workers=0, pin_memory=True) # num_workers=4
+    loader_args = dict(batch_size=batch_size, num_workers=4, pin_memory=True)  # num_workers=4
     train_loader = DataLoader(train_set, shuffle=True, **loader_args)
-    val_loader = DataLoader(val_set, shuffle=False, drop_last=True, **loader_args)
+    val_loader = DataLoader(val_set, shuffle=False, drop_last=True, batch_size=1, num_workers=1, pin_memory=True)
 
     # (Initialize logging)
     experiment = wandb.init(project='U-Net', resume='allow', anonymous='must')
@@ -102,30 +103,16 @@ def train_net(net,
                                   val_percent=val_percent, save_checkpoint=save_checkpoint, img_scale=img_scale,
                                   amp=amp))
 
-    logging.info(f'''Starting training:
-        Epochs:          {epochs}
-        Batch size:      {batch_size}
-        Learning rate:   {learning_rate}
-        Training size:   {n_train}
-        Validation size: {n_val}
-        Checkpoints:     {save_checkpoint}
-        Device:          {device.type}
-        Images scaling:  {img_scale}
-        Mixed Precision: {amp}''')
-
-    """logging.info("Starting training:\n",
-                 f"Epochs:          {epochs}\n",
-                 f"Batch size:      {batch_size}\n",
-                 f"Learning rate:   {learning_rate}\n",
-                 f"Training size:   {n_train}\n",
-                 f"Validation size: {n_val}\n",
-                 f"Checkpoints:     {save_checkpoint}\n",
-                 f"Device:          {device.type}\n",
-                 f"Images scaling:  {img_scale}\n",
-                 f"Mixed Precision: {amp}")"""
-
-
-
+    print("Starting training:\n",
+          f"Epochs:          {epochs}\n",
+          f"Batch size:      {batch_size}\n",
+          f"Learning rate:   {learning_rate}\n",
+          f"Training size:   {n_train}\n",
+          f"Validation size: {n_val}\n",
+          f"Checkpoints:     {save_checkpoint}\n",
+          f"Device:          {device.type}\n",
+          f"Images scaling:  {img_scale}\n",
+          f"Mixed Precision: {amp}")
 
     # 4. Set up the optimizer, the loss, the learning rate scheduler and the loss scaling for AMP
     optimizer = optim.RMSprop(net.parameters(), lr=learning_rate, weight_decay=1e-8, momentum=0.9)
@@ -135,7 +122,7 @@ def train_net(net,
     global_step = 0
 
     # 5. Begin training
-    for epoch in range(1, epochs+1):
+    for epoch in range(1, epochs + 1):
         net.train()
         epoch_loss = 0
         with tqdm(total=n_train, desc=f'Epoch {epoch}/{epochs}', unit='img') as pbar:
@@ -209,69 +196,68 @@ def train_net(net,
 #######################################################################################################################
 # Training the model
 #######################################################################################################################
+if __name__ == '__main__':
+    epochs = 4
+    batch_size = 8
+    learning_rate = 1e-5
+    load = False  # initializes the weights randomly
+    # To initialize the pre-trainined weights:
+    # load = "C:/2022_Summer_Intern/UNet_Training_With_Images/Pre-trained/unet_carvana_scale0.5_epoch2.pth"
+    scale = 0.5
+    amp = True
+    bilinear = False
+    classes = 2
+    val = 10
 
-epochs = 4
-batch_size = 1
-learning_rate = 1e-5
-load = False # initializes the weights randomly
-# To initialize the pre-trainined weights:
-# load = "C:/2022_Summer_Intern/UNet_Training_With_Images/Pre-trained/unet_carvana_scale0.5_epoch2.pth"
-scale = 0.5
-amp = True
-bilinear = False
-classes = 2
-val = 10
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f'Using device {device}')
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-print(f'Using device {device}')
+    # Change here to adapt to your data
+    # n_channels=3 for RGB images
+    # n_classes is the number of probabilities you want to get per pixel
+    net = UNet(n_channels=3, n_classes=classes, bilinear=bilinear)  # initializing random weights
 
-# Change here to adapt to your data
-# n_channels=3 for RGB images
-# n_classes is the number of probabilities you want to get per pixel
-net = UNet(n_channels=3, n_classes=classes, bilinear=bilinear) # initializing random weights
+    print(f'Network:\n'
+          f'\t{net.n_channels} input channels\n'
+          f'\t{net.n_classes} output channels (classes)\n'
+          f'\t{"Bilinear" if net.bilinear else "Transposed conv"} upscaling')
 
-print(f'Network:\n'
-             f'\t{net.n_channels} input channels\n'
-             f'\t{net.n_classes} output channels (classes)\n'
-             f'\t{"Bilinear" if net.bilinear else "Transposed conv"} upscaling')
+    if load:
+        net.load_state_dict(torch.load(load, map_location=device))
+        logging.info(f'Model loaded from {load}')
 
-if load:
-    net.load_state_dict(torch.load(load, map_location=device))
-    logging.info(f'Model loaded from {load}')
+    net.to(device=device)
 
-net.to(device=device)
+    train_net(net=net,
+              epochs=epochs,
+              batch_size=batch_size,
+              learning_rate=learning_rate,
+              device=device,
+              img_scale=scale,
+              val_percent=val / 100,
+              amp=amp)
 
-
-train_net(net=net,
-          epochs=epochs,
-          batch_size=batch_size,
-          learning_rate=learning_rate,
-          device=device,
-          img_scale=scale,
-          val_percent=val / 100,
-          amp=amp)
-
-#######################################################################################################################
-# To evaluate the trained weights
-#######################################################################################################################
-"""
-# I just randomly assigned values to the variables below
-img_scale = 0.5
-val_percent: float = 0.1
-
-# 1. Create dataset
-    dataset = BasicDataset(dir_img, dir_mask, img_scale)
-
-# 2. Split into train / validation partitions
-n_val = int(len(dataset) * val_percent)
-n_train = len(dataset) - n_val
-train_set, val_set = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(0))
-
-# 3. Create data loaders
-loader_args = dict(batch_size=batch_size, num_workers=4, pin_memory=True)
-train_loader = DataLoader(train_set, shuffle=True, **loader_args)
-val_loader = DataLoader(val_set, shuffle=False, drop_last=True, **loader_args)
-
-# 4. Evaluation
-evaluate(net, val_loader, device = 'cuda' if torch.cuda.is_available() else 'cpu')
-"""
+    #######################################################################################################################
+    # To evaluate the trained weights
+    #######################################################################################################################
+    """
+    # I just randomly assigned values to the variables below
+    img_scale = 0.5
+    val_percent: float = 0.1
+    
+    # 1. Create dataset
+        dataset = BasicDataset(dir_img, dir_mask, img_scale)
+    
+    # 2. Split into train / validation partitions
+    n_val = int(len(dataset) * val_percent)
+    n_train = len(dataset) - n_val
+    train_set, val_set = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(0))
+    
+    # 3. Create data loaders
+    loader_args = dict(batch_size=batch_size, num_workers=4, pin_memory=True)
+    train_loader = DataLoader(train_set, shuffle=True, **loader_args)
+    val_loader = DataLoader(val_set, shuffle=False, drop_last=True, **loader_args)
+    
+    # 4. Evaluation
+    evaluate(net, val_loader, device = 'cuda' if torch.cuda.is_available() else 'cpu')
+    """
