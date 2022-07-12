@@ -140,3 +140,4 @@ scratch_data/*
 
 samples/
 node_modules/
+backend/segmentation/wandb/*

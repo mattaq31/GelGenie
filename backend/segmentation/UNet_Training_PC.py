@@ -21,11 +21,14 @@ from segmentation.unet import UNet
 #######################################################################################################################
 
 
-dir_img = Path('/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/UNet_Training_With_Images/Carvana/Input/')
+# dir_img = Path('/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/UNet_Training_With_Images/Carvana/Input/')
+dir_img = Path('C:/2022_Summer_Intern/UNet_Training_With_Images/Carvana/Input')
 
-dir_mask = Path('/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/UNet_Training_With_Images/Carvana/Target/')
+# dir_mask = Path('/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/UNet_Training_With_Images/Carvana/Target/')
+dir_mask = Path('C:/2022_Summer_Intern/UNet_Training_With_Images/Carvana/Target/')
 
-dir_checkpoint = Path('/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/UNet_Training_With_Images/checkpoints/')
+# dir_checkpoint = Path('/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/UNet_Training_With_Images/checkpoints/')
+dir_checkpoint = Path('C:/2022_Summer_Intern/UNet_Training_With_Images/checkpoints')
 
 #######################################################################################################################
 # Functions
@@ -71,16 +74,15 @@ def evaluate(net, dataloader, device):
     return dice_score / num_val_batches
 
 
-def train_net(  net,
-                device,
-                epochs = 5,
-                batch_size = 1,
-                learning_rate = 1e-5,
-                val_percent = 0.1,
-                save_checkpoint = True,
-                img_scale = 0.5,
-                amp = False):
-
+def train_net(net,
+              device,
+              epochs: int = 5,
+              batch_size: int = 1,
+              learning_rate: float = 1e-5,
+              val_percent: float = 0.1,
+              save_checkpoint: bool = True,
+              img_scale: float = 0.5,
+              amp: bool = False):
     # 1. Create dataset
     dataset = BasicDataset(dir_img, dir_mask, img_scale)
 
@@ -110,6 +112,17 @@ def train_net(  net,
         Device:          {device.type}
         Images scaling:  {img_scale}
         Mixed Precision: {amp}''')
+
+    """logging.info("Starting training:\n",
+                 f"Epochs:          {epochs}\n",
+                 f"Batch size:      {batch_size}\n",
+                 f"Learning rate:   {learning_rate}\n",
+                 f"Training size:   {n_train}\n",
+                 f"Validation size: {n_val}\n",
+                 f"Checkpoints:     {save_checkpoint}\n",
+                 f"Device:          {device.type}\n",
+                 f"Images scaling:  {img_scale}\n",
+                 f"Mixed Precision: {amp}")"""
 
 
 
@@ -197,15 +210,13 @@ def train_net(  net,
 # Training the model
 #######################################################################################################################
 
-epochs = 1
+epochs = 4
 batch_size = 1
 learning_rate = 1e-5
-
 load = False # initializes the weights randomly
-# Pre-trainined weights:
-# load = "/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/UNet_Training_With_Images/Pre-trained/unet_carvana_scale0.5_epoch2.pth"
+# To initialize the pre-trainined weights:
+# load = "C:/2022_Summer_Intern/UNet_Training_With_Images/Pre-trained/unet_carvana_scale0.5_epoch2.pth"
 scale = 0.5
-
 amp = True
 bilinear = False
 classes = 2
@@ -239,3 +250,28 @@ train_net(net=net,
           img_scale=scale,
           val_percent=val / 100,
           amp=amp)
+
+#######################################################################################################################
+# To evaluate the trained weights
+#######################################################################################################################
+"""
+# I just randomly assigned values to the variables below
+img_scale = 0.5
+val_percent: float = 0.1
+
+# 1. Create dataset
+    dataset = BasicDataset(dir_img, dir_mask, img_scale)
+
+# 2. Split into train / validation partitions
+n_val = int(len(dataset) * val_percent)
+n_train = len(dataset) - n_val
+train_set, val_set = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(0))
+
+# 3. Create data loaders
+loader_args = dict(batch_size=batch_size, num_workers=4, pin_memory=True)
+train_loader = DataLoader(train_set, shuffle=True, **loader_args)
+val_loader = DataLoader(val_set, shuffle=False, drop_last=True, **loader_args)
+
+# 4. Evaluation
+evaluate(net, val_loader, device = 'cuda' if torch.cuda.is_available() else 'cpu')
+"""
