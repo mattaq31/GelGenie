@@ -196,46 +196,46 @@ def train_net(  net,
 #######################################################################################################################
 # Training the model
 #######################################################################################################################
+if __name__ == '__main__':
+    epochs = 8
+    batch_size = 1
+    learning_rate = 1e-5
 
-epochs = 1
-batch_size = 1
-learning_rate = 1e-5
+    load = False # initializes the weights randomly
+    # Pre-trainined weights:
+    # load = "/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/UNet_Training_With_Images/Pre-trained/unet_carvana_scale0.5_epoch2.pth"
+    scale = 0.5
 
-load = False # initializes the weights randomly
-# Pre-trainined weights:
-# load = "/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/UNet_Training_With_Images/Pre-trained/unet_carvana_scale0.5_epoch2.pth"
-scale = 0.5
+    amp = True
+    bilinear = False
+    classes = 2
+    val = 10
 
-amp = True
-bilinear = False
-classes = 2
-val = 10
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f'Using device {device}')
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-print(f'Using device {device}')
+    # Change here to adapt to your data
+    # n_channels=3 for RGB images
+    # n_classes is the number of probabilities you want to get per pixel
+    net = UNet(n_channels=3, n_classes=classes, bilinear=bilinear) # initializing random weights
 
-# Change here to adapt to your data
-# n_channels=3 for RGB images
-# n_classes is the number of probabilities you want to get per pixel
-net = UNet(n_channels=3, n_classes=classes, bilinear=bilinear) # initializing random weights
+    print(f'Network:\n'
+                 f'\t{net.n_channels} input channels\n'
+                 f'\t{net.n_classes} output channels (classes)\n'
+                 f'\t{"Bilinear" if net.bilinear else "Transposed conv"} upscaling')
 
-print(f'Network:\n'
-             f'\t{net.n_channels} input channels\n'
-             f'\t{net.n_classes} output channels (classes)\n'
-             f'\t{"Bilinear" if net.bilinear else "Transposed conv"} upscaling')
+    if load:
+        net.load_state_dict(torch.load(load, map_location=device))
+        logging.info(f'Model loaded from {load}')
 
-if load:
-    net.load_state_dict(torch.load(load, map_location=device))
-    logging.info(f'Model loaded from {load}')
-
-net.to(device=device)
+    net.to(device=device)
 
 
-train_net(net=net,
-          epochs=epochs,
-          batch_size=batch_size,
-          learning_rate=learning_rate,
-          device=device,
-          img_scale=scale,
-          val_percent=val / 100,
-          amp=amp)
+    train_net(net=net,
+              epochs=epochs,
+              batch_size=batch_size,
+              learning_rate=learning_rate,
+              device=device,
+              img_scale=scale,
+              val_percent=val / 100,
+              amp=amp)
