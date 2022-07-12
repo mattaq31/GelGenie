@@ -18,9 +18,9 @@
 #$ -l h_vmem=6G
 
 # Load all modules/environment/python
-module load anaconda/5.3.1
-module load cuda/11.0.2
-source activate gel_env
+# module load anaconda/5.3.1
+# module load cuda/11.0.2
+# source activate gel_env
 
 # Set cuda in interactive session
 source /exports/applications/support/set_cuda_visible_devices.sh
