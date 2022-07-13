@@ -21,11 +21,15 @@ from segmentation.unet import UNet
 #######################################################################################################################
 
 
-dir_img = Path('/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/UNet_Training_With_Images/Carvana/Input/')
+dir_img = Path(
+    '/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/UNet_Training_With_Images/Carvana/Input/')
 
-dir_mask = Path('/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/UNet_Training_With_Images/Carvana/Target/')
+dir_mask = Path(
+    '/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/UNet_Training_With_Images/Carvana/Target/')
 
-dir_checkpoint = Path('/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/UNet_Training_With_Images/checkpoints/')
+dir_checkpoint = Path(
+    '/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/UNet_Training_With_Images/checkpoints/')
+
 
 #######################################################################################################################
 # Functions
@@ -71,16 +75,15 @@ def evaluate(net, dataloader, device):
     return dice_score / num_val_batches
 
 
-def train_net(  net,
-                device,
-                epochs = 5,
-                batch_size = 8,
-                learning_rate = 1e-5,
-                val_percent = 0.1,
-                save_checkpoint = True,
-                img_scale = 0.5,
-                amp = False):
-
+def train_net(net,
+              device,
+              epochs=5,
+              batch_size=8,
+              learning_rate=1e-5,
+              val_percent=0.1,
+              save_checkpoint=True,
+              img_scale=0.5,
+              amp=False):
     # 1. Create dataset
     dataset = BasicDataset(dir_img, dir_mask, img_scale)
     print("created dataset")
@@ -92,9 +95,9 @@ def train_net(  net,
     print("alr split into train/validation partitions")
 
     # 3. Create data loaders
-    loader_args = dict(batch_size=batch_size, num_workers=1, pin_memory=True) # num_workers=4
+    loader_args = dict(batch_size=batch_size, num_workers=1, pin_memory=True)  # num_workers=4
     train_loader = DataLoader(train_set, shuffle=True, **loader_args)
-    val_loader = DataLoader(val_set, shuffle=False, drop_last=True, batch_size = 1, num_workers=1, pin_memory=True)
+    val_loader = DataLoader(val_set, shuffle=False, drop_last=True, batch_size=1, num_workers=1, pin_memory=True)
     print("created data loaders")
 
     # (Initialize logging)
@@ -104,18 +107,15 @@ def train_net(  net,
                                   amp=amp))
 
     print("Starting training:\n",
-         f"Epochs:          {epochs}\n",
-         f"Batch size:      {batch_size}\n",
-         f"Learning rate:   {learning_rate}\n",
-         f"Training size:   {n_train}\n",
-         f"Validation size: {n_val}\n",
-         f"Checkpoints:     {save_checkpoint}\n",
-         f"Device:          {device.type}\n",
-         f"Images scaling:  {img_scale}\n",
-         f"Mixed Precision: {amp}")
-
-
-
+          f"Epochs:          {epochs}\n",
+          f"Batch size:      {batch_size}\n",
+          f"Learning rate:   {learning_rate}\n",
+          f"Training size:   {n_train}\n",
+          f"Validation size: {n_val}\n",
+          f"Checkpoints:     {save_checkpoint}\n",
+          f"Device:          {device.type}\n",
+          f"Images scaling:  {img_scale}\n",
+          f"Mixed Precision: {amp}")
 
     # 4. Set up the optimizer, the loss, the learning rate scheduler and the loss scaling for AMP
     optimizer = optim.RMSprop(net.parameters(), lr=learning_rate, weight_decay=1e-8, momentum=0.9)
@@ -124,10 +124,9 @@ def train_net(  net,
     criterion = nn.CrossEntropyLoss()
     global_step = 0
     print("optimizer set up")
-    
 
     # 5. Begin training
-    for epoch in range(1, epochs+1):
+    for epoch in range(1, epochs + 1):
         net.train()
         print("Begin iteration")
         epoch_loss = 0
@@ -144,7 +143,7 @@ def train_net(  net,
 
                 images = images.to(device=device, dtype=torch.float32)
                 true_masks = true_masks.to(device=device, dtype=torch.long)
-                
+
                 print("images to device done")
 
                 with torch.cuda.amp.autocast(enabled=amp):
@@ -155,8 +154,6 @@ def train_net(  net,
                                        F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float(),
                                        multiclass=True)
                     print("loss calculated")
-                                       
-
 
                 optimizer.zero_grad(set_to_none=True)
                 grad_scaler.scale(loss).backward()
@@ -216,7 +213,7 @@ if __name__ == '__main__':
     batch_size = 4
     learning_rate = 1e-5
 
-    load = False # initializes the weights randomly
+    load = False  # initializes the weights randomly
     # Pre-trainined weights:
     # load = "/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/UNet_Training_With_Images/Pre-trained/unet_carvana_scale0.5_epoch2.pth"
     scale = 0.5
@@ -232,19 +229,18 @@ if __name__ == '__main__':
     # Change here to adapt to your data
     # n_channels=3 for RGB images
     # n_classes is the number of probabilities you want to get per pixel
-    net = UNet(n_channels=3, n_classes=classes, bilinear=bilinear) # initializing random weights
+    net = UNet(n_channels=3, n_classes=classes, bilinear=bilinear)  # initializing random weights
 
     print(f'Network:\n'
-                 f'\t{net.n_channels} input channels\n'
-                 f'\t{net.n_classes} output channels (classes)\n'
-                 f'\t{"Bilinear" if net.bilinear else "Transposed conv"} upscaling')
+          f'\t{net.n_channels} input channels\n'
+          f'\t{net.n_classes} output channels (classes)\n'
+          f'\t{"Bilinear" if net.bilinear else "Transposed conv"} upscaling')
 
     if load:
         net.load_state_dict(torch.load(load, map_location=device))
         logging.info(f'Model loaded from {load}')
 
     net.to(device=device)
-
 
     train_net(net=net,
               epochs=epochs,
