@@ -7,20 +7,29 @@
 ################################################################################
 
 #  job name: -N
-
+#$ -N UNet_Training_64G_1GPU_24hr_100_epochs
+#
 # Grid Engine options (lines prefixed with #$)
 #$ -cwd
 #
-# Predicted Runtime Limit of 1 hour
-#$ -l h_rt=01:00:00
+# Predicted Runtime Limit of 24 hours
+#$ -l h_rt=24:00:00
 #
-# Allocate Memory Limit of 6 GByte
-#$ -l h_vmem=6G
+# Request 4 GPU:
+#$ -pe gpu-titanx 1
+#
+# Allocate Memory Limit of 64 GByte for each gpu
+#$ -l h_vmem=64G
+#
+#$ -m beas
+#$ -M s2137314@ed.ac.uk
+#
+# Initialise the environment modules
+. /etc/profile.d/modules.sh
 
 # Load all modules/environment/python
-# module load anaconda/5.3.1
-# module load cuda/11.0.2
-# source activate gel_env
+module load anaconda
+source activate gel_env
 
 # Set cuda in interactive session
 source /exports/applications/support/set_cuda_visible_devices.sh

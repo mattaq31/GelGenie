@@ -83,16 +83,19 @@ def train_net(  net,
 
     # 1. Create dataset
     dataset = BasicDataset(dir_img, dir_mask, img_scale)
+    print("created dataset")
 
     # 2. Split into train / validation partitions
     n_val = int(len(dataset) * val_percent)
     n_train = len(dataset) - n_val
     train_set, val_set = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(0))
+    print("alr split into train/validation partitions")
 
     # 3. Create data loaders
-    loader_args = dict(batch_size=batch_size, num_workers=4, pin_memory=True) # num_workers=4
+    loader_args = dict(batch_size=batch_size, num_workers=1, pin_memory=True) # num_workers=4
     train_loader = DataLoader(train_set, shuffle=True, **loader_args)
     val_loader = DataLoader(val_set, shuffle=False, drop_last=True, batch_size = 1, num_workers=1, pin_memory=True)
+    print("created data loaders")
 
     # (Initialize logging)
     experiment = wandb.init(project='U-Net', resume='allow', anonymous='must')
@@ -101,15 +104,15 @@ def train_net(  net,
                                   amp=amp))
 
     print("Starting training:\n",
-          f"Epochs:          {epochs}\n",
-          f"Batch size:      {batch_size}\n",
-          f"Learning rate:   {learning_rate}\n",
-          f"Training size:   {n_train}\n",
-          f"Validation size: {n_val}\n",
-          f"Checkpoints:     {save_checkpoint}\n",
-          f"Device:          {device.type}\n",
-          f"Images scaling:  {img_scale}\n",
-          f"Mixed Precision: {amp}")
+         f"Epochs:          {epochs}\n",
+         f"Batch size:      {batch_size}\n",
+         f"Learning rate:   {learning_rate}\n",
+         f"Training size:   {n_train}\n",
+         f"Validation size: {n_val}\n",
+         f"Checkpoints:     {save_checkpoint}\n",
+         f"Device:          {device.type}\n",
+         f"Images scaling:  {img_scale}\n",
+         f"Mixed Precision: {amp}")
 
 
 
@@ -120,15 +123,19 @@ def train_net(  net,
     grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
     criterion = nn.CrossEntropyLoss()
     global_step = 0
+    print("optimizer set up")
+    
 
     # 5. Begin training
     for epoch in range(1, epochs+1):
         net.train()
+        print("Begin iteration")
         epoch_loss = 0
         with tqdm(total=n_train, desc=f'Epoch {epoch}/{epochs}', unit='img') as pbar:
             for batch in train_loader:
                 images = batch['image']
                 true_masks = batch['mask']
+                print("loaded batch of images and masks")
 
                 assert images.shape[1] == net.n_channels, \
                     f'Network has been defined with {net.n_channels} input channels, ' \
@@ -137,13 +144,19 @@ def train_net(  net,
 
                 images = images.to(device=device, dtype=torch.float32)
                 true_masks = true_masks.to(device=device, dtype=torch.long)
+                
+                print("images to device done")
 
                 with torch.cuda.amp.autocast(enabled=amp):
                     masks_pred = net(images)
+                    print("predicted masks")
                     loss = criterion(masks_pred, true_masks) \
                            + dice_loss(F.softmax(masks_pred, dim=1).float(),
                                        F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float(),
                                        multiclass=True)
+                    print("loss calculated")
+                                       
+
 
                 optimizer.zero_grad(set_to_none=True)
                 grad_scaler.scale(loss).backward()
@@ -192,13 +205,15 @@ def train_net(  net,
             torch.save(net.state_dict(), str(dir_checkpoint / 'checkpoint_epoch{}.pth'.format(epoch)))
             logging.info(f'Checkpoint {epoch} saved!')
 
+        print("another epoch done!")
+
 
 #######################################################################################################################
 # Training the model
 #######################################################################################################################
 if __name__ == '__main__':
-    epochs = 8
-    batch_size = 1
+    epochs = 100
+    batch_size = 4
     learning_rate = 1e-5
 
     load = False # initializes the weights randomly
