@@ -16,6 +16,35 @@ from segmentation.unet_utils.data_loading import BasicDataset
 from segmentation.unet_utils.dice_score import dice_loss, multiclass_dice_coeff, dice_coeff
 from segmentation.unet import UNet
 
+import click
+import toml
+
+#######################################################################################################################
+# Path of base data, image directory, mask directory, and checkpoints
+#######################################################################################################################
+
+"""
+@click.command()
+@click.option('--server',           default="EDDIE",    help='Where the program is run [EDDIE/PC]')
+@click.option('--core',             default="GPU",      help='Which processor is used [GPU/CPU]')
+@click.option('--pe',               default=1,          help='How many parallel environments (cores) needed')
+@click.option('--memory',           default=64,         help='Required memory per core in GBytes')
+@click.option('--epochs',           default=1,          help='Number of epochs desired')
+@click.option('--num_workers',      default=1,          help='How many workers for dataloader simultaneously ,'
+                                                             '(not to be more than cores/threads)')
+@click.option('--batch_size',       default=1,          help='Batch size for dataloader')
+@click.option('--learning_rate',    default=1e-5,       help='Learning Rate')
+@click.option('--val_percent',      default=0.1,        help='Percentage of validation set')
+@click.option('--save_checkpoint',  default=True,       help='Whether checkpoints are saved')
+@click.option('--img_scale',        default=0.5,        help='Downscaling factor of the images')
+@click.option('--amp',              default=False,      help='Use mixed precision')
+@click.option('--load',             default=False,      help='Load model from a .pth file')
+"""
+
+#dict_of_params = toml.load(path)
+
+
+
 #######################################################################################################################
 # Path of base data, image directory, mask directory, and checkpoints
 #######################################################################################################################
@@ -86,19 +115,19 @@ def train_net(net,
               amp=False):
     # 1. Create dataset
     dataset = BasicDataset(dir_img, dir_mask, img_scale)
-    print("created dataset")
+    # print("created dataset")
 
     # 2. Split into train / validation partitions
     n_val = int(len(dataset) * val_percent)
     n_train = len(dataset) - n_val
     train_set, val_set = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(0))
-    print("alr split into train/validation partitions")
+    # print("alr split into train/validation partitions")
 
     # 3. Create data loaders
     loader_args = dict(batch_size=batch_size, num_workers=1, pin_memory=True)  # num_workers=4
     train_loader = DataLoader(train_set, shuffle=True, **loader_args)
     val_loader = DataLoader(val_set, shuffle=False, drop_last=True, batch_size=1, num_workers=1, pin_memory=True)
-    print("created data loaders")
+    # print("created data loaders")
 
     # (Initialize logging)
     experiment = wandb.init(project='U-Net', resume='allow', anonymous='must')
@@ -123,18 +152,18 @@ def train_net(net,
     grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
     criterion = nn.CrossEntropyLoss()
     global_step = 0
-    print("optimizer set up")
+    # print("optimizer set up")
 
     # 5. Begin training
     for epoch in range(1, epochs + 1):
         net.train()
-        print("Begin iteration")
+        # print("Begin iteration")
         epoch_loss = 0
         with tqdm(total=n_train, desc=f'Epoch {epoch}/{epochs}', unit='img') as pbar:
             for batch in train_loader:
                 images = batch['image']
                 true_masks = batch['mask']
-                print("loaded batch of images and masks")
+                # print("loaded batch of images and masks")
 
                 assert images.shape[1] == net.n_channels, \
                     f'Network has been defined with {net.n_channels} input channels, ' \
@@ -144,16 +173,16 @@ def train_net(net,
                 images = images.to(device=device, dtype=torch.float32)
                 true_masks = true_masks.to(device=device, dtype=torch.long)
 
-                print("images to device done")
+                # print("images to device done")
 
                 with torch.cuda.amp.autocast(enabled=amp):
                     masks_pred = net(images)
-                    print("predicted masks")
+                    # print("predicted masks")
                     loss = criterion(masks_pred, true_masks) \
                            + dice_loss(F.softmax(masks_pred, dim=1).float(),
                                        F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float(),
                                        multiclass=True)
-                    print("loss calculated")
+                    # print("loss calculated")
 
                 optimizer.zero_grad(set_to_none=True)
                 grad_scaler.scale(loss).backward()
