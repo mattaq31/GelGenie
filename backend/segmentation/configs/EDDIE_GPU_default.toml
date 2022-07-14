@@ -1,0 +1,32 @@
+config = "EDDIE_GPU_default"  # configuration name
+
+
+#[processing_unit]
+server = "EDDIE"   # Where the program is run [EDDIE/PC]
+
+
+#[batch_file]
+core = "GPU"    # Which processor is used [GPU/CPU]
+pe = 1          # How many parallel environments (cores) needed
+memory = 64     # Required memory per core in GBytes
+
+
+#[data]
+batch_size = 4  # Batch size for dataloader
+num_workers = 1 # parallel threads to use to speed up data processing
+img_scale = 0.5 # How many workers for dataloader simultaneously (parallel dataloader threads, speed up data processing)
+validation = 10 # % of the data that is used as validation (0-100)
+
+
+#[model]
+name = 'UNet'   # model architecture name
+lr = 1e-5       # learning rate
+classes = 2     # Number of classes/probabilities per pixel
+bilinear = false # Use bilinear upsampling
+
+
+#[training]
+epochs = 10     # Number of epochs desired
+amp = false     # Use mixed precision
+load = false    # Load model from a .pth file (Bool/Path)
+save_checkpoint = true # Whether checkpoints are saved

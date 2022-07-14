@@ -2,6 +2,7 @@
 
 
 import logging
+import sys
 from pathlib import Path
 
 import torch
@@ -24,40 +25,133 @@ import toml
 #######################################################################################################################
 
 """
-@click.command()
-@click.option('--server',           default="EDDIE",    help='Where the program is run [EDDIE/PC]')
-@click.option('--core',             default="GPU",      help='Which processor is used [GPU/CPU]')
-@click.option('--pe',               default=1,          help='How many parallel environments (cores) needed')
-@click.option('--memory',           default=64,         help='Required memory per core in GBytes')
-@click.option('--epochs',           default=1,          help='Number of epochs desired')
-@click.option('--num_workers',      default=1,          help='How many workers for dataloader simultaneously ,'
-                                                             '(not to be more than cores/threads)')
-@click.option('--batch_size',       default=1,          help='Batch size for dataloader')
-@click.option('--learning_rate',    default=1e-5,       help='Learning Rate')
-@click.option('--val_percent',      default=0.1,        help='Percentage of validation set')
-@click.option('--save_checkpoint',  default=True,       help='Whether checkpoints are saved')
-@click.option('--img_scale',        default=0.5,        help='Downscaling factor of the images')
-@click.option('--amp',              default=False,      help='Use mixed precision')
-@click.option('--load',             default=False,      help='Load model from a .pth file')
+"/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/",
+                                             "Automatic-Gel-Analysis/backend/segmentation/configs/",
+                                             "EDDIE_GPU_default.toml"
 """
+@click.command()
+@click.option('--parameters',       default=None,       help='[Path] location of TOML parameters file, '
+                                                             'containing configs for this experiment')
+@click.option('--server',           default=None,       help='[String] Where the program is run [EDDIE/PC]')
+@click.option('--core',             default=None,       help='[String] Which processor is used [GPU/CPU]')
+@click.option('--pe',               default=None,       help='[int] How many parallel environments (cores) needed')
+@click.option('--memory',           default=None,       help='[int] Required memory per core in GBytes')
+@click.option('--epochs',           default=None,       help='[int] Number of epochs desired')
+@click.option('--num_workers',      default=None,       help='[int] How many workers for dataloader simultaneously ,'
+                                                             '(parallel dataloader threads, speed up data processing)')
+@click.option('--batch_size',       default=None,       help='[int] Batch size for dataloader')
+@click.option('--lr',               default=None,       help='[float] Learning Rate')
+@click.option('--validation',       default=None,       help='[int] % of the data that is used as validation (0-100)')
+@click.option('--save_checkpoint',  default=None,       help='[Bool] Whether checkpoints are saved')
+@click.option('--img_scale',        default=None,       help='[Float] Downscaling factor of the images')
+@click.option('--amp',              default=None,       help='[Bool] Use mixed precision')
+@click.option('--load',             default=None,       help='[Bool/Path] Load model from a .pth file')
+@click.option('--classes',          default=None,       help='[int] Number of classes/probabilities per pixel')
+@click.option('--bilinear',         default=None,       help='[Bool] Use bilinear upsampling')
+def unet_train(parameters, **kwargs):
 
-#dict_of_params = toml.load(path)
+    params = setup(parameters, **kwargs)
 
+    # Pre-trainined weights:
+    # load = "/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/UNet_Training_With_Images/Pre-trained/unet_carvana_scale0.5_epoch2.pth"
+
+
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f'Using device {device}')
+
+    # Change here to adapt to your data
+    # n_channels=3 for RGB images
+    # n_classes is the number of probabilities you want to get per pixel
+    net = UNet(n_channels=3, n_classes=params['classes'], bilinear=params['bilinear'])  # initializing random weights
+
+    print(f'Network:\n'
+          f'\t{net.n_channels} input channels\n'
+          f'\t{net.n_classes} output channels (classes)\n'
+          f'\t{"Bilinear" if net.bilinear else "Transposed conv"} upscaling')
+
+    load = params['load']
+    if load:
+        net.load_state_dict(torch.load(load, map_location=device))
+        logging.info(f'Model loaded from {load}')
+
+    net.to(device=device)
+
+    train_net(net=net,
+              epochs=params['epochs'],
+              batch_size=params['batch_size'],
+              learning_rate=params['lr'],
+              device=device,
+              img_scale=params['img_scale'],
+              val_percent=params['validation'] / 100,
+              amp=params['amp'],
+              dir_img=params['dir_img'],
+              dir_mask = params['dir_mask'],
+              dir_checkpoint = params['dir_checkpoint'],
+              num_workers = params['num_workers'])
 
 
 #######################################################################################################################
 # Path of base data, image directory, mask directory, and checkpoints
 #######################################################################################################################
+def setup(parameters, **kwargs):
+
+    # Getting manual input configurations (that are not default, ie. none)
+    kwargs = {k: v for (k, v) in kwargs.items() if v is not None}
+    # The default configuration if none is specified
+    kwargs_default = {'parameters':        ("C:/2022_Summer_Intern/Automatic-Gel-Analysis/backend/segmentation/"
+                                            "configs/PC_default.toml"),
+                      'server':             "EDDIE",
+                      'core':               "GPU",
+                      'pe':                 1,
+                      'memory':             64,
+                      'epochs':             10,
+                      'num_workers':        1,
+                      'batch_size':         4,
+                      'lr':                 1e-5,
+                      'validation':         10,
+                      'save_checkpoint':    True,
+                      'img_scale':          0.5,
+                      'amp':                False,
+                      'load':               False,
+                      'classes':            2,
+                      'bilinear':           False}
+    # Loading the parameter configuration file
+    if parameters is None:
+        params = toml.load(kwargs_default['parameters'])
+    else:
+        params = toml.load(parameters)
+    params.update(kwargs) # prioritize manually entered configuration over config file
+    kwargs_default.update(params) # prioritize (manually entered + config file) over default
+    params = kwargs_default # saving the dict back to return output dictionary
+
+    if params['server'] == "PC":  # Paths for working on Kiros's PC
+        params['dir_img'] = Path('C:/2022_Summer_Intern/UNet_Training_With_Images/Carvana/Input')
+        params['dir_mask'] = Path('C:/2022_Summer_Intern/UNet_Training_With_Images/Carvana/Target/')
+        params['dir_checkpoint'] = Path('C:/2022_Summer_Intern/UNet_Training_With_Images/checkpoints')
+    elif params['server'] == "EDDIE":  # Paths for working on EDDIE server
+        params['dir_img'] = Path('/exports/csce/eddie/eng/groups/DunnGroup/kiros/'
+                                 '2022_summer_intern/UNet_Training_With_Images/Carvana/Input/')
+        params['dir_mask'] = Path('/exports/csce/eddie/eng/groups/DunnGroup/kiros/'
+                                  '2022_summer_intern/UNet_Training_With_Images/Carvana/Target/')
+        params['dir_checkpoint'] = Path('/exports/csce/eddie/eng/groups/DunnGroup/kiros/'
+                                        '2022_summer_intern/UNet_Training_With_Images/checkpoints/')
+
+    # Checking if number of workers exceed available threads when in EDDIE GPU, fixing it and alerting user
+    if params['server'] == "EDDIE" and params['core'] == "GPU":
+        if params['num_workers'] > params['pe']:
+            params['num_workers'] = params['pe']
+            print(f"Number of workers ({params['num_workers']}) exceeded available threads on GPU ({params['pe']}),",
+                  "It is lowered to match it")
+    # Alerts user if GPU is selected but is unavailable, and automatically switches to CPU
+    params['device'] = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    if params['core'] == "GPU":
+        if params['device'] == 'cpu':
+            print("GPU specified but cuda is unavailable, cpu will be used instead")
+    return params
 
 
-dir_img = Path(
-    '/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/UNet_Training_With_Images/Carvana/Input/')
 
-dir_mask = Path(
-    '/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/UNet_Training_With_Images/Carvana/Target/')
-
-dir_checkpoint = Path(
-    '/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/UNet_Training_With_Images/checkpoints/')
 
 
 #######################################################################################################################
@@ -112,7 +206,11 @@ def train_net(net,
               val_percent=0.1,
               save_checkpoint=True,
               img_scale=0.5,
-              amp=False):
+              amp=False,
+              dir_img=None,
+              dir_mask=None,
+              dir_checkpoint=None,
+              num_workers=1):
     # 1. Create dataset
     dataset = BasicDataset(dir_img, dir_mask, img_scale)
     # print("created dataset")
@@ -124,7 +222,7 @@ def train_net(net,
     # print("alr split into train/validation partitions")
 
     # 3. Create data loaders
-    loader_args = dict(batch_size=batch_size, num_workers=1, pin_memory=True)  # num_workers=4
+    loader_args = dict(batch_size=batch_size, num_workers=num_workers, pin_memory=True)  # num_workers=4
     train_loader = DataLoader(train_set, shuffle=True, **loader_args)
     val_loader = DataLoader(val_set, shuffle=False, drop_last=True, batch_size=1, num_workers=1, pin_memory=True)
     # print("created data loaders")
@@ -238,44 +336,4 @@ def train_net(net,
 # Training the model
 #######################################################################################################################
 if __name__ == '__main__':
-    epochs = 100
-    batch_size = 4
-    learning_rate = 1e-5
-
-    load = False  # initializes the weights randomly
-    # Pre-trainined weights:
-    # load = "/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/UNet_Training_With_Images/Pre-trained/unet_carvana_scale0.5_epoch2.pth"
-    scale = 0.5
-
-    amp = True
-    bilinear = False
-    classes = 2
-    val = 10
-
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print(f'Using device {device}')
-
-    # Change here to adapt to your data
-    # n_channels=3 for RGB images
-    # n_classes is the number of probabilities you want to get per pixel
-    net = UNet(n_channels=3, n_classes=classes, bilinear=bilinear)  # initializing random weights
-
-    print(f'Network:\n'
-          f'\t{net.n_channels} input channels\n'
-          f'\t{net.n_classes} output channels (classes)\n'
-          f'\t{"Bilinear" if net.bilinear else "Transposed conv"} upscaling')
-
-    if load:
-        net.load_state_dict(torch.load(load, map_location=device))
-        logging.info(f'Model loaded from {load}')
-
-    net.to(device=device)
-
-    train_net(net=net,
-              epochs=epochs,
-              batch_size=batch_size,
-              learning_rate=learning_rate,
-              device=device,
-              img_scale=scale,
-              val_percent=val / 100,
-              amp=amp)
+    unet_train(sys.argv[1:]) # for use when debugging with pycharm
