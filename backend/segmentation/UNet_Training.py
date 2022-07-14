@@ -20,6 +20,9 @@ from segmentation.unet import UNet
 import click
 import toml
 
+import os
+from time import strftime
+
 #######################################################################################################################
 # Path of base data, image directory, mask directory, and checkpoints
 #######################################################################################################################
@@ -118,24 +121,15 @@ def setup(parameters, **kwargs):
                       'bilinear':           False}
     # Loading the parameter configuration file
     if parameters is None:
-        params = toml.load(kwargs_default['parameters'])
+        config_path = kwargs_default['parameters']
     else:
-        params = toml.load(parameters)
+        config_path = toml.load(parameters)
+    params = toml.load(config_path)
+
     params.update(kwargs) # prioritize manually entered configuration over config file
     kwargs_default.update(params) # prioritize (manually entered + config file) over default
     params = kwargs_default # saving the dict back to return output dictionary
 
-    if params['server'] == "PC":  # Paths for working on Kiros's PC
-        params['dir_img'] = Path('C:/2022_Summer_Intern/UNet_Training_With_Images/Carvana/Input')
-        params['dir_mask'] = Path('C:/2022_Summer_Intern/UNet_Training_With_Images/Carvana/Target/')
-        params['dir_checkpoint'] = Path('C:/2022_Summer_Intern/UNet_Training_With_Images/checkpoints')
-    elif params['server'] == "EDDIE":  # Paths for working on EDDIE server
-        params['dir_img'] = Path('/exports/csce/eddie/eng/groups/DunnGroup/kiros/'
-                                 '2022_summer_intern/UNet_Training_With_Images/Carvana/Input/')
-        params['dir_mask'] = Path('/exports/csce/eddie/eng/groups/DunnGroup/kiros/'
-                                  '2022_summer_intern/UNet_Training_With_Images/Carvana/Target/')
-        params['dir_checkpoint'] = Path('/exports/csce/eddie/eng/groups/DunnGroup/kiros/'
-                                        '2022_summer_intern/UNet_Training_With_Images/checkpoints/')
 
     # Checking if number of workers exceed available threads when in EDDIE GPU, fixing it and alerting user
     if params['server'] == "EDDIE" and params['core'] == "GPU":
@@ -148,12 +142,42 @@ def setup(parameters, **kwargs):
     if params['core'] == "GPU":
         if params['device'] == 'cpu':
             print("GPU specified but cuda is unavailable, cpu will be used instead")
+
+
+
+    if params['server'] == "PC":  # Paths for working on Kiros's PC
+        params['dir_img'] = Path('C:/2022_Summer_Intern/UNet_Training_With_Images/Carvana/Input')
+        params['dir_mask'] = Path('C:/2022_Summer_Intern/UNet_Training_With_Images/Carvana/Target/')
+
+
+        # Make base directory for storing everything
+        base_dir = strftime(
+            "C:/2022_Summer_Intern/UNet_Training_With_Images"
+            "/Model/%Y_%m_%d_%H;%M;%S")
+        os.makedirs(base_dir, exist_ok=True)
+
+
+    elif params['server'] == "EDDIE":  # Paths for working on EDDIE server
+        params['dir_img'] = Path('/exports/csce/eddie/eng/groups/DunnGroup/kiros/'
+                                 '2022_summer_intern/UNet_Training_With_Images/Carvana/Input/')
+        params['dir_mask'] = Path('/exports/csce/eddie/eng/groups/DunnGroup/kiros/'
+                                  '2022_summer_intern/UNet_Training_With_Images/Carvana/Target/')
+
+        # Make base directory for storing everything
+        base_dir = strftime(
+            "/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/UNet_Training_With_Images"
+            "/Model/%Y_%m_%d_%H;%M;%S")
+        os.makedirs(base_dir, exist_ok=True)
+
+    params['dir_checkpoint'] = Path(base_dir +'/checkpoints/')
+
+    # Copies the config file
+    config_file_name = config_path.split('.')[-2].split('/')[-1]
+    with open(base_dir + '/' + config_file_name, "w") as f:
+        toml.dump(params, f)
+        f.close()
+
     return params
-
-
-
-
-
 #######################################################################################################################
 # Functions
 #######################################################################################################################
