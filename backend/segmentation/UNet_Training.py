@@ -9,6 +9,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import wandb
+from matplotlib import pyplot as plt
 from torch import optim
 from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
@@ -24,6 +25,9 @@ import os
 from time import strftime
 
 import torchshow as ts
+
+import numpy as np
+import pandas as pd
 
 #######################################################################################################################
 # Path of base data, image directory, mask directory, and checkpoints
@@ -94,7 +98,8 @@ def unet_train(parameters, **kwargs):
               dir_mask=params['dir_mask'],
               dir_checkpoint=params['dir_checkpoint'],
               num_workers=int(params['num_workers'],),
-              segmentation_path=params['segmentation_path'])
+              segmentation_path=params['segmentation_path'],
+              base_dir=params['base_dir'])
 
 
 #######################################################################################################################
@@ -172,6 +177,7 @@ def setup(parameters, **kwargs):
             "/Model/%Y_%m_%d_%H;%M;%S")
         os.makedirs(base_dir, exist_ok=True)
 
+    params['base_dir'] = base_dir
     params['dir_checkpoint'] = Path(base_dir +'/checkpoints/')
     os.makedirs(params['dir_checkpoint'], exist_ok=True)
 
@@ -303,7 +309,8 @@ def train_net(net,
               dir_mask=None,
               dir_checkpoint=None,
               num_workers=1,
-              segmentation_path=''):
+              segmentation_path='',
+              base_dir=''):
     # 1. Create dataset
     dataset = BasicDataset(dir_img, dir_mask, img_scale)
     # print("created dataset")
@@ -419,10 +426,23 @@ def train_net(net,
                             'epoch': epoch,
                             **histograms
                         })
+                #break #just for testing, DELETE!!!!!!!
             # All batches in the epoch iterated through, append loss values as string type
             train_loss_log.append(epoch_loss)
             val_loss_log.append(evaluate_epoch(net, val_loader, device, epoch, segmentation_path).item())
+
+            plot_stats(train_loss_log, val_loss_log, base_dir)
+
+            loss_array = np.array([train_loss_log, val_loss_log]).T
+            loss_dataframe = pd.DataFrame(loss_array, columns=['Training Set', 'Validation Set'])
+            loss_dataframe.index.names = ['Epoch']
+            loss_dataframe.index += 1
+            loss_dataframe.to_csv(Path(base_dir+'/loss.csv'))
+
             pass
+
+
+
 
         if save_checkpoint:
             Path(dir_checkpoint).mkdir(parents=True, exist_ok=True)
@@ -432,6 +452,19 @@ def train_net(net,
         print("another epoch done!")
 
 
+def plot_stats(train_loss_log, val_loss_log, base_dir):
+    fig, axs = plt.subplots(nrows=3, ncols=1, figsize=(10,7))
+    axs[0].plot([epoch+1 for epoch in range(len(train_loss_log))], train_loss_log, label='train set', linestyle='--', color='b')
+    axs[0].plot([epoch+1 for epoch in range(len(val_loss_log))], val_loss_log, label='validation set', linestyle='--', color='r')
+    axs[1].plot([epoch+1 for epoch in range(len(train_loss_log))], train_loss_log, label='train set', linestyle='--', color='b')
+    axs[2].plot([epoch+1 for epoch in range(len(val_loss_log))], val_loss_log, label='validation set', linestyle='--', color='r')
+    for ax in axs:
+        ax.set_xlabel('Epoch')
+        ax.set_ylabel('Loss')
+        ax.legend()
+    plt.tight_layout()
+    plt.savefig(Path(base_dir+'/loss.jpg'))
+    plt.close(fig)
 #######################################################################################################################
 # Training the model
 #######################################################################################################################
