@@ -81,17 +81,17 @@ def unet_train(parameters, **kwargs):
     net.to(device=device)
 
     train_net(net=net,
-              epochs=params['epochs'],
-              batch_size=params['batch_size'],
-              learning_rate=params['lr'],
+              epochs=int(params['epochs']),
+              batch_size=int(params['batch_size']),
+              learning_rate=float(params['lr']),
               device=device,
-              img_scale=params['img_scale'],
-              val_percent=params['validation'] / 100,
+              img_scale=float(params['img_scale']),
+              val_percent=int(params['validation']) / 100,
               amp=params['amp'],
               dir_img=params['dir_img'],
               dir_mask = params['dir_mask'],
               dir_checkpoint = params['dir_checkpoint'],
-              num_workers = params['num_workers'])
+              num_workers = int(params['num_workers']))
 
 
 #######################################################################################################################
@@ -120,10 +120,10 @@ def setup(parameters, **kwargs):
                       'classes':            2,
                       'bilinear':           False}
     # Loading the parameter configuration file
-    if parameters is None:
-        config_path = kwargs_default['parameters']
+    if parameters is not None:
+        config_path = parameters
     else:
-        config_path = toml.load(parameters)
+        config_path = kwargs_default['parameters']
     params = toml.load(config_path)
 
     params.update(kwargs) # prioritize manually entered configuration over config file
@@ -172,7 +172,8 @@ def setup(parameters, **kwargs):
     params['dir_checkpoint'] = Path(base_dir +'/checkpoints/')
 
     # Copies the config file
-    config_file_name = config_path.split('.')[-2].split('/')[-1]
+    # config_file_name = config_path.split('.')[-2].split('/')[-1]
+    config_file_name = config_path.split('/')[-1]
     with open(base_dir + '/' + config_file_name, "w") as f:
         toml.dump(params, f)
         f.close()
