@@ -23,6 +23,8 @@ import toml
 import os
 from time import strftime
 
+import torchshow as ts
+
 #######################################################################################################################
 # Path of base data, image directory, mask directory, and checkpoints
 #######################################################################################################################
@@ -89,9 +91,10 @@ def unet_train(parameters, **kwargs):
               val_percent=int(params['validation']) / 100,
               amp=params['amp'],
               dir_img=params['dir_img'],
-              dir_mask = params['dir_mask'],
-              dir_checkpoint = params['dir_checkpoint'],
-              num_workers = int(params['num_workers']))
+              dir_mask=params['dir_mask'],
+              dir_checkpoint=params['dir_checkpoint'],
+              num_workers=int(params['num_workers'],),
+              segmentation_path=params['segmentation_path'])
 
 
 #######################################################################################################################
@@ -170,6 +173,7 @@ def setup(parameters, **kwargs):
         os.makedirs(base_dir, exist_ok=True)
 
     params['dir_checkpoint'] = Path(base_dir +'/checkpoints/')
+    os.makedirs(params['dir_checkpoint'], exist_ok=True)
 
     # Copies the config file
     # config_file_name = config_path.split('.')[-2].split('/')[-1]
@@ -177,6 +181,10 @@ def setup(parameters, **kwargs):
     with open(base_dir + '/' + config_file_name, "w") as f:
         toml.dump(params, f)
         f.close()
+
+    # Path for saving segmentation images
+    params['segmentation_path'] = base_dir + '/segmentation_images'
+    os.makedirs(params['segmentation_path'], exist_ok=True)
 
     return params
 #######################################################################################################################
@@ -201,9 +209,6 @@ def evaluate(net, dataloader, device):
             # predict the mask
             mask_pred = net(image)
 
-            # This prints the image, segmentation prediction, true segmentation with torchshow
-            # ts.show([torch.squeeze(image), torch.squeeze(mask_pred), torch.squeeze(mask_true)])
-
             # convert to one-hot format
             if net.n_classes == 1:
                 mask_pred = (F.sigmoid(mask_pred) > 0.5).float()
@@ -223,6 +228,68 @@ def evaluate(net, dataloader, device):
     return dice_score / num_val_batches
 
 
+def evaluate_epoch(net, dataloader, device, epoch, segmentation_path):
+    net.eval()
+    num_val_batches = len(dataloader)
+    dice_score = 0
+
+    show_image = None
+    show_mask_pred = None
+    show_mask_true = None
+
+    # iterate over the validation set
+    for batch in tqdm(dataloader, total=num_val_batches, desc='Validation round', unit='batch', leave=False):
+        image, mask_true = batch['image'], batch['mask']
+        # move images and labels to correct device and type
+        image = image.to(device=device, dtype=torch.float32)
+        mask_true = mask_true.to(device=device, dtype=torch.long)
+        mask_true = F.one_hot(mask_true, net.n_classes).permute(0, 3, 1, 2).float()
+
+        with torch.no_grad():
+            # predict the mask
+            mask_pred = net(image)
+
+            # gets the image, prediction mask, and true mask
+            show_image = image
+            show_mask_pred = mask_pred
+            show_mask_true = mask_true
+
+
+
+            # convert to one-hot format
+            if net.n_classes == 1:
+                mask_pred = (F.sigmoid(mask_pred) > 0.5).float()
+                # compute the Dice score
+                dice_score += dice_coeff(mask_pred, mask_true, reduce_batch_first=False)
+            else:
+                mask_pred = F.one_hot(mask_pred.argmax(dim=1), net.n_classes).permute(0, 3, 1, 2).float()
+                # compute the Dice score, ignoring background
+                dice_score += multiclass_dice_coeff(mask_pred[:, 1:, ...], mask_true[:, 1:, ...],
+                                                    reduce_batch_first=False)
+
+    net.train()
+
+    show_combi_mask = torch.empty(1, 3, 640, 959)
+    for i in range(640):
+        for j in range(959):
+            if (show_mask_pred[0][0][i][j] < 0.5 and show_mask_pred[0][1][i][j] > 0.5):
+                show_combi_mask[0][0][i][j] = 1
+                show_combi_mask[0][1][i][j] = 0
+                show_combi_mask[0][2][i][j] = 0
+            else:
+                show_combi_mask[0][0][i][j] = image[0][0][i][j]
+                show_combi_mask[0][1][i][j] = image[0][1][i][j]
+                show_combi_mask[0][2][i][j] = image[0][2][i][j]
+    ts.show([torch.squeeze(show_image), torch.squeeze(show_mask_pred),
+             torch.squeeze(show_combi_mask), torch.squeeze(show_mask_true)])
+    ts.save([torch.squeeze(show_image), torch.squeeze(show_mask_pred),
+             torch.squeeze(show_combi_mask), torch.squeeze(show_mask_true)], segmentation_path + f'/epoch{epoch}.jpg')
+
+    # Fixes a potential division by zero error
+    if num_val_batches == 0:
+        return dice_score
+    return dice_score / num_val_batches
+
 def train_net(net,
               device,
               epochs=5,
@@ -235,7 +302,8 @@ def train_net(net,
               dir_img=None,
               dir_mask=None,
               dir_checkpoint=None,
-              num_workers=1):
+              num_workers=1,
+              segmentation_path=''):
     # 1. Create dataset
     dataset = BasicDataset(dir_img, dir_mask, img_scale)
     # print("created dataset")
@@ -276,6 +344,9 @@ def train_net(net,
     criterion = nn.CrossEntropyLoss()
     global_step = 0
     # print("optimizer set up")
+
+    train_loss_log = []
+    val_loss_log = []
 
     # 5. Begin training
     for epoch in range(1, epochs + 1):
@@ -348,6 +419,10 @@ def train_net(net,
                             'epoch': epoch,
                             **histograms
                         })
+            # All batches in the epoch iterated through, append loss values as string type
+            train_loss_log.append(epoch_loss)
+            val_loss_log.append(evaluate_epoch(net, val_loader, device, epoch, segmentation_path).item())
+            pass
 
         if save_checkpoint:
             Path(dir_checkpoint).mkdir(parents=True, exist_ok=True)
