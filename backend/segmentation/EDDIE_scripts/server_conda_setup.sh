@@ -2,7 +2,7 @@
 
 ################################################################################
 #                                                                              #
-# Loading All Prerequisite Modules                                             #
+# Script which installs all necessary conda packages for running on EDDIE      #
 #                                                                              #
 ################################################################################
 
@@ -13,7 +13,6 @@
 #
 # Allocate GPU Memory Limit of 1 Gbyte
 #$ -pe gpu-titanx 1 -l h_vmem=1G
-
 
 
 module load anaconda/5.3.1

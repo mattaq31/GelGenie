@@ -1,0 +1,29 @@
+# TODO: when you start adding more parameters I think you should start using folders as things will start to get complex very quickly.
+
+experiment_name = "MA_unet_default"  # configuration name
+
+#[processing_unit]
+base_hardware = "MA_mac"   # Where the program is run [EDDIE/PC]
+
+#[batch_file]
+core = "GPU"    # Which processor is used [GPU/CPU]
+pe = 1          # How many parallel environments (cores) needed
+memory = 64     # Required memory per core in GBytes
+
+#[data]
+batch_size = 4  # Batch size for dataloader
+num_workers = 1 # parallel threads to use to speed up data processing
+img_scale = 0.5 # TODO: is this necessary to be 0.5?
+validation = 10 # % of the data that is used as validation (0-100)
+
+#[model]
+name = 'UNet'   # model architecture name
+lr = 1e-5       # learning rate
+classes = 2     # Number of possible segmentation classes
+bilinear = false # Use bilinear upsampling within down/up blocks in unet network
+
+#[training]
+epochs = 10     # Number of epochs to run
+amp = false     # Use mixed precision TODO: change variable name to something more descriptive
+load = false    # Load model from a .pth file (Bool/Path)
+save_checkpoint = true # Whether model checkpoints are saved
