@@ -50,7 +50,7 @@ def experiment_setup(parameters, **kwargs):
 
     params.update(kwargs)  # prioritize command-line configuration over config file
     kwargs_default.update(params)  # replaces defaults with any user-defined parameters
-    params = kwargs_default  # rename kwargs_default TODO: this is unnecessary - code should be streamlined instead
+    params = kwargs_default  # TODO: streamline code
 
     # Checks if number of workers exceed available threads when using EDDIE, and if so fixes the issue
     if params['base_hardware'] == "EDDIE" and params['core'] == "GPU":
@@ -66,9 +66,14 @@ def experiment_setup(parameters, **kwargs):
             print("GPU specified but cuda is unavailable, cpu will be used instead")
 
     if params['base_hardware'] == "PC":  # Paths for working on Kiros's PC
-        base_dir = "C:/2022_Summer_Intern/UNet_Training_With_Images"
-        params['dir_img'] = Path('C:/2022_Summer_Intern/UNet_Training_With_Images/Carvana/Input')
-        params['dir_mask'] = Path('C:/2022_Summer_Intern/UNet_Training_With_Images/Carvana/Target/')
+        if params['experiment_name'] == "PC_Gel":
+            base_dir = "C:/2022_Summer_Intern/Gel_Images_UNet_Test"
+            params['dir_img'] = Path('C:/2022_Summer_Intern/Gel_Images_UNet_Test/Image_cleaned')
+            params['dir_mask'] = Path('C:/2022_Summer_Intern/Gel_Images_UNet_Test/Mask_cleaned')
+        else:
+            base_dir = "C:/2022_Summer_Intern/UNet_Training_With_Images"
+            params['dir_img'] = Path('C:/2022_Summer_Intern/UNet_Training_With_Images/Carvana/Input')
+            params['dir_mask'] = Path('C:/2022_Summer_Intern/UNet_Training_With_Images/Carvana/Target/')
 
     elif params['base_hardware'] == "EDDIE":  # Paths for working on EDDIE server
         base_dir = "/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/UNet_Training_With_Images/Model"
@@ -83,18 +88,21 @@ def experiment_setup(parameters, **kwargs):
         params['dir_mask'] = Path('/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/Carvana/Target/')
 
     # TODO: what's the default base directory if none specified?
+    else:
+        base_dir = './'
 
     # Make base directory for storing everything
-    base_dir = os.path.join(base_dir, strftime("%Y_%m_%d_%H;%M;%S"))
     # TODO: I would add the experiment name to the folder, not just the date
+    base_dir = os.path.join(base_dir, params['experiment_name'] + '_' + strftime("%Y_%m_%d_%H;%M;%S"))
     os.mkdir(base_dir)  # TODO: instead of overwriting, warn user if folder already exists and has data inside
+    # os.mkdir raises FileExistsError if directory already exists
 
     params['base_dir'] = base_dir
     params['dir_checkpoint'] = Path(base_dir + '/checkpoints/')
     os.mkdir(params['dir_checkpoint'])
 
     # Copies the config file
-    config_file_name = config_path.split('/')[-1]  # TODO: just make this a standard name e.g. config.toml
+    config_file_name = 'config.toml'
     with open(base_dir + '/' + config_file_name, "w") as f:
         toml.dump(params, f)
         f.close()
@@ -131,7 +139,7 @@ def unet_train(parameter_config, **kwargs):
     # Pre-trainined weights:
     # load = "/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/UNet_Training_With_Images/Pre-trained/unet_carvana_scale0.5_epoch2.pth"
 
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')  # TODO: you've already specified the device earlier - remove this line.
+    device = params['device']
     print(f'Using device {device}')
 
     # Change here to adapt to your data

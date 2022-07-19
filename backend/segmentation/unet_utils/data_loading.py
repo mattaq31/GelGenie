@@ -8,6 +8,7 @@ import numpy as np
 import torch
 from PIL import Image
 from torch.utils.data import Dataset
+import torchvision.transforms as transforms
 
 
 class BasicDataset(Dataset):
@@ -32,17 +33,18 @@ class BasicDataset(Dataset):
         newW, newH = int(scale * w), int(scale * h)
         assert newW > 0 and newH > 0, 'Scale is too small, resized images would have no pixel'
         pil_img = pil_img.resize((newW, newH), resample=Image.NEAREST if is_mask else Image.BICUBIC)
-        img_ndarray = np.asarray(pil_img)
 
         if not is_mask:
-            if img_ndarray.ndim == 2:
-                img_ndarray = img_ndarray[np.newaxis, ...]
-            else:
-                img_ndarray = img_ndarray.transpose((2, 0, 1))
+            img_ndarray = np.asarray(pil_img)  # (H, W, C)
+            image_transform = transforms.Compose([transforms.ToTensor()])
+            image_tensor = image_transform(img_ndarray) # (C, H, W)
+            return image_tensor
 
-        img_ndarray = img_ndarray / 255
+        else:
+            img_ndarray = np.array(pil_img)  # (H, W)
+            mask_tensor = torch.from_numpy(img_ndarray)
+            return mask_tensor
 
-        return img_ndarray
 
     @staticmethod
     def load(filename):
@@ -55,6 +57,7 @@ class BasicDataset(Dataset):
             return Image.open(filename)
 
     def __getitem__(self, idx):
+
         name = self.ids[idx]
         mask_file = list(self.masks_dir.glob(name + self.mask_suffix + '.*'))
         img_file = list(self.images_dir.glob(name + '.*'))
@@ -67,12 +70,12 @@ class BasicDataset(Dataset):
         assert img.size == mask.size, \
             f'Image and mask {name} should be the same size, but are {img.size} and {mask.size}'
 
-        img = self.preprocess(img, self.scale, is_mask=False)
-        mask = self.preprocess(mask, self.scale, is_mask=True)
+        img_tensor = self.preprocess(img, self.scale, is_mask=False)
+        mask_tensor = self.preprocess(mask, self.scale, is_mask=True)
 
         return {
-            'image': torch.as_tensor(img.copy()).float().contiguous(),
-            'mask': torch.as_tensor(mask.copy()).long().contiguous()
+            'image': img_tensor.float().contiguous(),
+            'mask': mask_tensor.int().contiguous()
         }
 
 

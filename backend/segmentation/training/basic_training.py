@@ -6,15 +6,13 @@ from torch.utils.data import DataLoader, random_split
 
 from tqdm import tqdm
 import wandb
-import numpy as np
-import pandas as pd
 from pathlib import Path
 import logging
 
 from segmentation.unet_utils.data_loading import BasicDataset
 from segmentation.unet_utils.dice_score import dice_loss
-from segmentation.unet_utils.utils import plot_stats
-from segmentation.evaluation.basic_eval import evaluate_epoch, evaluate
+from segmentation.unet_utils.utils import plot_stats, show_segmentation, excel_stats
+from segmentation.evaluation.basic_eval import evaluate
 
 
 def train_net(net,
@@ -34,22 +32,22 @@ def train_net(net,
               base_dir=''):
     """
     TODO: fill in
-    :param net:
-    :param device:
-    :param epochs:
-    :param batch_size:
-    :param learning_rate:
-    :param val_percent:
-    :param save_checkpoint:
-    :param img_scale:
-    :param amp:
-    :param dir_img:
-    :param dir_mask:
-    :param dir_checkpoint:
-    :param num_workers:
-    :param segmentation_path:
-    :param base_dir:
-    :return:
+    :param net: UNet Model
+    :param device: Device being used (cpu/ cuda)
+    :param epochs: Number of epochs
+    :param batch_size: Batch size for loading data
+    :param learning_rate: Learning rate
+    :param val_percent: Validation set partition percentage
+    :param save_checkpoint: Whether checkpoints are saved
+    :param img_scale: Downscaling factor of the images (between 0 and 1)
+    :param amp: Use mixed precision
+    :param dir_img: Directory of original image
+    :param dir_mask: Directory of true masks
+    :param dir_checkpoint: Directory where checkpoints are stored
+    :param num_workers: Number of workers for dataloader
+    :param segmentation_path: Directory to save segmentation images
+    :param base_dir: Path of base directory
+    :return: None
     """
 
     # 1. Create dataset
@@ -86,8 +84,6 @@ def train_net(net,
     optimizer = optim.RMSprop(net.parameters(), lr=learning_rate, weight_decay=1e-8, momentum=0.9)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=2)  # goal: maximize Dice score
 
-    if device != torch.device('cpu'):
-        grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)  # TODO: investigate - is this necessary?  If it is, can we implement something for CPU?
     criterion = nn.CrossEntropyLoss()
     global_step = 0
 
@@ -99,6 +95,11 @@ def train_net(net,
         net.train()
         epoch_loss = 0
         with tqdm(total=n_train, desc=f'Epoch {epoch}/{epochs}', unit='img') as pbar:
+            # Images to be showed each epoch
+            show_image = None
+            show_mask_pred = None
+            show_mask_true = None
+
             for batch in train_loader:
                 images = batch['image']
                 true_masks = batch['mask']
@@ -112,27 +113,18 @@ def train_net(net,
                 images = images.to(device=device, dtype=torch.float32)
                 true_masks = true_masks.to(device=device, dtype=torch.long)
 
-                if device != torch.device('cpu'):  # TODO: either find fix, or reduce amount of code here
-                    with torch.cuda.amp.autocast(enabled=amp):
-                        masks_pred = net(images)
 
-                        loss = criterion(masks_pred, true_masks) \
-                               + dice_loss(F.softmax(masks_pred, dim=1).float(),
-                                           F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float(),
-                                           multiclass=True)
-                else:
-                    masks_pred = net(images)
-                    loss = criterion(masks_pred, true_masks) \
-                           + dice_loss(F.softmax(masks_pred, dim=1).float(),
-                                       F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float(),
-                                       multiclass=True)
+                masks_pred = net(images)
+
+                loss = criterion(masks_pred, true_masks) \
+                       + dice_loss(F.softmax(masks_pred, dim=1).float(),
+                                   F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float(),
+                                   multiclass=True)
 
 
-                optimizer.zero_grad(set_to_none=True)
-                # TODO: what to do with the grad scaler and backward step in case of no CUDA being available?
-                grad_scaler.scale(loss).backward()
-                grad_scaler.step(optimizer)
-                grad_scaler.update()
+                optimizer.zero_grad() ## this ensures that all weight gradients are zeroed before moving on to the next set of gradients
+                loss.backward()  # this calculates the gradient for all weights (backpropagation)
+                optimizer.step()  # here, the optimizer will calculate and make the change necessary for each weight based on its defined rules
 
                 pbar.update(images.shape[0])
                 global_step += 1
@@ -145,48 +137,60 @@ def train_net(net,
                 pbar.set_postfix(**{'loss (batch)': loss.item()})
 
                 # Evaluation round
-                division_step = (n_train // (10 * batch_size))
-                if division_step > 0:
-                    if global_step % division_step == 0:
-                        histograms = {}
-                        for tag, value in net.named_parameters():
-                            tag = tag.replace('/', '.')
-                            histograms['Weights/' + tag] = wandb.Histogram(value.data.cpu())
-                            histograms['Gradients/' + tag] = wandb.Histogram(value.grad.data.cpu())
 
-                        val_score = evaluate(net, val_loader, device)
-                        scheduler.step(val_score)
+                histograms = {}
+                for tag, value in net.named_parameters():
+                    tag = tag.replace('/', '.')
+                    histograms['Weights/' + tag] = wandb.Histogram(value.data.cpu())
+                    histograms['Gradients/' + tag] = wandb.Histogram(value.grad.data.cpu())
 
-                        logging.info('Validation Dice score: {}'.format(val_score))
-                        experiment.log({
-                            'learning rate': optimizer.param_groups[0]['lr'],
-                            'validation Dice': val_score,
-                            'images': wandb.Image(images[0].cpu()),
-                            'masks': {
-                                'true': wandb.Image(true_masks[0].float().cpu()),
-                                'pred': wandb.Image(torch.softmax(masks_pred, dim=1).argmax(dim=1)[0].float().cpu()),
-                            },
-                            'step': global_step,
-                            'epoch': epoch,
-                            **histograms
-                        })
+               # For the last batch
+
+
+                val_score, show_image, show_mask_pred, show_mask_true = evaluate(net, val_loader, device)
+
+                # Logging the dice score into array
+                if len(val_loss_log) == epoch:  # Already exists dice score for this epoch
+                    val_loss_log[epoch-1] = val_score.item()  # Replace it
+                else:  # No dice score yet for this epoch
+                    val_loss_log.append(val_score.item())  # Append one into it
+                scheduler.step(val_score)
+
+                logging.info('Validation Dice score: {}'.format(val_score))
+                experiment.log({
+                    'learning rate': optimizer.param_groups[0]['lr'],
+                    'validation Dice': val_score,
+                    'images': wandb.Image(images[0].cpu()),
+                    'masks': {
+                        'true': wandb.Image(true_masks[0].float().cpu()),
+                        'pred': wandb.Image(torch.softmax(masks_pred, dim=1).argmax(dim=1)[0].float().cpu()),
+                    },
+                    'step': global_step,
+                    'epoch': epoch,
+                    **histograms
+                })
+
+                break  # TODO: delete
+
+            # Show segmentation images for this epoch
+            show_segmentation(show_image.squeeze(), show_mask_pred.squeeze(), show_mask_true.squeeze(),
+                              epoch, segmentation_path)
+
 
             # All batches in the epoch iterated through, append loss values as string type
             train_loss_log.append(epoch_loss)
-            # TODO: this function is repeating all the work the previous one did.  I would integrate both together.
-            val_loss_log.append(evaluate_epoch(net, val_loader, device, epoch, segmentation_path).item())
 
             plot_stats(train_loss_log, val_loss_log, base_dir)
 
-            loss_array = np.array([train_loss_log, val_loss_log]).T
-            loss_dataframe = pd.DataFrame(loss_array, columns=['Training Set', 'Validation Set'])
-            loss_dataframe.index.names = ['Epoch']
-            loss_dataframe.index += 1
-            loss_dataframe.to_csv(Path(base_dir + '/loss.csv'))
+            excel_stats(train_loss_log, val_loss_log, base_dir)
+
+
 
         if save_checkpoint:
             Path(dir_checkpoint).mkdir(parents=True, exist_ok=True)
             torch.save(net.state_dict(), str(dir_checkpoint / 'checkpoint_epoch{}.pth'.format(epoch)))
             logging.info(f'Checkpoint {epoch} saved!')
+
+        # break  # TODO: delete
 
         print("another epoch done!")
