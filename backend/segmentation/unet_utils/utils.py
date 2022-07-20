@@ -75,10 +75,10 @@ def show_segmentation(image, mask_pred, mask_true, epoch_number, dice_score, seg
                     combined_array[h][w] = 1  # is labelled
         return combined_array
 
-    image_array = np.transpose(image.detach().clone().squeeze().numpy(), (1, 2, 0))  # Copies the image into np array
-    mask_pred_array = combine_channels(mask_pred.detach().clone().squeeze().numpy())  # Copies prediction into np array
-    mask_true_array = combine_channels(mask_true.detach().clone().squeeze().numpy())  # Copies true mask into np array
-    combi_mask = np.transpose(combi_mask.detach().clone().squeeze().numpy(), (1, 2, 0))
+    image_array = np.transpose(image.detach().squeeze().cpu().numpy(), (1, 2, 0))  # Copies the image into np array
+    mask_pred_array = combine_channels(mask_pred.detach().squeeze().cpu().numpy())  # Copies prediction into np array
+    mask_true_array = combine_channels(mask_true.detach().squeeze().cpu().numpy())  # Copies true mask into np array
+    combi_mask = np.transpose(combi_mask.detach().squeeze().cpu().numpy(), (1, 2, 0))
 
     fig, axs = plt.subplots(nrows=1, ncols=4, figsize=(10, 7))
     axs[0].imshow(image_array)
