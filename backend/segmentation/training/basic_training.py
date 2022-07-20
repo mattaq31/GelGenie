@@ -170,11 +170,11 @@ def train_net(net,
                     **histograms
                 })
 
-                break  # TODO: delete
+                # break  # TODO: delete
 
             # Show segmentation images for this epoch
             show_segmentation(show_image.squeeze(), show_mask_pred.squeeze(), show_mask_true.squeeze(),
-                              epoch, segmentation_path)
+                              epoch, dice_score=val_loss_log[-1], segmentation_path=segmentation_path)
 
 
             # All batches in the epoch iterated through, append loss values as string type

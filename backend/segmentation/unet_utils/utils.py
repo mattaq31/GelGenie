@@ -56,9 +56,8 @@ def plot_stats(train_loss_log, val_loss_log, base_dir):
     plt.close(fig)
 
 
-def show_segmentation(image, mask_pred, mask_true, epoch_number, segmentation_path):
+def show_segmentation(image, mask_pred, mask_true, epoch_number, dice_score, segmentation_path):
     combi_mask = image.detach().clone().squeeze()  # Copies the image into np array
-    # , plt.imshow
     for i in range(image.size(dim=1)):  # Height
         for j in range(image.size(dim=2)):  # Width
             if mask_pred[0][i][j] < 0.5 and mask_pred[1][i][j] > 0.5:  # is labelled
@@ -82,19 +81,21 @@ def show_segmentation(image, mask_pred, mask_true, epoch_number, segmentation_pa
     combi_mask = np.transpose(combi_mask.detach().clone().squeeze().numpy(), (1, 2, 0))
 
     fig, axs = plt.subplots(nrows=1, ncols=4, figsize=(10, 7))
-    fig.suptitle(f'Epoch {epoch_number}')
     axs[0].imshow(image_array)
     axs[0].set_title('Original Image')
     axs[1].imshow(mask_pred_array)
     axs[1].set_title('Mask Prediction')
     axs[2].imshow(combi_mask)
     axs[2].set_title('Mask Prediction Superimposed')
+    axs[2].set_xlabel(f'Dice Score: {dice_score}')
     axs[3].imshow(mask_true_array)
     axs[3].set_title('True Mask')
+    plt.setp(plt.gcf().get_axes(), xticks=[], yticks=[])  # remove ticks
     plt.tight_layout()
     plt.savefig(Path(segmentation_path + f'/epoch{epoch_number}.pdf'))
     plt.close(fig)
 
+    # add dice score
 
 def excel_stats(train_loss_log, val_loss_log, base_dir):
     loss_array = np.array([train_loss_log, val_loss_log]).T
