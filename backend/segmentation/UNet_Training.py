@@ -83,7 +83,7 @@ def experiment_setup(parameters, **kwargs):
             params['dir_mask'] = Path('/exports/csce/eddie/eng/groups/DunnGroup/kiros/'
                                       '2022_summer_intern/UNet_Training_With_Images/Carvana/Target/')
         elif params['experiment_name'] == "EDDIE_Gel_Nathan_Q1":
-            base_dir = "/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/Gel_Images/Nathan_Q1_cleaned/Images/Models"
+            base_dir = "/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/Gel_Images/Nathan_Q1_cleaned/Models"
             params['dir_img'] = Path('/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/Gel_Images/Nathan_Q1_cleaned/Images/')
             params['dir_mask'] = Path('/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/Gel_Images/Nathan_Q1_cleaned/Masks/')
 
