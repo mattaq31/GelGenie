@@ -9,7 +9,7 @@ import toml
 import torch
 
 from segmentation.unet import UNet
-from segmentation.training.basic_training import train_net
+from segmentation.training.test import train_net
 
 
 def experiment_setup(parameters, **kwargs):
@@ -39,8 +39,7 @@ def experiment_setup(parameters, **kwargs):
                       'amp': False,
                       'load': False,
                       'classes': 2,
-                      'bilinear': False,
-                      'n_channels': 1}
+                      'bilinear': False}
 
     # Loading the toml config file
     if parameters is not None:
@@ -139,7 +138,6 @@ def experiment_setup(parameters, **kwargs):
 @click.option('--load', default=None, help='[Bool/Path] Load model from a .pth file')
 @click.option('--classes', default=None, help='[int] Number of classes/probabilities per pixel')
 @click.option('--bilinear', default=None, help='[Bool] Use bilinear upsampling')
-@click.option('--n_channels', default=None, help='[int] Number of channels of input image')
 def unet_train(parameter_config, **kwargs):
     params = experiment_setup(parameter_config, **kwargs)
 
@@ -152,7 +150,7 @@ def unet_train(parameter_config, **kwargs):
     # Change here to adapt to your data
     # n_channels=3 for RGB images
     # n_classes is the number of probabilities you want to get per pixel
-    net = UNet(n_channels=int(params['n_channels']), n_classes=params['classes'], bilinear=params['bilinear'])  # initializing random weights
+    net = UNet(n_channels=3, n_classes=params['classes'], bilinear=params['bilinear'])  # initializing random weights
 
     print(f'Network:\n'
           f'\t{net.n_channels} input channels\n'
@@ -179,8 +177,7 @@ def unet_train(parameter_config, **kwargs):
               dir_checkpoint=params['dir_checkpoint'],
               num_workers=int(params['num_workers'], ),
               segmentation_path=params['segmentation_path'],
-              base_dir=params['base_dir'],
-              n_channels=int(params['n_channels']))
+              base_dir=params['base_dir'])
 
 
 if __name__ == '__main__':

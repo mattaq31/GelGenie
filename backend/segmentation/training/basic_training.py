@@ -29,7 +29,8 @@ def train_net(net,
               dir_checkpoint=None,
               num_workers=1,
               segmentation_path='',
-              base_dir=''):
+              base_dir='',
+              n_channels=1):
     """
     TODO: fill in
     :param net: UNet Model
@@ -51,7 +52,7 @@ def train_net(net,
     """
 
     # 1. Create dataset
-    dataset = BasicDataset(dir_img, dir_mask, img_scale)
+    dataset = BasicDataset(dir_img, dir_mask, n_channels, img_scale)
 
     # 2. Split into train / validation partitions
     n_val = int(len(dataset) * val_percent)
@@ -174,7 +175,8 @@ def train_net(net,
 
             # Show segmentation images for this epoch
             show_segmentation(show_image.squeeze(), show_mask_pred.squeeze(), show_mask_true.squeeze(),
-                              epoch, dice_score=val_loss_log[-1], segmentation_path=segmentation_path)
+                              epoch, dice_score=val_loss_log[-1], segmentation_path=segmentation_path,
+                              n_channels=n_channels)
 
 
             # All batches in the epoch iterated through, append loss values as string type

@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import torchshow as ts
 import numpy as np
 import pandas as pd
+import torch
 
 
 def plot_img_and_mask(img, mask):
@@ -56,14 +57,29 @@ def plot_stats(train_loss_log, val_loss_log, base_dir):
     plt.close(fig)
 
 
-def show_segmentation(image, mask_pred, mask_true, epoch_number, dice_score, segmentation_path):
-    combi_mask = image.detach().clone().squeeze()  # Copies the image into np array
-    for i in range(image.size(dim=1)):  # Height
-        for j in range(image.size(dim=2)):  # Width
+def show_segmentation(image, mask_pred, mask_true, epoch_number, dice_score, segmentation_path, n_channels):
+    if n_channels == 1:
+        height = image.size(dim=0)
+        width = image.size(dim=1)
+        combi_mask = torch.zeros((3, height, width))
+        image_array = image.detach().squeeze().cpu().numpy()
+        image_tensor_array = torch.from_numpy(image_array)
+    elif n_channels == 3:
+        height = image.size(dim=1)
+        width = image.size(dim=2)
+        combi_mask = image.detach().clone().squeeze()  # Copies the image tensor
+        image_array = np.transpose(image.detach().squeeze().cpu().numpy(), (1, 2, 0))  # Copies the image into np array
+    for i in range(height):
+        for j in range(width):
             if mask_pred[0][i][j] < 0.5 and mask_pred[1][i][j] > 0.5:  # is labelled
                 combi_mask[0][i][j] = 1
                 combi_mask[1][i][j] = 0
                 combi_mask[2][i][j] = 0
+            elif n_channels == 1:  # Copies the greyscale value to R, G, B
+                combi_mask[0][i][j] = image_tensor_array[i][j]
+                combi_mask[1][i][j] = image_tensor_array[i][j]
+                combi_mask[2][i][j] = image_tensor_array[i][j]
+
 
     def combine_channels(mask_array):
         height = mask_array.shape[1]
@@ -75,7 +91,6 @@ def show_segmentation(image, mask_pred, mask_true, epoch_number, dice_score, seg
                     combined_array[h][w] = 1  # is labelled
         return combined_array
 
-    image_array = np.transpose(image.detach().squeeze().cpu().numpy(), (1, 2, 0))  # Copies the image into np array
     mask_pred_array = combine_channels(mask_pred.detach().squeeze().cpu().numpy())  # Copies prediction into np array
     mask_true_array = combine_channels(mask_true.detach().squeeze().cpu().numpy())  # Copies true mask into np array
     combi_mask = np.transpose(combi_mask.detach().squeeze().cpu().numpy(), (1, 2, 0))
