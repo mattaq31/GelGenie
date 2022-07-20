@@ -76,11 +76,16 @@ def experiment_setup(parameters, **kwargs):
             params['dir_mask'] = Path('C:/2022_Summer_Intern/UNet_Training_With_Images/Carvana/Target/')
 
     elif params['base_hardware'] == "EDDIE":  # Paths for working on EDDIE server
-        base_dir = "/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/UNet_Training_With_Images/Model"
-        params['dir_img'] = Path('/exports/csce/eddie/eng/groups/DunnGroup/kiros/'
-                                 '2022_summer_intern/UNet_Training_With_Images/Carvana/Input/')
-        params['dir_mask'] = Path('/exports/csce/eddie/eng/groups/DunnGroup/kiros/'
-                                  '2022_summer_intern/UNet_Training_With_Images/Carvana/Target/')
+        if params['experiment_name'] == "EDDIE_GPU_default":
+            base_dir = "/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/UNet_Training_With_Images/Model"
+            params['dir_img'] = Path('/exports/csce/eddie/eng/groups/DunnGroup/kiros/'
+                                     '2022_summer_intern/UNet_Training_With_Images/Carvana/Input/')
+            params['dir_mask'] = Path('/exports/csce/eddie/eng/groups/DunnGroup/kiros/'
+                                      '2022_summer_intern/UNet_Training_With_Images/Carvana/Target/')
+        elif params['experiment_name'] == "EDDIE_Gel_Nathan_Q1":
+            base_dir = "/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/Gel_Images/Nathan_Q1_cleaned/Images/Models"
+            params['dir_img'] = Path('/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/Gel_Images/Nathan_Q1_cleaned/Images/')
+            params['dir_mask'] = Path('/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/Gel_Images/Nathan_Q1_cleaned/Masks/')
 
     elif params['base_hardware'] == "MA_mac":  # Paths for working on Matthew's mac
         base_dir = "/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models"
