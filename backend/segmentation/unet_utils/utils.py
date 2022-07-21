@@ -96,7 +96,10 @@ def show_segmentation(image, mask_pred, mask_true, epoch_number, dice_score, seg
     combi_mask = np.transpose(combi_mask.detach().squeeze().cpu().numpy(), (1, 2, 0))
 
     fig, axs = plt.subplots(nrows=1, ncols=4, figsize=(10, 7))
-    axs[0].imshow(image_array)
+    if n_channels == 1:
+        axs[0].imshow(image_array, cmap='gray')
+    else:
+        axs[0].imshow(image_array)
     axs[0].set_title('Original Image')
     axs[1].imshow(mask_pred_array)
     axs[1].set_title('Mask Prediction')
