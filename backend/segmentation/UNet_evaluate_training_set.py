@@ -9,7 +9,7 @@ import toml
 import torch
 
 from segmentation.unet import UNet
-from segmentation.training.test import train_net
+from segmentation.training.evaluate_training_set import train_net
 
 
 def experiment_setup(parameters, **kwargs):

@@ -9,6 +9,7 @@ pe = 1          # How many parallel environments (cores) needed
 memory = 64     # Required memory per core in GBytes
 
 #[data]
+n_channels = 1
 batch_size = 4  # Batch size for dataloader
 num_workers = 1 # parallel threads to use to speed up data processing
 img_scale = 0.5 # TODO: is this necessary to be 0.5?

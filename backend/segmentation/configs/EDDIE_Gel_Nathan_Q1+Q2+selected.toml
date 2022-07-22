@@ -1,6 +1,6 @@
 # TODO: when you start adding more parameters I think you should start using folders as things will start to get complex very quickly.
 
-experiment_name = "EDDIE_GPU_default"  # configuration name
+experiment_name = "EDDIE_Gel_Nathan_Q1+Q2+selected"  # configuration name
 
 #[processing_unit]
 base_hardware = "EDDIE"   # Where the program is run [EDDIE/PC]
@@ -11,11 +11,11 @@ pe = 1          # How many parallel environments (cores) needed
 memory = 64     # Required memory per core in GBytes
 
 #[data]
-n_channels = 1
+n_channels = 1  # Number of channels of input image
 batch_size = 4  # Batch size for dataloader
 num_workers = 1 # parallel threads to use to speed up data processing
 img_scale = 0.5 # TODO: is this necessary to be 0.5?
-validation = 10 # % of the data that is used as validation (0-100)
+validation = 15 # % of the data that is used as validation (0-100)
 
 #[model]
 name = 'UNet'   # model architecture name
