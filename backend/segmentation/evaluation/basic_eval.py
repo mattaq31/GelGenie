@@ -1,7 +1,6 @@
 import torch
 import torch.nn.functional as F
 from tqdm import tqdm
-import torchshow as ts
 
 from segmentation.unet_utils.dice_score import multiclass_dice_coeff, dice_coeff
 
@@ -18,10 +17,6 @@ def evaluate(net, dataloader, device):
     net.eval()
     num_val_batches = len(dataloader)
     dice_score = 0
-
-    show_image = None
-    show_mask_pred = None
-    show_mask_true = None
 
     # iterate over the validation set
     for batch in tqdm(dataloader, total=num_val_batches, desc='Validation round', unit='batch', leave=False):

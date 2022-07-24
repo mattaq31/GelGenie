@@ -13,6 +13,14 @@ import torchvision.transforms as transforms
 
 class BasicDataset(Dataset):
     def __init__(self, images_dir: str, masks_dir: str, n_channels: int, scale: float = 1.0, mask_suffix: str = ''):
+        """
+        TODO: fill in!
+        :param images_dir:
+        :param masks_dir:
+        :param n_channels:
+        :param scale:
+        :param mask_suffix:
+        """
         self.images_dir = Path(images_dir)
         self.masks_dir = Path(masks_dir)
         assert (n_channels == 1 or n_channels == 3), 'Number of channels must be either 1 or 3'
@@ -20,6 +28,7 @@ class BasicDataset(Dataset):
         assert 0 < scale <= 1, 'Scale must be between 0 and 1'
         self.scale = scale
         self.mask_suffix = mask_suffix
+        self.standard_image_transform = transforms.Compose([transforms.ToTensor()])
 
         self.ids = [splitext(file)[0] for file in listdir(images_dir) if not file.startswith('.')]
         if not self.ids:
@@ -29,31 +38,31 @@ class BasicDataset(Dataset):
     def __len__(self):
         return len(self.ids)
 
-    @staticmethod
-    def preprocess(pil_img, n_channels, scale, is_mask):
+    def preprocess(self, pil_img, n_channels, scale, is_mask):
+        """
+        TODO: fill in!
+        :param pil_img:
+        :param n_channels:
+        :param scale:
+        :param is_mask:
+        :return:
+        """
         w, h = pil_img.size
         newW, newH = int(scale * w), int(scale * h)
-        assert newW > 0 and newH > 0, 'Scale is too small, resized images would have no pixel'
-        print(f"Image Mode: {pil_img.mode}, Is mask = {is_mask}, file: {pil_img.filename}")  # TODO: delete this
+        assert newW > 0 and newH > 0, 'Scale is too small, resized images would have no pixels'
+
         pil_img = pil_img.resize((newW, newH), resample=Image.NEAREST if is_mask else Image.BICUBIC)
 
         if not is_mask:
             if n_channels == 1:
-                # if pil_img.mode == 'RGB' or pil_img.mode == 'RGBA':
                 pil_img = pil_img.convert('L')
-            else:  # n_channels == 3
-                # if pil_img.mode == 'RGBA' or pil_img.mode == 'L':
+            else:
                 pil_img = pil_img.convert('RGB')
-            img_ndarray = np.asarray(pil_img)  # (H, W, C) if color / (H, W) if greyscale
-            image_transform = transforms.Compose([transforms.ToTensor()])
-            image_tensor = image_transform(img_ndarray) # (C, H, W) for color/greyscale
-            return image_tensor
 
+            return self.standard_image_transform(pil_img)
         else:
-            img_ndarray = np.array(pil_img)  # (H, W)
-            mask_tensor = torch.from_numpy(img_ndarray)
-            return mask_tensor
-
+            final_img = np.array(pil_img)  # TODO: what happens when we have multiple classes?  Need to search online for best implementation of this
+            return torch.from_numpy(final_img)
 
     @staticmethod
     def load(filename):
@@ -83,8 +92,8 @@ class BasicDataset(Dataset):
         mask_tensor = self.preprocess(mask, self.n_channels, self.scale, is_mask=True)
 
         return {
-            'image': img_tensor.float().contiguous(),
-            'mask': mask_tensor.int().contiguous()
+            'image': img_tensor,
+            'mask': mask_tensor.int().contiguous()  # TODO: why do we need this .contiguous() call?
         }
 
 

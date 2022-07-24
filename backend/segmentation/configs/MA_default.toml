@@ -11,10 +11,13 @@ pe = 1          # How many parallel environments (cores) needed
 memory = 64     # Required memory per core in GBytes
 
 #[data]
-batch_size = 4  # Batch size for dataloader
-num_workers = 1 # parallel threads to use to speed up data processing
+n_channels = 1
+batch_size = 1  # Batch size for dataloader
+num_workers = 4 # parallel threads to use to speed up data processing
 img_scale = 0.5 # TODO: is this necessary to be 0.5?
 validation = 10 # % of the data that is used as validation (0-100)
+dir_img = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/labelled_gel_dataset/Images_Q1+Q2+selected'
+dir_mask = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/labelled_gel_dataset/Masks_Q1+Q2+selected'
 
 #[model]
 name = 'UNet'   # model architecture name

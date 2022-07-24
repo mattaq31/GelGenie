@@ -5,11 +5,13 @@ from pathlib import Path
 from time import strftime
 import click
 import toml
+from torchinfo import summary
 
 import torch
 
 from segmentation.unet import UNet
 from segmentation.training.basic_training import train_net
+from segmentation.helper_functions.data_functions import create_dir_if_empty
 
 
 def experiment_setup(parameters, **kwargs):
@@ -103,22 +105,18 @@ def experiment_setup(parameters, **kwargs):
 
     elif params['base_hardware'] == "MA_mac":  # Paths for working on Matthew's mac
         base_dir = "/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models"
-        params['dir_img'] = Path('/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/Carvana/Input/')
-        params['dir_mask'] = Path('/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/Carvana/Target/')
-
     # TODO: what's the default base directory if none specified?
     else:
         base_dir = './'
 
     # Make base directory for storing everything
-    # TODO: I would add the experiment name to the folder, not just the date
     base_dir = os.path.join(base_dir, params['experiment_name'] + '_' + strftime("%Y_%m_%d_%H;%M;%S"))
     os.mkdir(base_dir)  # TODO: instead of overwriting, warn user if folder already exists and has data inside
     # os.mkdir raises FileExistsError if directory already exists
 
     params['base_dir'] = base_dir
     params['dir_checkpoint'] = Path(base_dir + '/checkpoints/')
-    os.mkdir(params['dir_checkpoint'])
+    create_dir_if_empty(params['dir_checkpoint'])
 
     # Copies the config file
     config_file_name = 'config.toml'
@@ -128,7 +126,7 @@ def experiment_setup(parameters, **kwargs):
 
     # Path for saving segmentation images
     params['segmentation_path'] = base_dir + '/segmentation_images'
-    os.mkdir(params['segmentation_path'])
+    create_dir_if_empty(params['dir_checkpoint'])
 
     return params
 
@@ -152,7 +150,7 @@ def experiment_setup(parameters, **kwargs):
 @click.option('--load', default=None, help='[Bool/Path] Load model from a .pth file')
 @click.option('--classes', default=None, help='[int] Number of classes/probabilities per pixel')
 @click.option('--bilinear', default=None, help='[Bool] Use bilinear upsampling')
-@click.option('--n_channels', default=None, help='[int] Number of channels of input image')
+@click.option('--n_channels', default=None, help='[int] Input image number of colour channels')
 def unet_train(parameter_config, **kwargs):
     params = experiment_setup(parameter_config, **kwargs)
 
@@ -167,10 +165,16 @@ def unet_train(parameter_config, **kwargs):
     # n_classes is the number of probabilities you want to get per pixel
     net = UNet(n_channels=int(params['n_channels']), n_classes=params['classes'], bilinear=params['bilinear'])  # initializing random weights
 
+    # prints out model summary to output directory
+    model_structure = summary(net, mode='train', depth=5, device=device, verbose=0)
+    with open(os.path.join(params['base_dir'], 'model_structure.txt'), 'w', encoding='utf-8') as f:
+        f.write(str(model_structure))
+
     print(f'Network:\n'
           f'\t{net.n_channels} input channels\n'
           f'\t{net.n_classes} output channels (classes)\n'
           f'\t{"Bilinear" if net.bilinear else "Transposed conv"} upscaling')
+    print('Network Structure:')
 
     load = params['load']
     if load:

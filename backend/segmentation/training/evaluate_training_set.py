@@ -31,7 +31,6 @@ def train_net(net,
               segmentation_path='',
               base_dir=''):
     """
-    TODO: fill in
     :param net: UNet Model
     :param device: Device being used (cpu/ cuda)
     :param epochs: Number of epochs

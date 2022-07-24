@@ -10,6 +10,7 @@ import torch
 
 from segmentation.unet import UNet
 from segmentation.training.evaluate_training_set import train_net
+from segmentation.helper_functions.data_functions import create_dir_if_empty
 
 
 def experiment_setup(parameters, **kwargs):
@@ -86,25 +87,19 @@ def experiment_setup(parameters, **kwargs):
             base_dir = "/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/Gel_Images/Nathan_Q1_cleaned/Models"
             params['dir_img'] = Path('/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/Gel_Images/Nathan_Q1_cleaned/Images/')
             params['dir_mask'] = Path('/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/Gel_Images/Nathan_Q1_cleaned/Masks/')
-
     elif params['base_hardware'] == "MA_mac":  # Paths for working on Matthew's mac
         base_dir = "/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models"
-        params['dir_img'] = Path('/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/Carvana/Input/')
-        params['dir_mask'] = Path('/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/Carvana/Target/')
-
-    # TODO: what's the default base directory if none specified?
     else:
         base_dir = './'
 
     # Make base directory for storing everything
-    # TODO: I would add the experiment name to the folder, not just the date
     base_dir = os.path.join(base_dir, params['experiment_name'] + '_' + strftime("%Y_%m_%d_%H;%M;%S"))
     os.mkdir(base_dir)  # TODO: instead of overwriting, warn user if folder already exists and has data inside
     # os.mkdir raises FileExistsError if directory already exists
 
     params['base_dir'] = base_dir
     params['dir_checkpoint'] = Path(base_dir + '/checkpoints/')
-    os.mkdir(params['dir_checkpoint'])
+    create_dir_if_empty(params['dir_checkpoint'])
 
     # Copies the config file
     config_file_name = 'config.toml'
@@ -114,7 +109,7 @@ def experiment_setup(parameters, **kwargs):
 
     # Path for saving segmentation images
     params['segmentation_path'] = base_dir + '/segmentation_images'
-    os.mkdir(params['segmentation_path'])
+    create_dir_if_empty(params['segmentation_path'])
 
     return params
 

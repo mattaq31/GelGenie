@@ -2,7 +2,6 @@
 
 from pathlib import Path
 import matplotlib.pyplot as plt
-import torchshow as ts
 import numpy as np
 import pandas as pd
 import torch
@@ -10,7 +9,7 @@ import torch
 
 def plot_img_and_mask(img, mask):
     """
-    TODO: fill
+    TODO: fill in
     :param img:
     :param mask:
     :return:
@@ -32,7 +31,7 @@ def plot_img_and_mask(img, mask):
 
 def plot_stats(train_loss_log, val_loss_log, base_dir):
     """
-    TODO: fill
+    TODO: fill in
     :param train_loss_log:
     :param val_loss_log:
     :param base_dir:
@@ -43,12 +42,6 @@ def plot_stats(train_loss_log, val_loss_log, base_dir):
                 color='b')
     axs.plot([epoch + 1 for epoch in range(len(val_loss_log))], val_loss_log, label='validation dice score', linestyle='--',
                 color='r')
-    # axs[1].plot([epoch + 1 for epoch in range(len(train_loss_log))], train_loss_log, label='training loss',
-    #             linestyle='--',
-    #             color='b')
-    # axs[2].plot([epoch + 1 for epoch in range(len(val_loss_log))], val_loss_log, label='validation dice score',
-    #             linestyle='--',
-    #             color='r')
     axs.set_xlabel('Epoch')
     axs.legend()
     axs.set_ylabel('Loss/ Dice score')
@@ -58,17 +51,30 @@ def plot_stats(train_loss_log, val_loss_log, base_dir):
 
 
 def show_segmentation(image, mask_pred, mask_true, epoch_number, dice_score, segmentation_path, n_channels):
+    """
+    TODO: fill in!
+    :param image:
+    :param mask_pred:
+    :param mask_true:
+    :param epoch_number:
+    :param dice_score:
+    :param segmentation_path:
+    :param n_channels:
+    :return:
+    """
+
     if n_channels == 1:
         height = image.size(dim=0)
         width = image.size(dim=1)
         combi_mask = torch.zeros((3, height, width))
         image_array = image.detach().squeeze().cpu().numpy()
-        image_tensor_array = torch.from_numpy(image_array)
+        image_tensor_array = torch.from_numpy(image_array) # TODO: why are you recreating a tensor again?
     elif n_channels == 3:
         height = image.size(dim=1)
         width = image.size(dim=2)
         combi_mask = image.detach().clone().squeeze()  # Copies the image tensor
         image_array = np.transpose(image.detach().squeeze().cpu().numpy(), (1, 2, 0))  # Copies the image into np array
+
     for i in range(height):
         for j in range(width):
             if mask_pred[0][i][j] < 0.5 and mask_pred[1][i][j] > 0.5:  # is labelled
@@ -80,8 +86,12 @@ def show_segmentation(image, mask_pred, mask_true, epoch_number, dice_score, seg
                 combi_mask[1][i][j] = image_tensor_array[i][j]
                 combi_mask[2][i][j] = image_tensor_array[i][j]
 
-
     def combine_channels(mask_array):
+        """
+        TODO: add comments to explain what's going on here
+        :param mask_array:
+        :return:
+        """
         height = mask_array.shape[1]
         width = mask_array.shape[2]
         combined_array = np.tile(0, (height, width))
@@ -113,7 +123,6 @@ def show_segmentation(image, mask_pred, mask_true, epoch_number, dice_score, seg
     plt.savefig(Path(segmentation_path + f'/epoch{epoch_number}.pdf'))
     plt.close(fig)
 
-    # add dice score
 
 def excel_stats(train_loss_log, val_loss_log, base_dir):
     loss_array = np.array([train_loss_log, val_loss_log]).T

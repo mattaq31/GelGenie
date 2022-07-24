@@ -13,6 +13,7 @@ from segmentation.unet_utils.data_loading import BasicDataset
 from segmentation.unet_utils.dice_score import dice_loss
 from segmentation.unet_utils.utils import plot_stats, show_segmentation, excel_stats
 from segmentation.evaluation.basic_eval import evaluate
+from .training_setup import define_optimizer
 
 
 def train_net(net,
@@ -82,8 +83,13 @@ def train_net(net,
           f"Mixed Precision: {amp}")
 
     # 4. Set up the optimizer, the loss, the learning rate scheduler and the loss scaling for AMP
-    optimizer = optim.RMSprop(net.parameters(), lr=learning_rate, weight_decay=1e-8, momentum=0.9)
+    optimizer = define_optimizer(net.parameters(), lr=learning_rate, optimizer_type='rmsprop',
+                                 optimizer_params={'weight_decay': 1e-8, 'momentum': 0.9, 'alpha': 0.99})
+    # TODO: allow user to select between rmsprop and adam (default parameters for adam are normally ok - just need to set LR)
+
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=2)  # goal: maximize Dice score
+    # TODO: I think we should try and remove this scheduler for now, then add later if necessary.
+    #  Add a system to allow user to select whether to turn scheduler on/off
 
     criterion = nn.CrossEntropyLoss()
     global_step = 0
@@ -96,24 +102,17 @@ def train_net(net,
         net.train()
         epoch_loss = 0
         with tqdm(total=n_train, desc=f'Epoch {epoch}/{epochs}', unit='img') as pbar:
-            # Images to be showed each epoch
-            show_image = None
-            show_mask_pred = None
-            show_mask_true = None
 
             for batch in train_loader:
                 images = batch['image']
                 true_masks = batch['mask']
-                # print("loaded batch of images and masks")
-
                 assert images.shape[1] == net.n_channels, \
                     f'Network has been defined with {net.n_channels} input channels, ' \
                     f'but loaded images have {images.shape[1]} channels. Please check that ' \
                     'the images are loaded correctly.'
 
-                images = images.to(device=device, dtype=torch.float32)
+                images = images.to(device=device)  # TODO: why is there this torch.long dtype here?
                 true_masks = true_masks.to(device=device, dtype=torch.long)
-
 
                 masks_pred = net(images)
 
@@ -122,8 +121,7 @@ def train_net(net,
                                    F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float(),
                                    multiclass=True)
 
-
-                optimizer.zero_grad() ## this ensures that all weight gradients are zeroed before moving on to the next set of gradients
+                optimizer.zero_grad()  # this ensures that all weight gradients are zeroed before moving on to the next set of gradients
                 loss.backward()  # this calculates the gradient for all weights (backpropagation)
                 optimizer.step()  # here, the optimizer will calculate and make the change necessary for each weight based on its defined rules
 
@@ -137,47 +135,41 @@ def train_net(net,
                 })
                 pbar.set_postfix(**{'loss (batch)': loss.item()})
 
-                # Evaluation round
+            # Evaluation round
+            histograms = {}  # TODO: look at these results in Wandb
+            for tag, value in net.named_parameters():
+                tag = tag.replace('/', '.')
+                histograms['Weights/' + tag] = wandb.Histogram(value.data.cpu())
+                histograms['Gradients/' + tag] = wandb.Histogram(value.grad.data.cpu())
 
-                histograms = {}
-                for tag, value in net.named_parameters():
-                    tag = tag.replace('/', '.')
-                    histograms['Weights/' + tag] = wandb.Histogram(value.data.cpu())
-                    histograms['Gradients/' + tag] = wandb.Histogram(value.grad.data.cpu())
+            val_score, show_image, show_mask_pred, show_mask_true = evaluate(net, val_loader, device)
 
-               # For the last batch
+            # Logging the dice score into array
+            if len(val_loss_log) == epoch:  # Already exists dice score for this epoch
+                val_loss_log[epoch - 1] = val_score.item()  # Replace it TODO: what's going on here? - just run eval function once after training dataloader complete!
+            else:  # No dice score yet for this epoch
+                val_loss_log.append(val_score.item())  # Append one into it
 
+            scheduler.step(val_score)  # TODO: also very important - should this be done once every epoch or every batch?
 
-                val_score, show_image, show_mask_pred, show_mask_true = evaluate(net, val_loader, device)
-
-                # Logging the dice score into array
-                if len(val_loss_log) == epoch:  # Already exists dice score for this epoch
-                    val_loss_log[epoch-1] = val_score.item()  # Replace it
-                else:  # No dice score yet for this epoch
-                    val_loss_log.append(val_score.item())  # Append one into it
-                scheduler.step(val_score)
-
-                logging.info('Validation Dice score: {}'.format(val_score))
-                experiment.log({
-                    'learning rate': optimizer.param_groups[0]['lr'],
-                    'validation Dice': val_score,
-                    'images': wandb.Image(images[0].cpu()),
-                    'masks': {
-                        'true': wandb.Image(true_masks[0].float().cpu()),
-                        'pred': wandb.Image(torch.softmax(masks_pred, dim=1).argmax(dim=1)[0].float().cpu()),
-                    },
-                    'step': global_step,
-                    'epoch': epoch,
-                    **histograms
-                })
-
-                # break  # TODO: delete
+            logging.info('Validation Dice score: {}'.format(val_score))  # TODO: is this useful?
+            experiment.log({
+                'learning rate': optimizer.param_groups[0]['lr'],
+                'validation Dice': val_score,
+                'images': wandb.Image(images[0].cpu()),
+                'masks': {
+                    'true': wandb.Image(true_masks[0].float().cpu()),
+                    'pred': wandb.Image(torch.softmax(masks_pred, dim=1).argmax(dim=1)[0].float().cpu()),
+                },
+                'step': global_step,
+                'epoch': epoch,
+                **histograms
+            })
 
             # Show segmentation images for this epoch
             show_segmentation(show_image.squeeze(), show_mask_pred.squeeze(), show_mask_true.squeeze(),
                               epoch, dice_score=val_loss_log[-1], segmentation_path=segmentation_path,
                               n_channels=n_channels)
-
 
             # All batches in the epoch iterated through, append loss values as string type
             train_loss_log.append(epoch_loss)
@@ -186,13 +178,8 @@ def train_net(net,
 
             excel_stats(train_loss_log, val_loss_log, base_dir)
 
-
-
         if save_checkpoint:
             Path(dir_checkpoint).mkdir(parents=True, exist_ok=True)
             torch.save(net.state_dict(), str(dir_checkpoint / 'checkpoint_epoch{}.pth'.format(epoch)))
             logging.info(f'Checkpoint {epoch} saved!')
 
-        # break  # TODO: delete
-
-        print("another epoch done!")
