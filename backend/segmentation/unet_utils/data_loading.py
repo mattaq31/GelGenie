@@ -62,6 +62,8 @@ class BasicDataset(Dataset):
             return self.standard_image_transform(pil_img)
         else:
             final_img = np.array(pil_img)  # TODO: what happens when we have multiple classes?  Need to search online for best implementation of this
+            unique = np.unique(final_img)
+            final_img = np.array([[np.where(unique == i)[0][0] for i in j] for j in final_img])
             return torch.from_numpy(final_img)
 
     @staticmethod

@@ -42,7 +42,12 @@ def experiment_setup(parameters, **kwargs):
                       'load': False,
                       'classes': 2,
                       'bilinear': False,
-                      'n_channels': 1}
+                      'n_channels': 1,
+                      'base_dir': './',
+                      'dir_img': False,
+                      'dir_mask': False,
+                      'optimizer_type': 'adam',
+                      'scheduler': False}
 
     # Loading the toml config file
     if parameters is not None:
@@ -54,6 +59,9 @@ def experiment_setup(parameters, **kwargs):
     params.update(kwargs)  # prioritize command-line configuration over config file
     kwargs_default.update(params)  # replaces defaults with any user-defined parameters
     params = kwargs_default  # TODO: streamline code
+
+    assert params['dir_img'], 'Image directory not set'
+    assert params['dir_mask'], 'Mask directory not set'
 
     # Checks if number of workers exceed available threads when using EDDIE, and if so fixes the issue
     if params['base_hardware'] == "EDDIE" and params['core'] == "GPU":
@@ -68,49 +76,8 @@ def experiment_setup(parameters, **kwargs):
         if params['device'] == 'cpu':
             print("GPU specified but cuda is unavailable, cpu will be used instead")
 
-    if params['base_hardware'] == "PC":  # Paths for working on Kiros's PC
-        if params['experiment_name'] == "PC_Gel_Nathan_Q1":
-            base_dir = "C:/2022_Summer_Intern/Gel_Images_UNet_Test/Models"
-            params['dir_img'] = Path('C:/2022_Summer_Intern/Gel_Images_UNet_Test/Images_Q1')
-            params['dir_mask'] = Path('C:/2022_Summer_Intern/Gel_Images_UNet_Test/Masks_Q1')
-        elif params['experiment_name'] == "PC_default":
-            base_dir = "C:/2022_Summer_Intern/UNet_Training_With_Images"
-            params['dir_img'] = Path('C:/2022_Summer_Intern/UNet_Training_With_Images/Carvana/Input')
-            params['dir_mask'] = Path('C:/2022_Summer_Intern/UNet_Training_With_Images/Carvana/Target/')
-        elif params['experiment_name'] == "PC_Gel_Nathan_Q1+Q2+selected":
-            base_dir = "C:/2022_Summer_Intern/Gel_Images_UNet_Test/Models"
-            params['dir_img'] = Path('C:/2022_Summer_Intern/Gel_Images_UNet_Test/Images_Q1+Q2+selected')
-            params['dir_mask'] = Path('C:/2022_Summer_Intern/Gel_Images_UNet_Test/Masks_Q1+Q2+selected')
-        elif params['experiment_name'] == "PC_Image_Wrong_Mode_Test":
-            base_dir = "C:/2022_Summer_Intern/Gel_Images_UNet_Test/Image_Wrong_Mode_Test"
-            params['dir_img'] = Path('C:/2022_Summer_Intern/Gel_Images_UNet_Test/Image_Wrong_Mode_Test/Image')
-            params['dir_mask'] = Path('C:/2022_Summer_Intern/Gel_Images_UNet_Test/Image_Wrong_Mode_Test/Mask')
-
-
-    elif params['base_hardware'] == "EDDIE":  # Paths for working on EDDIE server
-        if params['experiment_name'] == "EDDIE_GPU_default":
-            base_dir = "/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/UNet_Training_With_Images/Model"
-            params['dir_img'] = Path('/exports/csce/eddie/eng/groups/DunnGroup/kiros/'
-                                     '2022_summer_intern/UNet_Training_With_Images/Carvana/Input/')
-            params['dir_mask'] = Path('/exports/csce/eddie/eng/groups/DunnGroup/kiros/'
-                                      '2022_summer_intern/UNet_Training_With_Images/Carvana/Target/')
-        elif params['experiment_name'] == "EDDIE_Gel_Nathan_Q1":
-            base_dir = "/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/Gel_Images/Nathan_Q1_cleaned/Models"
-            params['dir_img'] = Path('/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/Gel_Images/Nathan_Q1_cleaned/Images/')
-            params['dir_mask'] = Path('/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/Gel_Images/Nathan_Q1_cleaned/Masks/')
-        elif params['experiment_name']  == 'EDDIE_Gel_Nathan_Q1+Q2+selected':
-            base_dir = "/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/Gel_Images/Nathan_Q1_cleaned/Models"
-            params['dir_img'] = Path('/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/Gel_Images/Nathan_Q1+Q2+selected/Images/')
-            params['dir_mask'] = Path('/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/Gel_Images/Nathan_Q1+Q2+selected/Masks/')
-
-    elif params['base_hardware'] == "MA_mac":  # Paths for working on Matthew's mac
-        base_dir = "/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models"
-    # TODO: what's the default base directory if none specified?
-    else:
-        base_dir = './'
-
     # Make base directory for storing everything
-    base_dir = os.path.join(base_dir, params['experiment_name'] + '_' + strftime("%Y_%m_%d_%H;%M;%S"))
+    base_dir = os.path.join(params['base_dir'], params['experiment_name'] + '_' + strftime("%Y_%m_%d_%H;%M;%S"))
     os.mkdir(base_dir)  # TODO: instead of overwriting, warn user if folder already exists and has data inside
     # os.mkdir raises FileExistsError if directory already exists
 
@@ -126,6 +93,7 @@ def experiment_setup(parameters, **kwargs):
 
     # Path for saving segmentation images
     params['segmentation_path'] = base_dir + '/segmentation_images'
+    create_dir_if_empty(params['segmentation_path'])
     create_dir_if_empty(params['dir_checkpoint'])
 
     return params
@@ -151,6 +119,11 @@ def experiment_setup(parameters, **kwargs):
 @click.option('--classes', default=None, help='[int] Number of classes/probabilities per pixel')
 @click.option('--bilinear', default=None, help='[Bool] Use bilinear upsampling')
 @click.option('--n_channels', default=None, help='[int] Input image number of colour channels')
+@click.option('--base_dir', default=None, help='[Path] Directory for output exports')
+@click.option('--dir_img', default=None, help='[Path] Directory of images')
+@click.option('--dir_mask', default=None, help='[Path] Directory of masks')
+@click.option('--optimizer_type', default=None, help='[String] Type of optimizer to be used [adam/rmsprop]')
+@click.option('--scheduler', default=None, help='[Bool] Whether a scheduler is used during training')
 def unet_train(parameter_config, **kwargs):
     params = experiment_setup(parameter_config, **kwargs)
 

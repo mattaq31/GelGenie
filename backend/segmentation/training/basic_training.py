@@ -5,7 +5,9 @@ from torch import optim
 from torch.utils.data import DataLoader, random_split
 
 from tqdm import tqdm
+
 import wandb
+
 from pathlib import Path
 import logging
 
@@ -31,7 +33,9 @@ def train_net(net,
               num_workers=1,
               segmentation_path='',
               base_dir='',
-              n_channels=1):
+              n_channels=1,
+              optimizer_type='adam',
+              scheduler_used=False):
     """
     TODO: fill in
     :param net: UNet Model
@@ -49,6 +53,7 @@ def train_net(net,
     :param num_workers: Number of workers for dataloader
     :param segmentation_path: Directory to save segmentation images
     :param base_dir: Path of base directory
+    :param optimizer_type: Type of optimizer to use
     :return: None
     """
 
@@ -66,10 +71,12 @@ def train_net(net,
     val_loader = DataLoader(val_set, shuffle=False, drop_last=True, batch_size=1, num_workers=1, pin_memory=True)
 
     # (Initialize logging)  TODO: we have to make a decision - either we use wandb or completely discard it
-    experiment = wandb.init(project='U-Net', resume='allow', anonymous='must')
+    # experiment = wandb.init(project='U-Net', resume='allow', anonymous='must')
+    experiment = wandb.init(project='U-Net', resume='allow')
     experiment.config.update(dict(epochs=epochs, batch_size=batch_size, learning_rate=learning_rate,
                                   val_percent=val_percent, save_checkpoint=save_checkpoint, img_scale=img_scale,
-                                  amp=amp))
+                                  amp=amp, n_channels=n_channels, optimizer_type=optimizer_type,
+                                  scheduler_used=scheduler_used, base_dir=base_dir))
 
     print("Starting training:\n",
           f"Epochs:          {epochs}\n",
@@ -80,14 +87,21 @@ def train_net(net,
           f"Checkpoints:     {save_checkpoint}\n",
           f"Device:          {device.type}\n",
           f"Images scaling:  {img_scale}\n",
-          f"Mixed Precision: {amp}")
+          f"Mixed Precision: {amp}\n",
+          f"Optimizer Type:  {optimizer_type}\n",
+          f"Scheduler Used:  {scheduler_used}")
 
     # 4. Set up the optimizer, the loss, the learning rate scheduler and the loss scaling for AMP
-    optimizer = define_optimizer(net.parameters(), lr=learning_rate, optimizer_type='rmsprop',
-                                 optimizer_params={'weight_decay': 1e-8, 'momentum': 0.9, 'alpha': 0.99})
-    # TODO: allow user to select between rmsprop and adam (default parameters for adam are normally ok - just need to set LR)
+    if optimizer_type == 'rmsprop':
+        optimizer = define_optimizer(net.parameters(), lr=learning_rate, optimizer_type='rmsprop',
+                                     optimizer_params={'weight_decay': 1e-8, 'momentum': 0.9, 'alpha': 0.99})
+    elif optimizer_type == 'adam':
+        optimizer = define_optimizer(net.parameters(), lr=learning_rate, optimizer_type='adam')
 
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=2)  # goal: maximize Dice score
+    if scheduler_used:  # Scheduler will be used
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=2)  # goal: maximize Dice score
+    else:  # No scheduler will be used
+        pass
     # TODO: I think we should try and remove this scheduler for now, then add later if necessary.
     #  Add a system to allow user to select whether to turn scheduler on/off
 
@@ -144,13 +158,10 @@ def train_net(net,
 
             val_score, show_image, show_mask_pred, show_mask_true = evaluate(net, val_loader, device)
 
-            # Logging the dice score into array
-            if len(val_loss_log) == epoch:  # Already exists dice score for this epoch
-                val_loss_log[epoch - 1] = val_score.item()  # Replace it TODO: what's going on here? - just run eval function once after training dataloader complete!
-            else:  # No dice score yet for this epoch
-                val_loss_log.append(val_score.item())  # Append one into it
+            val_loss_log.append(val_score.item())  # Append dice score
 
-            scheduler.step(val_score)  # TODO: also very important - should this be done once every epoch or every batch?
+            if scheduler_used:
+                scheduler.step(val_score)  # TODO: also very important - should this be done once every epoch or every batch?
 
             logging.info('Validation Dice score: {}'.format(val_score))  # TODO: is this useful?
             experiment.log({
