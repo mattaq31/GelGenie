@@ -15,7 +15,7 @@ num_workers = 1 # parallel threads to use to speed up data processing
 img_scale = 0.5 # TODO: is this necessary to be 0.5?
 validation = 10 # % of the data that is used as validation (0-100)
 base_dir = 'C:/2022_Summer_Intern/UNet_Training_With_Images'
-dir_img = 'C:/2022_Summer_Intern/UNet_Training_With_Images/Carvana/Input'
+dir_img = 'C:/2022_Summer_Intern/UNet_Training_With_Images/Carvana/Input/'
 dir_mask = 'C:/2022_Summer_Intern/UNet_Training_With_Images/Carvana/Target/'
 
 #[model]

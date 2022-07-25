@@ -11,7 +11,7 @@ import torch
 
 from segmentation.unet import UNet
 from segmentation.training.basic_training import train_net
-from segmentation.helper_functions.data_functions import create_dir_if_empty
+from segmentation.helper_functions.general_functions import create_dir_if_empty
 
 
 def experiment_setup(parameters, **kwargs):
@@ -44,8 +44,6 @@ def experiment_setup(parameters, **kwargs):
                       'bilinear': False,
                       'n_channels': 1,
                       'base_dir': './',
-                      'dir_img': False,
-                      'dir_mask': False,
                       'optimizer_type': 'adam',
                       'scheduler': False}
 
@@ -60,8 +58,8 @@ def experiment_setup(parameters, **kwargs):
     kwargs_default.update(params)  # replaces defaults with any user-defined parameters
     params = kwargs_default  # TODO: streamline code
 
-    assert params['dir_img'], 'Image directory not set'
-    assert params['dir_mask'], 'Mask directory not set'
+    if 'dir_mask' not in params or 'dir_img' not in params:
+        raise RuntimeError('Need to specify input and mask file paths')
 
     # Checks if number of workers exceed available threads when using EDDIE, and if so fixes the issue
     if params['base_hardware'] == "EDDIE" and params['core'] == "GPU":

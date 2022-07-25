@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import optim
-from torch.utils.data import DataLoader, random_split
 
 from tqdm import tqdm
 
@@ -11,11 +10,12 @@ import wandb
 from pathlib import Path
 import logging
 
-from segmentation.unet_utils.data_loading import BasicDataset
+
 from segmentation.unet_utils.dice_score import dice_loss
 from segmentation.unet_utils.utils import plot_stats, show_segmentation, excel_stats
 from segmentation.evaluation.basic_eval import evaluate
 from .training_setup import define_optimizer
+from ..helper_functions.data_functions import prep_dataloader
 
 
 def train_net(net,
@@ -57,18 +57,10 @@ def train_net(net,
     :return: None
     """
 
-    # 1. Create dataset
-    dataset = BasicDataset(dir_img, dir_mask, n_channels, img_scale)
+    train_loader, val_loader, n_train, n_val = \
+        prep_dataloader(dir_img, dir_mask, n_channels, img_scale, val_percent, batch_size, num_workers)
 
-    # 2. Split into train / validation partitions
-    n_val = int(len(dataset) * val_percent)
-    n_train = len(dataset) - n_val
-    train_set, val_set = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(0))
 
-    # 3. Create data loaders
-    loader_args = dict(batch_size=batch_size, num_workers=num_workers, pin_memory=True)
-    train_loader = DataLoader(train_set, shuffle=True, **loader_args)
-    val_loader = DataLoader(val_set, shuffle=False, drop_last=True, batch_size=1, num_workers=1, pin_memory=True)
 
     # (Initialize logging)  TODO: we have to make a decision - either we use wandb or completely discard it
     # experiment = wandb.init(project='U-Net', resume='allow', anonymous='must')

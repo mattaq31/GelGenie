@@ -8,7 +8,11 @@ import numpy as np
 import torch
 from PIL import Image
 from torch.utils.data import Dataset
+from segmentation.helper_functions.general_functions import extract_image_names_from_folder
 import torchvision.transforms as transforms
+import imageio
+import cv2
+import os
 
 
 class BasicDataset(Dataset):
@@ -30,68 +34,67 @@ class BasicDataset(Dataset):
         self.mask_suffix = mask_suffix
         self.standard_image_transform = transforms.Compose([transforms.ToTensor()])
 
-        self.ids = [splitext(file)[0] for file in listdir(images_dir) if not file.startswith('.')]
-        if not self.ids:
+        self.image_names = extract_image_names_from_folder(images_dir)
+        self.mask_names = extract_image_names_from_folder(masks_dir)
+        self.masks_dict = {os.path.basename(mask).split('.')[0]: mask for mask in self.mask_names}
+
+        if not self.image_names:
             raise RuntimeError(f'No input file found in {images_dir}, make sure you put your images there')
-        logging.info(f'Creating dataset with {len(self.ids)} examples')
+        if not self.mask_names:
+            raise RuntimeError(f'No input file found in {masks_dir}, make sure you put your images there')
+        logging.info(f'Creating dataset with {len(self.image_names)} examples')
 
     def __len__(self):
-        return len(self.ids)
+        return len(self.image_names)
 
-    def preprocess(self, pil_img, n_channels, scale, is_mask):
-        """
-        TODO: fill in!
-        :param pil_img:
-        :param n_channels:
-        :param scale:
-        :param is_mask:
-        :return:
-        """
-        w, h = pil_img.size
-        newW, newH = int(scale * w), int(scale * h)
-        assert newW > 0 and newH > 0, 'Scale is too small, resized images would have no pixels'
-
-        pil_img = pil_img.resize((newW, newH), resample=Image.NEAREST if is_mask else Image.BICUBIC)
-
-        if not is_mask:
-            if n_channels == 1:
-                pil_img = pil_img.convert('L')
-            else:
-                pil_img = pil_img.convert('RGB')
-
-            return self.standard_image_transform(pil_img)
-        else:
-            final_img = np.array(pil_img)  # TODO: what happens when we have multiple classes?  Need to search online for best implementation of this
-            unique = np.unique(final_img)
-            final_img = np.array([[np.where(unique == i)[0][0] for i in j] for j in final_img])
-            return torch.from_numpy(final_img)
 
     @staticmethod
-    def load(filename):
-        ext = splitext(filename)[1]
-        if ext in ['.npz', '.npy']:
-            return Image.fromarray(np.load(filename))
-        elif ext in ['.pt', '.pth']:
-            return Image.fromarray(torch.load(filename).numpy())
-        else:
-            return Image.open(filename)
+    def load_image(self, filename, n_channels):
+        image = imageio.imread(filename)
+
+        # Converting to desired number of channels
+        if n_channels == 1:  # Target input: 1 channel
+            if image.shape[-1] == 3:  # Actual input: 3 channels
+                image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+            # No change required for already grayscale images
+        elif n_channels == 3:  # Target input: 3 channels
+            if image.shape[-1] != 3:  # Actual input: 1 channels
+                image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+
+        # Normalizing image
+        if image.dtype == 'uint8':
+            max_val = 255
+        elif image.dtype == 'uint16':
+            max_val = 65535
+        image = (image.astype(np.float32) - max_val) / (max_val - 0)
+
+        return self.standard_image_transform(image)
+
+    @staticmethod
+    def load_mask(filename):
+        pil_mask = Image.open(filename)
+        final_mask = np.array(pil_mask)
+        unique = np.unique(final_mask)
+        final_mask = np.array([[np.where(unique == i)[0][0] for i in j] for j in final_mask])
+        return torch.from_numpy(final_mask)
+
+# in your init function - run glob on the dataset folder, this gets all images and puts them in a list
+    #2 when you get your id in __getitem__, just index the above list
 
     def __getitem__(self, idx):
 
-        name = self.ids[idx]
-        mask_file = list(self.masks_dir.glob(name + self.mask_suffix + '.*'))
-        img_file = list(self.images_dir.glob(name + '.*'))
+        img_file = self.image_names[idx]
+        mask_file = self.masks_dict[os.path.basename(img_file).split('.')[0]]
 
-        assert len(img_file) == 1, f'Either no image or multiple images found for the ID {name}: {img_file}'
-        assert len(mask_file) == 1, f'Either no mask or multiple masks found for the ID {name}: {mask_file}'
-        mask = self.load(mask_file[0])
-        img = self.load(img_file[0])
+        if os.path.basename(img_file).split('.')[0] != os.path.basename(mask_file).split('.')[0]:
+            raise RuntimeError('Gel and Mask images do not match')
 
-        assert img.size == mask.size, \
-            f'Image and mask {name} should be the same size, but are {img.size} and {mask.size}'
+        img_tensor = self.load_image(self, filename=img_file, n_channels=self.n_channels)
+        mask_tensor = self.load_mask(mask_file)
 
-        img_tensor = self.preprocess(img, self.n_channels, self.scale, is_mask=False)
-        mask_tensor = self.preprocess(mask, self.n_channels, self.scale, is_mask=True)
+        assert img_tensor.size(dim=-2) == mask_tensor.size(dim=-2) and \
+               img_tensor.size(dim=-1) == mask_tensor.size(dim=-1), \
+            f'Image and mask should be the same size, but are {img_tensor.size} and {mask_tensor.size}'
 
         return {
             'image': img_tensor,

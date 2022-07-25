@@ -10,7 +10,7 @@ import torch
 
 from segmentation.unet import UNet
 from segmentation.training.evaluate_training_set import train_net
-from segmentation.helper_functions.data_functions import create_dir_if_empty
+from segmentation.helper_functions.general_functions import create_dir_if_empty
 
 
 def experiment_setup(parameters, **kwargs):
