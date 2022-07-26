@@ -76,7 +76,7 @@ def experiment_setup(parameters, **kwargs):
 
     # Make base directory for storing everything
     base_dir = os.path.join(params['base_dir'], params['experiment_name'] + '_' + strftime("%Y_%m_%d_%H;%M;%S"))
-    os.mkdir(base_dir)  # TODO: instead of overwriting, warn user if folder already exists and has data inside
+    create_dir_if_empty(base_dir)  # TODO: instead of overwriting, warn user if folder already exists and has data inside
     # os.mkdir raises FileExistsError if directory already exists
 
     params['base_dir'] = base_dir
