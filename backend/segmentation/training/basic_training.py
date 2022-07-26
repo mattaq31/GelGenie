@@ -141,6 +141,7 @@ def train_net(net,
                 })
                 pbar.set_postfix(**{'loss (batch)': loss.item()})
 
+
             # Evaluation round
             histograms = {}  # TODO: look at these results in Wandb
             for tag, value in net.named_parameters():
@@ -155,24 +156,36 @@ def train_net(net,
             if scheduler_used:
                 scheduler.step(val_score)  # TODO: also very important - should this be done once every epoch or every batch?
 
-            logging.info('Validation Dice score: {}'.format(val_score))  # TODO: is this useful?
-            experiment.log({
-                'learning rate': optimizer.param_groups[0]['lr'],
-                'validation Dice': val_score,
-                'images': wandb.Image(images[0].cpu()),
-                'masks': {
-                    'true': wandb.Image(true_masks[0].float().cpu()),
-                    'pred': wandb.Image(torch.softmax(masks_pred, dim=1).argmax(dim=1)[0].float().cpu()),
-                },
-                'step': global_step,
-                'epoch': epoch,
-                **histograms
-            })
 
             # Show segmentation images for this epoch
             show_segmentation(show_image.squeeze(), show_mask_pred.squeeze(), show_mask_true.squeeze(),
                               epoch, dice_score=val_loss_log[-1], segmentation_path=segmentation_path,
                               n_channels=n_channels)
+
+
+            # Logging onto wandb
+            logging.info('Validation Dice score: {}'.format(val_score))  # TODO: is this useful?
+            experiment.log({
+                'learning rate': optimizer.param_groups[0]['lr'],
+                'validation Dice': val_score,
+                'train':{
+                    'images': wandb.Image(images[0].cpu()),
+                    'masks': {
+                        'true': wandb.Image(true_masks[0].float().cpu()),
+                        'pred': wandb.Image(torch.softmax(masks_pred, dim=1).argmax(dim=1)[0].float().cpu()),
+                    },
+                },
+                'val': {
+                    'images': wandb.Image(show_image.cpu()),
+                    'masks': {
+                        'true': wandb.Image(show_mask_true.float().cpu()),
+                        'pred': wandb.Image(torch.softmax(show_mask_pred, dim=1).argmax(dim=1)[0].float().cpu()),
+                    },
+                },
+                'step': global_step,
+                'epoch': epoch,
+                **histograms
+            })
 
             # All batches in the epoch iterated through, append loss values as string type
             train_loss_log.append(epoch_loss)
