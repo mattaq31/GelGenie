@@ -122,6 +122,7 @@ def show_segmentation(image, mask_pred, mask_true, epoch_number, dice_score, seg
     plt.tight_layout()
     plt.savefig(Path(segmentation_path + f'/epoch{epoch_number}.pdf'))
     plt.close(fig)
+    # return [image_array, mask_pred_array, combi_mask, mask_true_array]
 
 
 def excel_stats(train_loss_log, val_loss_log, base_dir):

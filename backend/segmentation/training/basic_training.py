@@ -64,7 +64,7 @@ def train_net(net,
 
     # (Initialize logging)  TODO: we have to make a decision - either we use wandb or completely discard it
     # experiment = wandb.init(project='U-Net', resume='allow', anonymous='must')
-    experiment = wandb.init(project='U-Net', resume='allow')
+    experiment = wandb.init(project='U-Net', entity='dunn-group', resume='allow')
     experiment.config.update(dict(epochs=epochs, batch_size=batch_size, learning_rate=learning_rate,
                                   val_percent=val_percent, save_checkpoint=save_checkpoint, img_scale=img_scale,
                                   amp=amp, n_channels=n_channels, optimizer_type=optimizer_type,
@@ -158,6 +158,10 @@ def train_net(net,
 
 
             # Show segmentation images for this epoch
+            # show_segmentation(show_image.squeeze(), show_mask_pred.squeeze(), show_mask_true.squeeze(),
+            #                   epoch, dice_score=val_loss_log[-1], segmentation_path=segmentation_path,
+            #                   n_channels=n_channels)
+
             show_segmentation(show_image.squeeze(), show_mask_pred.squeeze(), show_mask_true.squeeze(),
                               epoch, dice_score=val_loss_log[-1], segmentation_path=segmentation_path,
                               n_channels=n_channels)
@@ -178,10 +182,11 @@ def train_net(net,
                 'val': {
                     'images': wandb.Image(show_image.cpu()),
                     'masks': {
-                        'true': wandb.Image(show_mask_true.float().cpu()),
-                        'pred': wandb.Image(torch.softmax(show_mask_pred, dim=1).argmax(dim=1)[0].float().cpu()),
+                        'true': wandb.Image(show_mask_true.cpu()),
+                        'pred': wandb.Image(show_mask_pred.cpu()),
                     },
                 },
+                # 'plot': wandb.Image(plot),
                 'step': global_step,
                 'epoch': epoch,
                 **histograms
@@ -194,7 +199,7 @@ def train_net(net,
 
             excel_stats(train_loss_log, val_loss_log, base_dir)
 
-        if save_checkpoint:
+        if save_checkpoint and (epoch == epochs or epoch % 10 == 0):  # Only save checkpoints every 10 epochs
             Path(dir_checkpoint).mkdir(parents=True, exist_ok=True)
             torch.save(net.state_dict(), str(dir_checkpoint / 'checkpoint_epoch{}.pth'.format(epoch)))
             logging.info(f'Checkpoint {epoch} saved!')
