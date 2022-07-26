@@ -56,10 +56,15 @@ class BasicDataset(Dataset):
         if n_channels == 1:  # Target input: 1 channel
             if image.shape[-1] == 3:  # Actual input: 3 channels
                 image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+            elif image.shape[-1] == 4: # Actual input: 4 channels
+                image = cv2.cvtColor(image, cv2.COLOR_RGBA2GRAY)
             # No change required for already grayscale images
         elif n_channels == 3:  # Target input: 3 channels
-            if image.shape[-1] != 3:  # Actual input: 1 channels
+            if image.shaoe[-1] == 4:  # Actual input: 4 channels
+                image = cv2.cvtColor(image, cv2.COLOR_RGBA2RGB)
+            elif image.shape[-1] != 3:  # Actual input: 1 channels
                 image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+
 
         # Normalizing image
         if image.dtype == 'uint8':

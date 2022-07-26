@@ -9,7 +9,7 @@ import toml
 import torch
 
 from segmentation.unet import UNet
-from segmentation.training.evaluate_training_set import train_net
+from segmentation.test_scripts.evaluate_training_set import train_net
 from segmentation.helper_functions.general_functions import create_dir_if_empty
 
 
