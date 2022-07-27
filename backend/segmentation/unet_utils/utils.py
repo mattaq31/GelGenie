@@ -5,6 +5,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import torch
+import copy
+
+from gel_tools.band_detection import watershed_seg
 
 
 def plot_img_and_mask(img, mask):
@@ -63,66 +66,76 @@ def show_segmentation(image, mask_pred, mask_true, epoch_number, dice_score, seg
     :return:
     """
 
+
+    """
+    Tensor: [C,H,W]
+    tensor.numpy --> Array: [C, H, W]
+    Matplotlib requires array: [H, W, C]
+    """
+
     if n_channels == 1:
         height = image.size(dim=0)
         width = image.size(dim=1)
-        combi_mask = torch.zeros((3, height, width))
         image_array = image.detach().squeeze().cpu().numpy()
-        image_tensor_array = torch.from_numpy(image_array) # TODO: why are you recreating a tensor again?
     elif n_channels == 3:
         height = image.size(dim=1)
         width = image.size(dim=2)
-        combi_mask = image.detach().clone().squeeze()  # Copies the image tensor
-        image_array = np.transpose(image.detach().squeeze().cpu().numpy(), (1, 2, 0))  # Copies the image into np array
+        image_array = np.transpose(image.detach().squeeze().cpu().numpy(), (1, 2, 0))  # np array [H, W, C]
 
+    mask_pred_array = mask_pred.detach().squeeze().cpu().numpy()  # Copies prediction into np array [C, H, W]
+    mask_true_array = mask_true.detach().squeeze().cpu().numpy()[1]  # Copies true mask[1] into np array [H,W]
+
+    """
+    Method: mask_pred has value x for channel with 0 label and value y for channel with 1 label
+    Equation: (y-0.5)+(0.5-x)
+    """
+    threshold_mask_array = np.zeros((height, width))  # [H,W]
+    for h in range(height):
+        for w in range(width):
+            if mask_pred_array[0][h][w] < 0.5 and mask_pred_array[1][h][w] > 0.5:
+                threshold_mask_array[h][w] = 1
+
+    labelled_bands = watershed_seg(threshold_mask_array, 0.5, 0.5)
+
+    combi_mask_array = np.zeros((height, width, 3))  # np array [H, W, C]
     for i in range(height):
         for j in range(width):
-            if mask_pred[0][i][j] < 0.5 and mask_pred[1][i][j] > 0.5:  # is labelled
-                combi_mask[0][i][j] = 1
-                combi_mask[1][i][j] = 0
-                combi_mask[2][i][j] = 0
-            elif n_channels == 1:  # Copies the greyscale value to R, G, B
-                combi_mask[0][i][j] = image_tensor_array[i][j]
-                combi_mask[1][i][j] = image_tensor_array[i][j]
-                combi_mask[2][i][j] = image_tensor_array[i][j]
+            if threshold_mask_array[i][j] == 1:
+                combi_mask_array[i][j] = [1, 0, 0]
+            else:  # Background
+                if n_channels == 1:  # image_array [H,W] / grayscale
+                    combi_mask_array[i][j] = np.repeat(image_array[i][j], 3)  # Copies grayscale value to RGB channels
+                elif n_channels == 3:  # image_array [H,W,C] / RGB
+                    combi_mask_array[i][j] = image_array[i][j]  # Copies RGB channel values all at once
 
-    def combine_channels(mask_array):
-        """
-        TODO: add comments to explain what's going on here
-        :param mask_array:
-        :return:
-        """
-        height = mask_array.shape[1]
-        width = mask_array.shape[2]
-        combined_array = np.tile(0, (height, width))
-        for h in range(height):
-            for w in range(width):
-                if mask_array[1][h][w] > 0.5:
-                    combined_array[h][w] = 1  # is labelled
-        return combined_array
+    fig, axs = plt.subplots(nrows=1, ncols=5, figsize=(10, 7))
 
-    mask_pred_array = combine_channels(mask_pred.detach().squeeze().cpu().numpy())  # Copies prediction into np array
-    mask_true_array = combine_channels(mask_true.detach().squeeze().cpu().numpy())  # Copies true mask into np array
-    combi_mask = np.transpose(combi_mask.detach().squeeze().cpu().numpy(), (1, 2, 0))
-
-    fig, axs = plt.subplots(nrows=1, ncols=4, figsize=(10, 7))
     if n_channels == 1:
         axs[0].imshow(image_array, cmap='gray')
     else:
         axs[0].imshow(image_array)
     axs[0].set_title('Original Image')
-    axs[1].imshow(mask_pred_array)
+
+    axs[1].imshow(threshold_mask_array, cmap='gray')
     axs[1].set_title('Mask Prediction')
-    axs[2].imshow(combi_mask)
-    axs[2].set_title('Mask Prediction Superimposed')
-    axs[2].set_xlabel(f'Dice Score: {dice_score}')
-    axs[3].imshow(mask_true_array)
-    axs[3].set_title('True Mask')
+
+    axs[2].imshow(labelled_bands, cmap='tab20')
+    axs[2].set_title('Labelled Bands')
+
+    axs[3].imshow(combi_mask_array)
+    axs[3].set_title('Mask Prediction Superimposed')
+    axs[3].set_xlabel(f'Dice Score: {dice_score}')
+
+    axs[4].imshow(mask_true_array, cmap='gray')
+    axs[4].set_title('True Mask')
+
     plt.setp(plt.gcf().get_axes(), xticks=[], yticks=[])  # remove ticks
     plt.tight_layout()
+
+    plt.show  # TODO: delete
     plt.savefig(Path(segmentation_path + f'/epoch{epoch_number}.pdf'))
     plt.close(fig)
-    # return [image_array, mask_pred_array, combi_mask, mask_true_array]
+    return image_array, threshold_mask_array, labelled_bands, combi_mask_array, mask_true_array
 
 
 def excel_stats(train_loss_log, val_loss_log, base_dir):

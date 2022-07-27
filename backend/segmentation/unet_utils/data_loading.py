@@ -71,7 +71,7 @@ class BasicDataset(Dataset):
             max_val = 255
         elif image.dtype == 'uint16':
             max_val = 65535
-        image = (image.astype(np.float32) - max_val) / (max_val - 0)
+        image = image.astype(np.float32) / (max_val - 0)
 
         return self.standard_image_transform(image)
 

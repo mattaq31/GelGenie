@@ -103,6 +103,9 @@ def train_net(net,
     train_loss_log = []
     val_loss_log = []
 
+    table = wandb.Table(columns=['Image', 'Mask Prediction', 'Separated bands',
+                                 'Super-imposed mask prediction', 'True Mask'])
+
     # 5. Begin training
     for epoch in range(1, epochs + 1):
         net.train()
@@ -141,6 +144,8 @@ def train_net(net,
                 })
                 pbar.set_postfix(**{'loss (batch)': loss.item()})
 
+                # break  # TODO: delete
+
 
             # Evaluation round
             histograms = {}  # TODO: look at these results in Wandb
@@ -156,16 +161,13 @@ def train_net(net,
             if scheduler_used:
                 scheduler.step(val_score)  # TODO: also very important - should this be done once every epoch or every batch?
 
-
-            # Show segmentation images for this epoch
-            # show_segmentation(show_image.squeeze(), show_mask_pred.squeeze(), show_mask_true.squeeze(),
-            #                   epoch, dice_score=val_loss_log[-1], segmentation_path=segmentation_path,
-            #                   n_channels=n_channels)
-
-            show_segmentation(show_image.squeeze(), show_mask_pred.squeeze(), show_mask_true.squeeze(),
+            image_array, threshold_mask_array, labelled_bands, combi_mask_array, mask_true_array = \
+                show_segmentation(show_image.squeeze(), show_mask_pred.squeeze(), show_mask_true.squeeze(),
                               epoch, dice_score=val_loss_log[-1], segmentation_path=segmentation_path,
                               n_channels=n_channels)
 
+            table.add_data(wandb.Image(image_array, caption=f'Epoch {epoch}'), wandb.Image(threshold_mask_array),
+                           wandb.Image(labelled_bands), wandb.Image(combi_mask_array), wandb.Image(mask_true_array))
 
             # Logging onto wandb
             logging.info('Validation Dice score: {}'.format(val_score))  # TODO: is this useful?
@@ -186,7 +188,7 @@ def train_net(net,
                         'pred': wandb.Image(show_mask_pred.cpu()),
                     },
                 },
-                # 'plot': wandb.Image(plot),
+                'table': table,
                 'step': global_step,
                 'epoch': epoch,
                 **histograms
