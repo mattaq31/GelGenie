@@ -103,14 +103,19 @@ def train_net(net,
     train_loss_log = []
     val_loss_log = []
 
-    table = wandb.Table(columns=['Image', 'Mask Prediction', 'Separated bands',
-                                 'Super-imposed mask prediction', 'True Mask'])
+
+    columns=['Epoch', 'Image', 'Mask Prediction', 'Separated bands',
+                                 'Super-imposed mask prediction', 'True Mask']
+    table_list = []
 
     # 5. Begin training
     for epoch in range(1, epochs + 1):
         net.train()
         epoch_loss = 0
+
         with tqdm(total=n_train, desc=f'Epoch {epoch}/{epochs}', unit='img') as pbar:
+
+            # table_artifact = wandb.Artifact('Validation_Set_Predictions_' + str(wandb.run.id), type='predictions')
 
             for batch in train_loader:
                 images = batch['image']
@@ -166,8 +171,16 @@ def train_net(net,
                               epoch, dice_score=val_loss_log[-1], segmentation_path=segmentation_path,
                               n_channels=n_channels)
 
-            table.add_data(wandb.Image(image_array, caption=f'Epoch {epoch}'), wandb.Image(threshold_mask_array),
-                           wandb.Image(labelled_bands), wandb.Image(combi_mask_array), wandb.Image(mask_true_array))
+            # table.add_data(f'Epoch {epoch}/{epochs}', wandb.Image(image_array, caption=f'Epoch {epoch}'), wandb.Image(threshold_mask_array),
+            #                wandb.Image(labelled_bands), wandb.Image(combi_mask_array), wandb.Image(mask_true_array))
+
+            name = f'Epoch_{epoch}'
+            table_list.append([f'Epoch {epoch}/{epochs}', wandb.Image(image_array, caption=f'Epoch {epoch}'),
+                               wandb.Image(threshold_mask_array),wandb.Image(labelled_bands),
+                               wandb.Image(combi_mask_array), wandb.Image(mask_true_array)])
+
+            # locals()[name]
+            table = wandb.Table(data=table_list, columns=columns)
 
             # Logging onto wandb
             logging.info('Validation Dice score: {}'.format(val_score))  # TODO: is this useful?
@@ -188,11 +201,14 @@ def train_net(net,
                         'pred': wandb.Image(show_mask_pred.cpu()),
                     },
                 },
+                # f'table - epoch {epoch}': table,
                 'table': table,
                 'step': global_step,
                 'epoch': epoch,
                 **histograms
             })
+            # table_artifact.add(table, 'predictions')
+            # experiment.log_artifact(table_artifact)
 
             # All batches in the epoch iterated through, append loss values as string type
             train_loss_log.append(epoch_loss)
