@@ -45,7 +45,8 @@ def experiment_setup(parameters, **kwargs):
                       'n_channels': 1,
                       'base_dir': './',
                       'optimizer_type': 'adam',
-                      'scheduler': False}
+                      'scheduler': False,
+                      'loss': 'both'}
 
     # Loading the toml config file
     if parameters is not None:
@@ -122,6 +123,7 @@ def experiment_setup(parameters, **kwargs):
 @click.option('--dir_mask', default=None, help='[Path] Directory of masks')
 @click.option('--optimizer_type', default=None, help='[String] Type of optimizer to be used [adam/rmsprop]')
 @click.option('--scheduler', default=None, help='[Bool] Whether a scheduler is used during training')
+@click.option('--loss', default=None, help='[String] Components of the Loss function [CrossEntropy/Dice/Both]')
 def unet_train(parameter_config, **kwargs):
     params = experiment_setup(parameter_config, **kwargs)
 
@@ -168,7 +170,8 @@ def unet_train(parameter_config, **kwargs):
               num_workers=int(params['num_workers'], ),
               segmentation_path=params['segmentation_path'],
               base_dir=params['base_dir'],
-              n_channels=int(params['n_channels']))
+              n_channels=int(params['n_channels']),
+              loss_fn=params['loss'])
 
 
 if __name__ == '__main__':

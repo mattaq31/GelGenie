@@ -35,7 +35,8 @@ def train_net(net,
               base_dir='',
               n_channels=1,
               optimizer_type='adam',
-              scheduler_used=False):
+              scheduler_used=False,
+              loss_fn='both'):
     """
     TODO: fill in
     :param net: UNet Model
@@ -130,10 +131,17 @@ def train_net(net,
 
                 masks_pred = net(images)
 
-                loss = criterion(masks_pred, true_masks) \
-                       + dice_loss(F.softmax(masks_pred, dim=1).float(),
-                                   F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float(),
-                                   multiclass=True)
+                if loss_fn == 'both':
+                    loss = criterion(masks_pred, true_masks) \
+                           + dice_loss(F.softmax(masks_pred, dim=1).float(),
+                                       F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float(),
+                                       multiclass=True)
+                elif loss_fn == 'CrossEntropy':
+                    loss = criterion(masks_pred, true_masks)
+                elif loss_fn == 'Dice':
+                    loss = dice_loss(F.softmax(masks_pred, dim=1).float(),
+                                     F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float(),
+                                     multiclass=True)
 
                 optimizer.zero_grad()  # this ensures that all weight gradients are zeroed before moving on to the next set of gradients
                 loss.backward()  # this calculates the gradient for all weights (backpropagation)

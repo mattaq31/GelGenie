@@ -32,4 +32,5 @@ amp = false     # Use mixed precision TODO: change variable name to something mo
 load = false    # Load model from a .pth file (Bool/Path)
 optimizer_type = 'adam'  # Use adam optimizer
 scheduler = false  # No scheduler is used
+loss = 'both'  # loss calculated by CrossEntropy + Dice
 save_checkpoint = true # Whether model checkpoints are saved

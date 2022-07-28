@@ -1,6 +1,8 @@
 # code here adapted from https://github.com/milesial/Pytorch-UNet/tree/e36c782fbfc976b7326182a47dd7213bd3360a7e
 
 from pathlib import Path
+
+import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -135,6 +137,12 @@ def show_segmentation(image, mask_pred, mask_true, epoch_number, dice_score, seg
     plt.show  # TODO: delete
     plt.savefig(Path(segmentation_path + f'/epoch{epoch_number}.pdf'))
     plt.close(fig)
+
+    # For saving un-thresholded mask predictions
+    mask_pred_array = np.transpose(mask_pred_array, (1, 2, 0))  # C, H, W to H, W, C
+    np.save(str(Path(segmentation_path + f'/epoch{epoch_number}_mask_pred.tif')), mask_pred_array)
+    # cv2.imwrite(str(Path(segmentation_path + f'/epoch{epoch_number}_mask_pred.tif')), mask_pred_array)
+
     return image_array, threshold_mask_array, labelled_bands, combi_mask_array, mask_true_array
 
 
