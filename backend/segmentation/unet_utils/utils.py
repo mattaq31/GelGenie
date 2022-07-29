@@ -140,8 +140,7 @@ def show_segmentation(image, mask_pred, mask_true, epoch_number, dice_score, seg
 
     # For saving un-thresholded mask predictions
     mask_pred_array = np.transpose(mask_pred_array, (1, 2, 0))  # C, H, W to H, W, C
-    np.save(str(Path(segmentation_path + f'/epoch{epoch_number}_mask_pred.tif')), mask_pred_array)
-    # cv2.imwrite(str(Path(segmentation_path + f'/epoch{epoch_number}_mask_pred.tif')), mask_pred_array)
+    np.save(str(Path(segmentation_path + f'/epoch{epoch_number}_mask_pred')), mask_pred_array)
 
     return image_array, threshold_mask_array, labelled_bands, combi_mask_array, mask_true_array
 

@@ -1,7 +1,5 @@
 # code here taken from https://github.com/milesial/Pytorch-UNet/tree/e36c782fbfc976b7326182a47dd7213bd3360a7e
 import logging
-from os import listdir
-from os.path import splitext
 from pathlib import Path
 
 import numpy as np

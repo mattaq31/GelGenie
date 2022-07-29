@@ -8,6 +8,7 @@ from scipy import ndimage as ndi
 from skimage.color import label2rgb
 
 
+
 # Create histogram of gray values in image
 # Can be used to determine bg and fg values in testing
 def make_histogram(image):
@@ -65,6 +66,9 @@ def watershed_seg(image, sure_fg, sure_bg, verbose=False):
         print(labeled_bands)
 
     return labeled_bands
+
+
+
 
 
 def mask_expansion(original_image, labeled_image, next_bg, verbose=False):
