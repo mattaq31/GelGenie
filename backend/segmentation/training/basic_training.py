@@ -10,7 +10,6 @@ import wandb
 from pathlib import Path
 import logging
 
-
 from segmentation.unet_utils.dice_score import dice_loss
 from segmentation.unet_utils.utils import plot_stats, show_segmentation, excel_stats
 from segmentation.evaluation.basic_eval import evaluate
@@ -38,7 +37,6 @@ def train_net(net,
               scheduler_used=False,
               loss_fn='both'):
     """
-    TODO: fill in
     :param net: UNet Model
     :param device: Device being used (cpu/ cuda)
     :param epochs: Number of epochs
@@ -90,8 +88,6 @@ def train_net(net,
 
     if scheduler_used:  # Scheduler will be used
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=2)  # goal: maximize Dice score
-    else:  # No scheduler will be used
-        pass
 
     criterion = nn.CrossEntropyLoss()
     global_step = 0
@@ -99,8 +95,8 @@ def train_net(net,
     train_loss_log = []
     val_loss_log = []
 
-    columns=['Epoch', 'Image', 'Mask Prediction', 'Separated bands',
-                                 'Super-imposed mask prediction', 'True Mask']
+    columns = ['Epoch', 'Image', 'Mask Prediction', 'Separated bands',
+               'Super-imposed mask prediction', 'True Mask']
     table_list = []
 
     # 5. Begin training
@@ -151,7 +147,7 @@ def train_net(net,
 
             # Evaluation round
             histograms = {}  # TODO: look at these results in Wandb
-            for tag, value in net.named_parameters():
+            for tag, value in net.named_parameters():  # TODO: does this add anything to our analysis or is this just bloat?
                 tag = tag.replace('/', '.')
                 histograms['Weights/' + tag] = wandb.Histogram(value.data.cpu())
                 histograms['Gradients/' + tag] = wandb.Histogram(value.grad.data.cpu())
@@ -165,11 +161,11 @@ def train_net(net,
 
             image_array, threshold_mask_array, labelled_bands, combi_mask_array, mask_true_array = \
                 show_segmentation(show_image.squeeze(), show_mask_pred.squeeze(), show_mask_true.squeeze(),
-                              epoch, dice_score=val_loss_log[-1], segmentation_path=segmentation_path,
-                              n_channels=n_channels)
+                                  epoch, dice_score=val_loss_log[-1], segmentation_path=segmentation_path,
+                                  n_channels=n_channels)
 
             table_list.append([f'Epoch {epoch}/{epochs}', wandb.Image(image_array, caption=f'Epoch {epoch}'),
-                               wandb.Image(threshold_mask_array),wandb.Image(labelled_bands),
+                               wandb.Image(threshold_mask_array), wandb.Image(labelled_bands),
                                wandb.Image(combi_mask_array), wandb.Image(mask_true_array)])
 
             table = wandb.Table(data=table_list, columns=columns)
@@ -179,7 +175,7 @@ def train_net(net,
             experiment.log({
                 'learning rate': optimizer.param_groups[0]['lr'],
                 'validation Dice': val_score,
-                'train':{
+                'train': {
                     'images': wandb.Image(images[0].cpu()),
                     'masks': {
                         'true': wandb.Image(true_masks[0].float().cpu()),
@@ -210,4 +206,3 @@ def train_net(net,
             Path(dir_checkpoint).mkdir(parents=True, exist_ok=True)
             torch.save(net.state_dict(), str(dir_checkpoint / 'checkpoint_epoch{}.pth'.format(epoch)))
             logging.info(f'Checkpoint {epoch} saved!')
-

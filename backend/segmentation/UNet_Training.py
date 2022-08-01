@@ -137,6 +137,8 @@ def unet_train(parameter_config, **kwargs):
     # n_channels=3 for RGB images
     # n_classes is the number of probabilities you want to get per pixel
     net = UNet(n_channels=int(params['n_channels']), n_classes=params['classes'], bilinear=params['bilinear'])  # initializing random weights
+    # TODO: how do we continue training from a model checkpoint?
+
 
     # prints out model summary to output directory
     model_structure = summary(net, mode='train', depth=5, device=device, verbose=0)
