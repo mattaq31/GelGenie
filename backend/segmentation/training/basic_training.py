@@ -26,8 +26,10 @@ def train_net(net,
               save_checkpoint=True,
               img_scale=0.5,
               amp=False,
-              dir_img=None,
-              dir_mask=None,
+              dir_train_img=None,
+              dir_train_mask=None,
+              dir_val_img=None,
+              dir_val_mask=None,
               dir_checkpoint=None,
               num_workers=1,
               segmentation_path='',
@@ -57,7 +59,8 @@ def train_net(net,
     """
 
     train_loader, val_loader, n_train, n_val = \
-        prep_dataloader(dir_img, dir_mask, n_channels, img_scale, val_percent, batch_size, num_workers)
+        prep_dataloader(dir_train_img, dir_train_mask, dir_val_img, dir_val_mask,
+                        n_channels, img_scale, val_percent, batch_size, num_workers)
 
     # (Initialize logging)
     experiment = wandb.init(project='U-Net', entity='dunn-group', resume='allow')

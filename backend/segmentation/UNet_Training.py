@@ -59,7 +59,8 @@ def experiment_setup(parameters, **kwargs):
     kwargs_default.update(params)  # replaces defaults with any user-defined parameters
     params = kwargs_default  # TODO: streamline code
 
-    if 'dir_mask' not in params or 'dir_img' not in params:
+    if 'dir_train_mask' not in params or 'dir_train_img' not in params or \
+            'dir_val_mask' not in params or 'dir_val_img' not in params:
         raise RuntimeError('Need to specify input and mask file paths')
 
     # Checks if number of workers exceed available threads when using EDDIE, and if so fixes the issue
@@ -119,8 +120,10 @@ def experiment_setup(parameters, **kwargs):
 @click.option('--bilinear', default=None, help='[Bool] Use bilinear upsampling')
 @click.option('--n_channels', default=None, help='[int] Input image number of colour channels')
 @click.option('--base_dir', default=None, help='[Path] Directory for output exports')
-@click.option('--dir_img', default=None, help='[Path] Directory of images')
-@click.option('--dir_mask', default=None, help='[Path] Directory of masks')
+@click.option('--dir_train_img', default=None, help='[Path] Directory of training images')
+@click.option('--dir_train_mask', default=None, help='[Path] Directory of training masks')
+@click.option('--dir_val_img', default=None, help='[Path] Directory of validation images')
+@click.option('--dir_val_mask', default=None, help='[Path] Directory of validation masks')
 @click.option('--optimizer_type', default=None, help='[String] Type of optimizer to be used [adam/rmsprop]')
 @click.option('--scheduler', default=None, help='[Bool] Whether a scheduler is used during training')
 @click.option('--loss', default=None, help='[String] Components of the Loss function [CrossEntropy/Dice/Both]')
@@ -166,8 +169,10 @@ def unet_train(parameter_config, **kwargs):
               img_scale=float(params['img_scale']),
               val_percent=int(params['validation']) / 100,
               amp=params['amp'],
-              dir_img=params['dir_img'],
-              dir_mask=params['dir_mask'],
+              dir_train_img=params['dir_train_img'],
+              dir_train_mask=params['dir_train_mask'],
+              dir_val_img=params['dir_val_img'],
+              dir_val_mask=params['dir_val_mask'],
               dir_checkpoint=params['dir_checkpoint'],
               num_workers=int(params['num_workers'], ),
               segmentation_path=params['segmentation_path'],

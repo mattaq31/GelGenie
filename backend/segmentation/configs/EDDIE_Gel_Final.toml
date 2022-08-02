@@ -1,10 +1,10 @@
-experiment_name = "PC_Gel_Nathan_Q1+Q2+selected"  # configuration name
+experiment_name = "EDDIE_Gel_Final"  # configuration name
 
 #[processing_unit]
-base_hardware = "PC"   # Where the program is run [EDDIE/PC]
+base_hardware = "EDDIE"   # Where the program is run [EDDIE/PC]
 
 #[batch_file]
-core = "CPU"    # Which processor is used [GPU/CPU]
+core = "GPU"    # Which processor is used [GPU/CPU]
 pe = 1          # How many parallel environments (cores) needed
 memory = 64     # Required memory per core in GBytes
 
@@ -14,9 +14,11 @@ batch_size = 1  # Batch size for dataloader
 num_workers = 1 # parallel threads to use to speed up data processing
 img_scale = 0.5 # TODO: is this necessary to be 0.5?
 validation = 10 # % of the data that is used as validation (0-100)
-base_dir = 'C:/2022_Summer_Intern/Gel_Images_UNet_Test/Models'
-dir_img = 'C:/2022_Summer_Intern/Gel_Images_UNet_Test/Images_all_nathan+selected'
-dir_mask = 'C:/2022_Summer_Intern/Gel_Images_UNet_Test/Masks_all_nathan+selected'
+base_dir = '/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/Gel_Images/Final_Set/Models'
+dir_train_img = '/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/Gel_Images/Final_Set/Training_Set/Images/'
+dir_train_mask = '/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/Gel_Images/Final_Set/Training_Set/Masks/'
+dir_val_img = '/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/Gel_Images/Final_Set/Validation_Set/Images/'
+dir_val_mask = '/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/Gel_Images/Final_Set/Validation_Set/Masks/'
 
 #[model]
 name = 'UNet'   # model architecture name

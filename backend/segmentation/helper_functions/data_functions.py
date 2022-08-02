@@ -3,14 +3,18 @@ from segmentation.unet_utils.data_loading import BasicDataset
 import torch
 
 
-def prep_dataloader(dir_img, dir_mask, n_channels, img_scale, val_percent, batch_size, num_workers):
+def prep_dataloader(dir_train_img, dir_train_mask, dir_val_img, dir_val_mask,
+                    n_channels, img_scale, val_percent, batch_size, num_workers):
     # 1. Create dataset
-    dataset = BasicDataset(dir_img, dir_mask, n_channels, img_scale)
+    train_set = BasicDataset(dir_train_img, dir_train_mask, n_channels, img_scale)
+    val_set = BasicDataset(dir_val_img, dir_val_mask, n_channels, img_scale)
 
     # 2. Split into train / validation partitions
-    n_val = int(len(dataset) * val_percent)
-    n_train = len(dataset) - n_val
-    train_set, val_set = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(0))
+    # n_val = int(len(dataset) * val_percent)
+    # n_train = len(dataset) - n_val
+    # train_set, val_set = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(0))
+    n_train = int(len(train_set))
+    n_val = int(len(val_set))
 
     # 3. Create data loaders
     loader_args = dict(batch_size=batch_size, num_workers=num_workers, pin_memory=True)
