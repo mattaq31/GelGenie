@@ -36,6 +36,9 @@ class BasicDataset(Dataset):
         self.mask_names = extract_image_names_from_folder(masks_dir)
         self.masks_dict = {os.path.basename(mask).split('.')[0]: mask for mask in self.mask_names}
 
+        self.max_height = 0
+        self.max_width = 0
+
         if not self.image_names:
             raise RuntimeError(f'No input file found in {images_dir}, make sure you put your images there')
         if not self.mask_names:
@@ -57,6 +60,10 @@ class BasicDataset(Dataset):
             elif image.shape[-1] == 4: # Actual input: 4 channels
                 image = cv2.cvtColor(image, cv2.COLOR_RGBA2GRAY)
             # No change required for already grayscale images
+            height = image.shape[0]
+            width = image.shape[1]
+            self.max_height = max(height, self.max_height)
+            self.max_width = max(width, self.max_width)
         elif n_channels == 3:  # Target input: 3 channels
             if image.shaoe[-1] == 4:  # Actual input: 4 channels
                 image = cv2.cvtColor(image, cv2.COLOR_RGBA2RGB)

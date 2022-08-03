@@ -148,6 +148,8 @@ def train_net(net,
                 })
                 pbar.set_postfix(**{'loss (batch)': loss.item()})
 
+                break  # TODO: remove
+
             # Evaluation round
             histograms = {}  # TODO: look at these results in Wandb
             for tag, value in net.named_parameters():  # TODO: does this add anything to our analysis or is this just bloat?
