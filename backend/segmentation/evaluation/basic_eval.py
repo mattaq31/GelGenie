@@ -46,6 +46,8 @@ def evaluate(net, dataloader, device):
                 dice_score += multiclass_dice_coeff(mask_pred[:, 1:, ...], mask_true[:, 1:, ...],
                                                     reduce_batch_first=False)
 
+        # break  # TODO: delete
+
     net.train()
 
     # Fixes a potential division by zero error

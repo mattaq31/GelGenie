@@ -12,13 +12,15 @@ memory = 64     # Required memory per core in GBytes
 
 #[data]
 n_channels = 1  # Number of channels of input image
-batch_size = 4  # Batch size for dataloader
+batch_size = 8  # Batch size for dataloader
 num_workers = 1 # parallel threads to use to speed up data processing
 img_scale = 0.5 # TODO: is this necessary to be 0.5?
 validation = 10 # % of the data that is used as validation (0-100)
 base_dir = '/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/Gel_Images/Nathan_all+selected/Models'
 dir_img = '/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/Gel_Images/Nathan_all+selected/Images/'
 dir_mask = '/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/Gel_Images/Nathan_all+selected/Masks/'
+apply_augmentations = true
+padding = true
 
 #[model]
 name = 'UNet'   # model architecture name

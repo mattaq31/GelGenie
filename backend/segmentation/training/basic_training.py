@@ -37,7 +37,10 @@ def train_net(net,
               n_channels=1,
               optimizer_type='adam',
               scheduler_used=False,
-              loss_fn='both'):
+              loss_fn='both',
+              apply_augmentations=False,
+              padding=False
+              ):
     """
     :param net: UNet Model
     :param device: Device being used (cpu/ cuda)
@@ -60,7 +63,8 @@ def train_net(net,
 
     train_loader, val_loader, n_train, n_val = \
         prep_dataloader(dir_train_img, dir_train_mask, dir_val_img, dir_val_mask,
-                        n_channels, img_scale, val_percent, batch_size, num_workers)
+                        n_channels, img_scale, val_percent, batch_size, num_workers,
+                        apply_augmentations, padding)
 
     # (Initialize logging)
     experiment = wandb.init(project='U-Net', entity='dunn-group', resume='allow')
@@ -148,7 +152,7 @@ def train_net(net,
                 })
                 pbar.set_postfix(**{'loss (batch)': loss.item()})
 
-                break  # TODO: remove
+                # break  # TODO: remove
 
             # Evaluation round
             histograms = {}  # TODO: look at these results in Wandb

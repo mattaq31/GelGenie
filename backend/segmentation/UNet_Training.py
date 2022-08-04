@@ -46,7 +46,9 @@ def experiment_setup(parameters, **kwargs):
                       'base_dir': './',
                       'optimizer_type': 'adam',
                       'scheduler': False,
-                      'loss': 'both'}
+                      'loss': 'both',
+                      'apply_augmentations': False,
+                      'padding': False}
 
     # Loading the toml config file
     if parameters is not None:
@@ -75,6 +77,10 @@ def experiment_setup(parameters, **kwargs):
     if params['core'] == "GPU":
         if params['device'] == 'cpu':
             print("GPU specified but cuda is unavailable, cpu will be used instead")
+
+    if params['padding'] is False and params['batch_size'] != 1:
+        print(f'padding switched off but batch_size set to {params["batch_size"]}, now set to 1')
+        params['batch_size'] = 1
 
     # Make base directory for storing everything
     base_dir = os.path.join(params['base_dir'], params['experiment_name'] + '_' + strftime("%Y_%m_%d_%H;%M;%S"))
@@ -127,6 +133,8 @@ def experiment_setup(parameters, **kwargs):
 @click.option('--optimizer_type', default=None, help='[String] Type of optimizer to be used [adam/rmsprop]')
 @click.option('--scheduler', default=None, help='[Bool] Whether a scheduler is used during training')
 @click.option('--loss', default=None, help='[String] Components of the Loss function [CrossEntropy/Dice/Both]')
+@click.option('--apply_augmentations', default=None, help='[Bool] Whether augmentations are applied to training images')
+@click.option('--padding', default=None, help='[Bool] Whether padding is applied to training images')
 def unet_train(parameter_config, **kwargs):
     params = experiment_setup(parameter_config, **kwargs)
 
@@ -178,7 +186,9 @@ def unet_train(parameter_config, **kwargs):
               segmentation_path=params['segmentation_path'],
               base_dir=params['base_dir'],
               n_channels=int(params['n_channels']),
-              loss_fn=params['loss'])
+              loss_fn=params['loss'],
+              apply_augmentations=params['apply_augmentations'],
+              padding=params['padding'])
 
 
 if __name__ == '__main__':

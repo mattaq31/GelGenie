@@ -10,7 +10,7 @@ memory = 64     # Required memory per core in GBytes
 
 #[data]
 n_channels = 1
-batch_size = 1  # Batch size for dataloader
+batch_size = 8  # Batch size for dataloader
 num_workers = 1 # parallel threads to use to speed up data processing
 img_scale = 0.5 # TODO: is this necessary to be 0.5?
 validation = 10 # % of the data that is used as validation (0-100)
@@ -19,6 +19,8 @@ dir_train_img = 'C:/2022_Summer_Intern/Gel_Images_UNet_Test/Final_Set/Training_S
 dir_train_mask = 'C:/2022_Summer_Intern/Gel_Images_UNet_Test/Final_Set/Training_Set/Masks'
 dir_val_img = 'C:/2022_Summer_Intern/Gel_Images_UNet_Test/Final_Set/Validation_Set/Images'
 dir_val_mask = 'C:/2022_Summer_Intern/Gel_Images_UNet_Test/Final_Set/Validation_Set/Masks'
+apply_augmentations = true
+padding = true
 
 #[model]
 name = 'UNet'   # model architecture name

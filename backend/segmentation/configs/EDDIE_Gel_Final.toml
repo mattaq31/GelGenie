@@ -19,6 +19,8 @@ dir_train_img = '/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_inte
 dir_train_mask = '/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/Gel_Images/Final_Set/Training_Set/Masks/'
 dir_val_img = '/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/Gel_Images/Final_Set/Validation_Set/Images/'
 dir_val_mask = '/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/Gel_Images/Final_Set/Validation_Set/Masks/'
+apply_augmentations = true
+padding = true
 
 #[model]
 name = 'UNet'   # model architecture name
