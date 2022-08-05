@@ -8,6 +8,7 @@ import toml
 from torchinfo import summary
 
 import torch
+import segmentation_models_pytorch as smp
 
 from segmentation.unet import UNet
 from segmentation.training.basic_training import train_net
@@ -29,6 +30,7 @@ def experiment_setup(parameter_config, **kwargs):
                                            "configs/PC_default.toml"),
                       'base_hardware': "EDDIE",
                       'core': "GPU",
+                      'model_name': 'milesial-UNet',
                       'pe': 1,
                       'memory': 64,
                       'epochs': 10,
@@ -143,6 +145,7 @@ def experiment_setup(parameter_config, **kwargs):
                                                        'containing configs for this experiment')
 @click.option('--base_hardware', default=None, help='[String] Where the program is run [EDDIE/PC]')
 @click.option('--core', default=None, help='[String] Which processor is used [GPU/CPU]')
+@click.option('--model_name', default=None, help='[String] Which model is used [milesial-UNet/smp]')
 @click.option('--pe', default=None, help='[int] How many parallel environments (cores) needed')
 @click.option('--memory', default=None, help='[int] Required memory per core in GBytes')
 @click.option('--epochs', default=None, help='[int] Number of epochs desired')
@@ -180,8 +183,18 @@ def unet_train(parameter_config, **kwargs):
     # Change here to adapt to your data
     # n_channels=3 for RGB images
     # n_classes is the number of probabilities you want to get per pixel
-    net = UNet(n_channels=int(params['n_channels']), n_classes=params['classes'], bilinear=params['bilinear'])  # initializing random weights
+    if params['model_name'] == 'milesial-Unet':
+        net = UNet(n_channels=int(params['n_channels']), n_classes=params['classes'], bilinear=params['bilinear'])  # initializing random weights
+    elif params['model_name'] == 'UnetPlusPlus':
+        net = smp.UnetPlusPlus(
+            encoder_name="resnet18",  # choose encoder, e.g. mobilenet_v2 or efficientnet-b7
+            in_channels=1,  # model input channels (1 for gray-scale images, 3 for RGB, etc.)
+            classes=2,  # model output channels (number of classes in your dataset)
+        )
+
     # TODO: how do we continue training from a model checkpoint?
+
+
 
 
     # prints out model summary to output directory
@@ -189,10 +202,21 @@ def unet_train(parameter_config, **kwargs):
     with open(os.path.join(params['base_dir'], 'model_structure.txt'), 'w', encoding='utf-8') as f:
         f.write(str(model_structure))
 
-    print(f'Network:\n'
-          f'\t{net.n_channels} input channels\n'
-          f'\t{net.n_classes} output channels (classes)\n'
-          f'\t{"Bilinear" if net.bilinear else "Transposed conv"} upscaling')
+    if params['model_name'] == 'milesial-Unet':
+        print(f'Model:\n'
+              f'\t{params["model_name"]}'
+              f'Network:\n'
+              f'\t{net.n_channels} input channels\n'
+              f'\t{net.n_classes} output channels (classes)\n'
+              f'\t{"Bilinear" if net.bilinear else "Transposed conv"} upscaling')
+    elif params['model_name'] == 'UnetPlusPlus':
+        print(f'Model:\n'
+              f'\t{params["model_name"]}'
+              f'Network:\n'
+              f'\tencoder: resnet18\n'
+              f'\t1 input channels\n'
+              f'\t2 output channels (classes)\n')
+
     print('Network Structure:')
 
     load = params['load']
@@ -205,6 +229,7 @@ def unet_train(parameter_config, **kwargs):
     train_net(net=net,
               device=device,
               base_hardware=params['base_hardware'],
+              model_name=params['model_name'],
               epochs=int(params['epochs']),
               batch_size=int(params['batch_size']),
               learning_rate=float(params['lr']),

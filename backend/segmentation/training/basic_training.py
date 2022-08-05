@@ -20,6 +20,7 @@ from ..helper_functions.data_functions import prep_dataloader
 def train_net(net,
               device,
               base_hardware='PC',
+              model_name='milesial-UNet',
               epochs=5,
               batch_size=8,
               learning_rate=1e-5,
@@ -122,8 +123,15 @@ def train_net(net,
             for batch in train_loader:
                 images = batch['image']
                 true_masks = batch['mask']
-                assert images.shape[1] == net.n_channels, \
-                    f'Network has been defined with {net.n_channels} input channels, ' \
+                if model_name == 'milesial-Unet':
+                    n_channels = net.n_channels
+                    n_classes = net.n_classes
+                else:
+                    n_channels = 1
+                    n_classes = 2
+
+                assert images.shape[1] == n_channels, \
+                    f'Network has been defined with {n_channels} input channels, ' \
                     f'but loaded images have {images.shape[1]} channels. Please check that ' \
                     f'the images are loaded correctly, images.shape is  {images.shape}'
 
@@ -135,13 +143,13 @@ def train_net(net,
                 if loss_fn == 'both':
                     loss = criterion(masks_pred, true_masks) \
                            + dice_loss(F.softmax(masks_pred, dim=1).float(),
-                                       F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float(),
+                                       F.one_hot(true_masks, n_classes).permute(0, 3, 1, 2).float(),
                                        multiclass=True)
                 elif loss_fn == 'CrossEntropy':
                     loss = criterion(masks_pred, true_masks)
                 elif loss_fn == 'Dice':
                     loss = dice_loss(F.softmax(masks_pred, dim=1).float(),
-                                     F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float(),
+                                     F.one_hot(true_masks, n_classes).permute(0, 3, 1, 2).float(),
                                      multiclass=True)
 
                 optimizer.zero_grad()  # this ensures that all weight gradients are zeroed before moving on to the next set of gradients

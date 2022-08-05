@@ -7,6 +7,7 @@ from segmentation.unet_utils.data_loading import BasicDataset
 def prep_dataloader(dir_train_img, dir_train_mask, dir_val_img, dir_val_mask,
                     n_channels, img_scale, val_percent, batch_size, num_workers,
                     apply_augmentations, padding):
+
     # 1. Create dataset
     if apply_augmentations is True:
         train_set = BasicDataset(dir_train_img, dir_train_mask, n_channels, img_scale,
