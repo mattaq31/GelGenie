@@ -14,7 +14,7 @@ from segmentation.training.basic_training import train_net
 from segmentation.helper_functions.general_functions import create_dir_if_empty
 
 
-def experiment_setup(parameters, **kwargs):
+def experiment_setup(parameter_config, **kwargs):
     """
     This function resolves conflicts between parameters defined in a config file and/or in the command-line options.
     :param parameters: Config filepath
@@ -51,10 +51,10 @@ def experiment_setup(parameters, **kwargs):
                       'padding': False}
 
     # Loading the toml config file
-    if parameters is not None:
-        config_path = parameters
+    if parameter_config is not None:
+        config_path = parameter_config
     else:
-        config_path = kwargs_default['parameters']
+        config_path = kwargs_default['parameter_config']
     params = toml.load(config_path)
 
     params.update(kwargs)  # prioritize command-line configuration over config file
