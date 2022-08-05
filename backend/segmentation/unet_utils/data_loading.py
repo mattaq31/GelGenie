@@ -49,6 +49,7 @@ class BasicDataset(Dataset):
                 image_file = os.path.join(root, name)
                 image = imageio.imread(image_file)
                 max_dimension = max(max_dimension, image.shape[0], image.shape[1])
+        max_dimension = 32*(max_dimension//32+1)  # to be divisible by 32
         self.max_dimension = max_dimension
         self.augmentations = augmentations
 

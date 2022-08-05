@@ -111,7 +111,7 @@ def experiment_setup(parameter_config, **kwargs):
         if params['device'] == 'cpu':
             print("GPU specified but cuda is unavailable, cpu will be used instead")
 
-    if params['padding'] is False and params['batch_size'] != 1:
+    if params['padding'] is False and int(params['batch_size']) != 1:
         print(f'padding switched off but batch_size set to {params["batch_size"]}, now set to 1')
         params['batch_size'] = 1
 
