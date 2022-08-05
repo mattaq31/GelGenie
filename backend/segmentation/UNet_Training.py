@@ -61,6 +61,39 @@ def experiment_setup(parameter_config, **kwargs):
     kwargs_default.update(params)  # replaces defaults with any user-defined parameters
     params = kwargs_default  # TODO: streamline code
 
+    if params['save_checkpoint'] == 'false':
+        params['save_checkpoint'] = False
+    elif params['save_checkpoint'] == 'true':
+        params['save_checkpoint'] = True
+
+    if params['amp'] == 'false':
+        params['amp'] = False
+    elif params['amp'] == 'true':
+        params['amp'] = True
+
+    if params['load'] == 'false':
+        params['load'] = False
+
+    if params['bilinear'] == 'false':
+        params['bilinear'] = False
+    elif params['bilinear'] == 'true':
+        params['bilinear'] = True
+
+    if params['scheduler'] == 'false':
+        params['scheduler'] = False
+    elif params['scheduler'] == 'true':
+        params['scheduler'] = True
+
+    if params['apply_augmentations'] == 'false':
+        params['apply_augmentations'] = False
+    elif params['apply_augmentations'] == 'true':
+        params['apply_augmentations'] = True
+
+    if params['padding'] == 'false':
+        params['padding'] = False
+    elif params['padding'] == 'true':
+        params['padding'] = True
+
     if 'dir_train_mask' not in params or 'dir_train_img' not in params or \
             'dir_val_mask' not in params or 'dir_val_img' not in params:
         raise RuntimeError('Need to specify input and mask file paths')
@@ -170,13 +203,14 @@ def unet_train(parameter_config, **kwargs):
     net.to(device=device)
 
     train_net(net=net,
-              epochs=int(params['epochs']),
+              device=device,
               base_hardware=params['base_hardware'],
+              epochs=int(params['epochs']),
               batch_size=int(params['batch_size']),
               learning_rate=float(params['lr']),
-              device=device,
-              img_scale=float(params['img_scale']),
               val_percent=int(params['validation']) / 100,
+              save_checkpoint=params['save_checkpoint'],
+              img_scale=float(params['img_scale']),
               amp=params['amp'],
               dir_train_img=params['dir_train_img'],
               dir_train_mask=params['dir_train_mask'],
@@ -187,6 +221,7 @@ def unet_train(parameter_config, **kwargs):
               segmentation_path=params['segmentation_path'],
               base_dir=params['base_dir'],
               n_channels=int(params['n_channels']),
+              optimizer_type=params['optimizer_type'],
               loss_fn=params['loss'],
               apply_augmentations=params['apply_augmentations'],
               padding=params['padding'])
