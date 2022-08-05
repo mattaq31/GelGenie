@@ -19,7 +19,7 @@ def get_training_augmentation():
         # Spatial-level transforms
 
         # Flip (horizontally, vertically or both)
-        albu.Flip(p=0.75),
+        albu.Flip(p=0.5),
 
         albu.RandomRotate90(p=0.5),
 

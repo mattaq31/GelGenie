@@ -116,7 +116,7 @@ def show_segmentation(image, mask_pred, mask_true, epoch_number, dice_score, seg
         axs[0].imshow(image_array, cmap='gray')
     else:
         axs[0].imshow(image_array)
-    axs[0].set_title('Original Image')
+
 
     axs[1].imshow(threshold_mask_array, cmap='gray')
     axs[1].set_title('Mask Prediction')

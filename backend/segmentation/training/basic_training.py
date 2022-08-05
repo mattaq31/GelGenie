@@ -19,6 +19,7 @@ from ..helper_functions.data_functions import prep_dataloader
 
 def train_net(net,
               device,
+              base_hardware='PC',
               epochs=5,
               batch_size=8,
               learning_rate=1e-5,
@@ -67,7 +68,12 @@ def train_net(net,
                         apply_augmentations, padding)
 
     # (Initialize logging)
-    experiment = wandb.init(project='U-Net', entity='dunn-group', resume='allow')
+    if base_hardware == 'EDDIE':
+        experiment = wandb.init(project='U-Net', entity='dunn-group', resume='allow',
+                                settings=wandb.Settings(start_method="fork"))
+    else:
+        experiment = wandb.init(project='U-Net', entity='dunn-group', resume='allow')
+
     experiment.config.update(dict(epochs=epochs, batch_size=batch_size, learning_rate=learning_rate,
                                   val_percent=val_percent, save_checkpoint=save_checkpoint, img_scale=img_scale,
                                   amp=amp, n_channels=n_channels, optimizer_type=optimizer_type,

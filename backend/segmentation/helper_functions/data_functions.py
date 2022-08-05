@@ -7,13 +7,14 @@ from segmentation.unet_utils.data_loading import BasicDataset
 def prep_dataloader(dir_train_img, dir_train_mask, dir_val_img, dir_val_mask,
                     n_channels, img_scale, val_percent, batch_size, num_workers,
                     apply_augmentations, padding):
-    if apply_augmentations is True:
-        augmentations = get_training_augmentation()
-    elif apply_augmentations is False:
-        augmentations = None
     # 1. Create dataset
-    train_set = BasicDataset(dir_train_img, dir_train_mask, n_channels, img_scale,
-                             augmentations=augmentations, padding=padding)
+    if apply_augmentations is True:
+        train_set = BasicDataset(dir_train_img, dir_train_mask, n_channels, img_scale,
+                                 augmentations=get_training_augmentation(), padding=padding)
+    elif apply_augmentations is False:
+        train_set = BasicDataset(dir_train_img, dir_train_mask, n_channels, img_scale,
+                                 augmentations=None, padding=padding)
+
     val_set = BasicDataset(dir_val_img, dir_val_mask, n_channels, img_scale,
                            augmentations=None, padding=padding)
 

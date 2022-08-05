@@ -171,6 +171,7 @@ def unet_train(parameter_config, **kwargs):
 
     train_net(net=net,
               epochs=int(params['epochs']),
+              base_hardware=params['base_hardware'],
               batch_size=int(params['batch_size']),
               learning_rate=float(params['lr']),
               device=device,
