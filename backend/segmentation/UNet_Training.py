@@ -11,21 +11,21 @@ import torch
 import segmentation_models_pytorch as smp
 
 from segmentation.unet import UNet
-from segmentation.training.basic_training import train_net
+from segmentation.training.core_training import train_net
 from segmentation.helper_functions.general_functions import create_dir_if_empty
 
 
 def experiment_setup(parameter_config, **kwargs):
     """
     This function resolves conflicts between parameters defined in a config file and/or in the command-line options.
-    :param parameters: Config filepath
+    :param parameter_config: Config filepath
     :param kwargs: All other configuration options extracted from command-line
     :return: Dictionary of all resolved parameters
     """
 
     kwargs = {k: v for (k, v) in kwargs.items() if v is not None}  # filters out none values
 
-    # The default configuration if none are specified
+    # The default configuration options if none are specified
     kwargs_default = {'parameter_config': ("C:/2022_Summer_Intern/Automatic-Gel-Analysis/backend/segmentation/"
                                            "configs/PC_default.toml"),
                       'base_hardware': "EDDIE",
@@ -68,7 +68,7 @@ def experiment_setup(parameter_config, **kwargs):
     elif params['save_checkpoint'] == 'true':
         params['save_checkpoint'] = True
 
-    if params['amp'] == 'false':
+    if params['amp'] == 'false':  # TODO: what are these for?  This should never be the case
         params['amp'] = False
     elif params['amp'] == 'true':
         params['amp'] = True
@@ -126,7 +126,7 @@ def experiment_setup(parameter_config, **kwargs):
     params['dir_checkpoint'] = Path(base_dir + '/checkpoints/')
     create_dir_if_empty(params['dir_checkpoint'])
 
-    # Copies the config file
+    # Copies the config file to the experiment folder
     config_file_name = 'config.toml'
     with open(base_dir + '/' + config_file_name, "w") as f:
         toml.dump(params, f)
@@ -180,10 +180,8 @@ def unet_train(parameter_config, **kwargs):
     device = params['device']
     print(f'Using device {device}')
 
-    # Change here to adapt to your data
-    # n_channels=3 for RGB images
     # n_classes is the number of probabilities you want to get per pixel
-    if params['model_name'] == 'milesial-Unet':
+    if params['model_name'] == 'milesial-UNet':
         net = UNet(n_channels=int(params['n_channels']), n_classes=params['classes'], bilinear=params['bilinear'])  # initializing random weights
     elif params['model_name'] == 'UnetPlusPlus':
         net = smp.UnetPlusPlus(
@@ -191,18 +189,15 @@ def unet_train(parameter_config, **kwargs):
             in_channels=1,  # model input channels (1 for gray-scale images, 3 for RGB, etc.)
             classes=2,  # model output channels (number of classes in your dataset)
         )
-
-    # TODO: how do we continue training from a model checkpoint?
-
-
-
+    else:
+        raise RuntimeError('Model not recognized.')
 
     # prints out model summary to output directory
     model_structure = summary(net, mode='train', depth=5, device=device, verbose=0)
     with open(os.path.join(params['base_dir'], 'model_structure.txt'), 'w', encoding='utf-8') as f:
         f.write(str(model_structure))
 
-    if params['model_name'] == 'milesial-Unet':
+    if params['model_name'] == 'milesial-Unet':  # TODO: combine these into one - not all print statements are necessary.
         print(f'Model:\n'
               f'\t{params["model_name"]}'
               f'Network:\n'
@@ -217,10 +212,8 @@ def unet_train(parameter_config, **kwargs):
               f'\t1 input channels\n'
               f'\t2 output channels (classes)\n')
 
-    print('Network Structure:')
-
     load = params['load']
-    if load:
+    if load:  # TODO: This is not enough.  The optimizer and scheduler also need to be loaded from the checkpoint.
         net.load_state_dict(torch.load(load, map_location=device))
         logging.info(f'Model loaded from {load}')
 

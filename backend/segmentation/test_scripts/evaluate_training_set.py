@@ -9,9 +9,10 @@ import wandb
 from pathlib import Path
 import logging
 
-from segmentation.unet_utils.data_loading import BasicDataset
-from segmentation.unet_utils.dice_score import dice_loss
-from segmentation.unet_utils.utils import plot_stats, show_segmentation, excel_stats
+from segmentation.data_handling.dataloaders import BasicDataset
+from segmentation.helper_functions.dice_score import dice_loss
+from segmentation.helper_functions.stat_functions import excel_stats
+from segmentation.helper_functions.display_functions import plot_stats, show_segmentation
 from segmentation.evaluation.basic_eval import evaluate
 
 

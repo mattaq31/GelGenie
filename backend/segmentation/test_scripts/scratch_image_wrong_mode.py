@@ -1,4 +1,4 @@
-from segmentation.helper_functions.data_functions import prep_dataloader
+from segmentation.data_handling import prep_dataloader
 from tqdm import tqdm
 
 from segmentation.unet import UNet

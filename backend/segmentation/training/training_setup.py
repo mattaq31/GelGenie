@@ -22,3 +22,13 @@ def define_optimizer(optim_weights, lr=1e-4, optimizer_params=None, optimizer_ty
             optimizer = optim.RMSprop(filter(lambda p: p.requires_grad, optim_weights), lr=lr)
 
     return optimizer
+
+
+def define_scheduler():
+    # Add this scheduler here:
+    # learning_rate_scheduler = \
+    #     optim.lr_scheduler.CosineAnnealingWarmRestarts(base_optimizer, T_mult=scheduler_params['t_mult'],
+    #                                                    T_0=scheduler_params['restart_period'],
+    #                                                    eta_min=scheduler_params['lr_min'])
+
+    raise NotImplementedError

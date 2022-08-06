@@ -4,46 +4,41 @@ import torch.nn.functional as F
 from torch import optim
 
 from tqdm import tqdm
-
 import wandb
-
+import os
 from pathlib import Path
 import logging
 
-from segmentation.unet_utils.dice_score import dice_loss
-from segmentation.unet_utils.utils import plot_stats, show_segmentation, excel_stats
+from segmentation.helper_functions.dice_score import dice_loss
+from ..helper_functions.stat_functions import excel_stats
+from ..helper_functions.display_functions import plot_stats, show_segmentation
 from segmentation.evaluation.basic_eval import evaluate
 from .training_setup import define_optimizer
-from ..helper_functions.data_functions import prep_dataloader
+from ..data_handling import prep_dataloader
 
 
-def train_net(net,
-              device,
-              base_hardware='PC',
-              model_name='milesial-UNet',
-              epochs=5,
-              batch_size=8,
-              learning_rate=1e-5,
-              val_percent=0.1,
-              save_checkpoint=True,
-              img_scale=0.5,
-              amp=False,
-              dir_train_img=None,
-              dir_train_mask=None,
-              dir_val_img=None,
-              dir_val_mask=None,
-              dir_checkpoint=None,
-              num_workers=1,
-              segmentation_path='',
-              base_dir='',
-              n_channels=1,
-              optimizer_type='adam',
-              scheduler_used=False,
-              loss_fn='both',
-              apply_augmentations=False,
-              padding=False
-              ):
+def train_net(net, device, base_hardware='PC', model_name='milesial-UNet', epochs=5, batch_size=8, learning_rate=1e-5,
+              val_percent=0.1, save_checkpoint=True, img_scale=0.5, amp=False, dir_train_img=None,
+              dir_train_mask=None, dir_val_img=None, dir_val_mask=None, dir_checkpoint=None,
+              num_workers=1, segmentation_path='', base_dir='', n_channels=1, optimizer_type='adam',
+              scheduler_used=False, loss_fn='both', apply_augmentations=False, padding=False):
     """
+    TODO: documentation needs updating here.
+    TODO: if not using val_percent anymore, this needs to be removed.
+    Ideally, you should allow the user to either select a specific
+    validation dataset or specify a percentage of the training set to be converted to the validation set
+
+    :param padding:
+    :param dir_train_img:
+    :param n_channels:
+    :param dir_val_img:
+    :param dir_val_mask:
+    :param model_name:
+    :param base_hardware:
+    :param dir_train_mask:
+    :param scheduler_used:
+    :param loss_fn:
+    :param apply_augmentations:
     :param net: UNet Model
     :param device: Device being used (cpu/ cuda)
     :param epochs: Number of epochs
@@ -53,8 +48,6 @@ def train_net(net,
     :param save_checkpoint: Whether checkpoints are saved
     :param img_scale: Downscaling factor of the images (between 0 and 1)
     :param amp: Use mixed precision
-    :param dir_img: Directory of original image
-    :param dir_mask: Directory of true masks
     :param dir_checkpoint: Directory where checkpoints are stored
     :param num_workers: Number of workers for dataloader
     :param segmentation_path: Directory to save segmentation images
@@ -71,9 +64,12 @@ def train_net(net,
     # (Initialize logging)
     if base_hardware == 'EDDIE':
         experiment = wandb.init(project='U-Net', entity='dunn-group', resume='allow',
+                                name=os.path.basename(base_dir),
                                 settings=wandb.Settings(start_method="fork"))
     else:
-        experiment = wandb.init(project='U-Net', entity='dunn-group', resume='allow')
+        experiment = wandb.init(project='U-Net', entity='dunn-group',
+                                name=os.path.basename(base_dir),
+                                resume='allow')
 
     experiment.config.update(dict(epochs=epochs, batch_size=batch_size, learning_rate=learning_rate,
                                   val_percent=val_percent, save_checkpoint=save_checkpoint, img_scale=img_scale,
@@ -102,6 +98,7 @@ def train_net(net,
 
     if scheduler_used:  # Scheduler will be used
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=2)  # goal: maximize Dice score
+    # TODO: optimizer and scheduler need to be reloaded from previous checkpoint if continuing training.
 
     criterion = nn.CrossEntropyLoss()
     global_step = 0
@@ -113,17 +110,16 @@ def train_net(net,
                'Super-imposed mask prediction', 'True Mask']
     table_list = []
 
-    # 5. Begin training
+    # Begin training
     for epoch in range(1, epochs + 1):
         net.train()
         epoch_loss = 0
 
         with tqdm(total=n_train, desc=f'Epoch {epoch}/{epochs}', unit='img') as pbar:
-
             for batch in train_loader:
                 images = batch['image']
                 true_masks = batch['mask']
-                if model_name == 'milesial-Unet':
+                if model_name == 'milesial-Unet':  # TODO: remove this - this should not be model dependent.
                     n_channels = net.n_channels
                     n_classes = net.n_classes
                 else:
@@ -159,14 +155,13 @@ def train_net(net,
                 pbar.update(images.shape[0])
                 global_step += 1
                 epoch_loss += loss.item()
-                experiment.log({
+                experiment.log({  # TODO: are all these items necessary at this point?
                     'train loss': loss.item(),
                     'step': global_step,
                     'epoch': epoch
                 })
                 pbar.set_postfix(**{'loss (batch)': loss.item()})
-
-                # break  # TODO: remove
+                continue
 
             # Evaluation round
             histograms = {}  # TODO: look at these results in Wandb
@@ -191,10 +186,10 @@ def train_net(net,
                                wandb.Image(threshold_mask_array), wandb.Image(labelled_bands),
                                wandb.Image(combi_mask_array), wandb.Image(mask_true_array)])
 
-            table = wandb.Table(data=table_list, columns=columns)
+            table = wandb.Table(data=table_list, columns=columns)  # TODO: This table is difficult to view on wandb - fix or remove
 
             # Logging onto wandb
-            logging.info('Validation Dice score: {}'.format(val_score))  # TODO: is this useful?
+            logging.info('Validation Dice score: {}'.format(val_score))
             experiment.log({
                 'learning rate': optimizer.param_groups[0]['lr'],
                 'validation Dice': val_score,
@@ -215,7 +210,7 @@ def train_net(net,
                 'table': table,
                 'step': global_step,
                 'epoch': epoch,
-                **histograms
+                **histograms  # TODO: remove this histogram
             })
 
             # All batches in the epoch iterated through, append loss values as string type
@@ -227,5 +222,6 @@ def train_net(net,
 
         if save_checkpoint and (epoch == epochs or epoch % 10 == 0):  # Only save checkpoints every 10 epochs
             Path(dir_checkpoint).mkdir(parents=True, exist_ok=True)
+            # TODO: you need to save the model, optimizer and scheduler all together.  Create a dict to hold them all.
             torch.save(net.state_dict(), str(dir_checkpoint / 'checkpoint_epoch{}.pth'.format(epoch)))
             logging.info(f'Checkpoint {epoch} saved!')
