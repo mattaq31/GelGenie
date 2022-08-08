@@ -19,7 +19,7 @@ dir_img = 'C:/2022_Summer_Intern/UNet_Training_With_Images/Carvana/Input/'
 dir_mask = 'C:/2022_Summer_Intern/UNet_Training_With_Images/Carvana/Target/'
 
 #[model]
-name = 'UNet'   # model architecture name
+name = 'milesial-UNet'   # model architecture name
 lr = 1e-5       # learning rate
 classes = 2     # Number of possible segmentation classes
 bilinear = false # Use bilinear upsampling within down/up blocks in unet network

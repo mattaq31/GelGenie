@@ -63,38 +63,8 @@ def experiment_setup(parameter_config, **kwargs):
     kwargs_default.update(params)  # replaces defaults with any user-defined parameters
     params = kwargs_default  # TODO: streamline code
 
-    if params['save_checkpoint'] == 'false':
-        params['save_checkpoint'] = False
-    elif params['save_checkpoint'] == 'true':
-        params['save_checkpoint'] = True
-
-    if params['amp'] == 'false':
-        params['amp'] = False
-    elif params['amp'] == 'true':
-        params['amp'] = True
-
     if params['load'] == 'false':
         params['load'] = False
-
-    if params['bilinear'] == 'false':
-        params['bilinear'] = False
-    elif params['bilinear'] == 'true':
-        params['bilinear'] = True
-
-    if params['scheduler'] == 'false':
-        params['scheduler'] = False
-    elif params['scheduler'] == 'true':
-        params['scheduler'] = True
-
-    if params['apply_augmentations'] == 'false':
-        params['apply_augmentations'] = False
-    elif params['apply_augmentations'] == 'true':
-        params['apply_augmentations'] = True
-
-    if params['padding'] == 'false':
-        params['padding'] = False
-    elif params['padding'] == 'true':
-        params['padding'] = True
 
     if 'dir_train_mask' not in params or 'dir_train_img' not in params or \
             'dir_val_mask' not in params or 'dir_val_img' not in params:
@@ -146,31 +116,34 @@ def experiment_setup(parameter_config, **kwargs):
 @click.option('--base_hardware', default=None, help='[String] Where the program is run [EDDIE/PC]')
 @click.option('--core', default=None, help='[String] Which processor is used [GPU/CPU]')
 @click.option('--model_name', default=None, help='[String] Which model is used [milesial-UNet/smp]')
-@click.option('--pe', default=None, help='[int] How many parallel environments (cores) needed')
-@click.option('--memory', default=None, help='[int] Required memory per core in GBytes')
-@click.option('--epochs', default=None, help='[int] Number of epochs desired')
-@click.option('--num_workers', default=None, help='[int] How many workers for dataloader simultaneously ,'
-                                                  '(parallel dataloader threads, speed up data processing)')
-@click.option('--batch_size', default=None, help='[int] Batch size for dataloader')
-@click.option('--lr', default=None, help='[float] Learning Rate')
-@click.option('--validation', default=None, help='[int] % of the data that is used as validation (0-100)')
-@click.option('--save_checkpoint', default=None, help='[Bool] Whether checkpoints are saved')
-@click.option('--img_scale', default=None, help='[Float] Downscaling factor of the images')
-@click.option('--amp', default=None, help='[Bool] Use mixed precision')
+@click.option('--pe', type=click.INT, default=None, help='[int] How many parallel environments (cores) needed')
+@click.option('--memory', type=click.INT, default=None, help='[int] Required memory per core in GBytes')
+@click.option('--epochs', type=click.INT, default=None, help='[int] Number of epochs desired')
+@click.option('--num_workers', type=click.INT, default=None,
+              help='[int] How many workers for dataloader simultaneously ,'
+                   '(parallel dataloader threads, speed up data processing)')
+@click.option('--batch_size', type=click.INT, default=None, help='[int] Batch size for dataloader')
+@click.option('--lr', type=click.FLOAT, default=None, help='[float] Learning Rate')
+@click.option('--validation', type=click.INT, default=None,
+              help='[int] % of the data that is used as validation (0-100)')
+@click.option('--save_checkpoint', type=click.BOOL, default=None, help='[Bool] Whether checkpoints are saved')
+@click.option('--img_scale', type=click.FLOAT, default=None, help='[Float] Downscaling factor of the images')
+@click.option('--amp', type=click.BOOL, default=None, help='[Bool] Use mixed precision')
 @click.option('--load', default=None, help='[Bool/Path] Load model from a .pth file')
-@click.option('--classes', default=None, help='[int] Number of classes/probabilities per pixel')
-@click.option('--bilinear', default=None, help='[Bool] Use bilinear upsampling')
-@click.option('--n_channels', default=None, help='[int] Input image number of colour channels')
+@click.option('--classes', type=click.INT, default=None, help='[int] Number of classes/probabilities per pixel')
+@click.option('--bilinear', type=click.BOOL, default=None, help='[Bool] Use bilinear upsampling')
+@click.option('--n_channels', type=click.INT, default=None, help='[int] Input image number of colour channels')
 @click.option('--base_dir', default=None, help='[Path] Directory for output exports')
 @click.option('--dir_train_img', default=None, help='[Path] Directory of training images')
 @click.option('--dir_train_mask', default=None, help='[Path] Directory of training masks')
 @click.option('--dir_val_img', default=None, help='[Path] Directory of validation images')
 @click.option('--dir_val_mask', default=None, help='[Path] Directory of validation masks')
 @click.option('--optimizer_type', default=None, help='[String] Type of optimizer to be used [adam/rmsprop]')
-@click.option('--scheduler', default=None, help='[Bool] Whether a scheduler is used during training')
+@click.option('--scheduler', type=click.BOOL, default=None, help='[Bool] Whether a scheduler is used during training')
 @click.option('--loss', default=None, help='[String] Components of the Loss function [CrossEntropy/Dice/Both]')
-@click.option('--apply_augmentations', default=None, help='[Bool] Whether augmentations are applied to training images')
-@click.option('--padding', default=None, help='[Bool] Whether padding is applied to training images')
+@click.option('--apply_augmentations', type=click.BOOL, default=None,
+              help='[Bool] Whether augmentations are applied to training images')
+@click.option('--padding', type=click.BOOL, default=None, help='[Bool] Whether padding is applied to training images')
 def unet_train(parameter_config, **kwargs):
     params = experiment_setup(parameter_config, **kwargs)
 
@@ -183,7 +156,7 @@ def unet_train(parameter_config, **kwargs):
     # Change here to adapt to your data
     # n_channels=3 for RGB images
     # n_classes is the number of probabilities you want to get per pixel
-    if params['model_name'] == 'milesial-Unet':
+    if params['model_name'] == 'milesial-UNet':
         net = UNet(n_channels=int(params['n_channels']), n_classes=params['classes'], bilinear=params['bilinear'])  # initializing random weights
     elif params['model_name'] == 'UnetPlusPlus':
         net = smp.UnetPlusPlus(
@@ -191,6 +164,8 @@ def unet_train(parameter_config, **kwargs):
             in_channels=1,  # model input channels (1 for gray-scale images, 3 for RGB, etc.)
             classes=2,  # model output channels (number of classes in your dataset)
         )
+    else:
+        raise RuntimeError(f'Model {params["model_name"]} unidentified, must be milesial-UNet or UnetPlusPlus')
 
     # TODO: how do we continue training from a model checkpoint?
 
@@ -202,7 +177,7 @@ def unet_train(parameter_config, **kwargs):
     with open(os.path.join(params['base_dir'], 'model_structure.txt'), 'w', encoding='utf-8') as f:
         f.write(str(model_structure))
 
-    if params['model_name'] == 'milesial-Unet':
+    if params['model_name'] == 'milesial-UNet':
         print(f'Model:\n'
               f'\t{params["model_name"]}'
               f'Network:\n'
@@ -221,8 +196,14 @@ def unet_train(parameter_config, **kwargs):
 
     load = params['load']
     if load:
-        net.load_state_dict(torch.load(load, map_location=device))
+        saved_dict = torch.load(load, map_location=device)
+        net.load_state_dict(saved_dict['network'])
         logging.info(f'Model loaded from {load}')
+        print(f'Model loaded from {load}')
+        load = saved_dict
+
+
+
 
     net.to(device=device)
 
@@ -230,23 +211,25 @@ def unet_train(parameter_config, **kwargs):
               device=device,
               base_hardware=params['base_hardware'],
               model_name=params['model_name'],
-              epochs=int(params['epochs']),
-              batch_size=int(params['batch_size']),
-              learning_rate=float(params['lr']),
-              val_percent=int(params['validation']) / 100,
+              epochs=params['epochs'],
+              batch_size=params['batch_size'],
+              learning_rate=params['lr'],
+              val_percent=params['validation'] / 100,
               save_checkpoint=params['save_checkpoint'],
-              img_scale=float(params['img_scale']),
+              img_scale=params['img_scale'],
               amp=params['amp'],
               dir_train_img=params['dir_train_img'],
               dir_train_mask=params['dir_train_mask'],
               dir_val_img=params['dir_val_img'],
               dir_val_mask=params['dir_val_mask'],
               dir_checkpoint=params['dir_checkpoint'],
-              num_workers=int(params['num_workers'], ),
+              num_workers=params['num_workers'],
               segmentation_path=params['segmentation_path'],
               base_dir=params['base_dir'],
-              n_channels=int(params['n_channels']),
+              n_channels=params['n_channels'],
               optimizer_type=params['optimizer_type'],
+              scheduler_used=params['scheduler'],
+              load=load,
               loss_fn=params['loss'],
               apply_augmentations=params['apply_augmentations'],
               padding=params['padding'])

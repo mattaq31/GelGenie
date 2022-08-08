@@ -39,6 +39,7 @@ def train_net(net,
               n_channels=1,
               optimizer_type='adam',
               scheduler_used=False,
+              load=False,
               loss_fn='both',
               apply_augmentations=False,
               padding=False
@@ -60,6 +61,7 @@ def train_net(net,
     :param segmentation_path: Directory to save segmentation images
     :param base_dir: Path of base directory
     :param optimizer_type: Type of optimizer to use
+    :param load: False if nothing is loaded, dictionary of state_dicts if loaded
     :return: None
     """
 
@@ -100,8 +102,17 @@ def train_net(net,
     elif optimizer_type == 'adam':
         optimizer = define_optimizer(net.parameters(), lr=learning_rate, optimizer_type='adam')
 
+    # Load will either be False or a dict of state_dicts
+    if load:
+        optimizer.load_state_dict(load['optimizer'])
+
     if scheduler_used:  # Scheduler will be used
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=2)  # goal: maximize Dice score
+
+        if load:
+            scheduler.load_state_dict(load['scheduler'])
+
+
 
     criterion = nn.CrossEntropyLoss()
     global_step = 0
@@ -170,10 +181,6 @@ def train_net(net,
 
             # Evaluation round
             histograms = {}  # TODO: look at these results in Wandb
-            for tag, value in net.named_parameters():  # TODO: does this add anything to our analysis or is this just bloat?
-                tag = tag.replace('/', '.')
-                histograms['Weights/' + tag] = wandb.Histogram(value.data.cpu())
-                histograms['Gradients/' + tag] = wandb.Histogram(value.grad.data.cpu())
 
             val_score, show_image, show_mask_pred, show_mask_true = evaluate(net, val_loader, device)
 
@@ -227,5 +234,10 @@ def train_net(net,
 
         if save_checkpoint and (epoch == epochs or epoch % 10 == 0):  # Only save checkpoints every 10 epochs
             Path(dir_checkpoint).mkdir(parents=True, exist_ok=True)
-            torch.save(net.state_dict(), str(dir_checkpoint / 'checkpoint_epoch{}.pth'.format(epoch)))
+            save_dict = {'network': net.state_dict(),
+                         'optimizer': optimizer.state_dict()}
+            if scheduler_used:
+                save_dict['scheduler'] = scheduler.state_dict()
+
+            torch.save(save_dict, str(dir_checkpoint / 'checkpoint_epoch{}.pth'.format(epoch)))
             logging.info(f'Checkpoint {epoch} saved!')
