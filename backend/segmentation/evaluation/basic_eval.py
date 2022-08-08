@@ -30,11 +30,6 @@ def evaluate(net, dataloader, device):
             # predict the mask
             mask_pred = net(image)
 
-            # gets the image, prediction mask, and true mask
-            show_image = image
-            show_mask_pred = mask_pred
-            show_mask_true = mask_true
-
             # convert to one-hot format
             if net.n_classes == 1:
                 mask_pred = (F.sigmoid(mask_pred) > 0.5).float()
@@ -49,4 +44,4 @@ def evaluate(net, dataloader, device):
     # Fixes a potential division by zero error
     if num_val_batches == 0:
         return dice_score
-    return dice_score / num_val_batches, show_image, show_mask_pred, show_mask_true
+    return dice_score / num_val_batches, image, mask_pred, mask_true

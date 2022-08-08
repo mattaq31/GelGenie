@@ -129,12 +129,6 @@ def train_net(net, device, base_hardware='PC', model_name='milesial-UNet', epoch
             for batch in train_loader:
                 images = batch['image']
                 true_masks = batch['mask']
-                if model_name == 'milesial-Unet':  # TODO: remove this - this should not be model dependent.
-                    n_channels = net.n_channels
-                    n_classes = net.n_classes
-                else:
-                    n_channels = 1
-                    n_classes = 2
 
                 assert images.shape[1] == n_channels, \
                     f'Network has been defined with {n_channels} input channels, ' \
@@ -149,13 +143,13 @@ def train_net(net, device, base_hardware='PC', model_name='milesial-UNet', epoch
                 if loss_fn == 'both':
                     loss = criterion(masks_pred, true_masks) \
                            + dice_loss(F.softmax(masks_pred, dim=1).float(),
-                                       F.one_hot(true_masks, n_classes).permute(0, 3, 1, 2).float(),
+                                       F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float(),
                                        multiclass=True)
                 elif loss_fn == 'CrossEntropy':
                     loss = criterion(masks_pred, true_masks)
                 elif loss_fn == 'Dice':
                     loss = dice_loss(F.softmax(masks_pred, dim=1).float(),
-                                     F.one_hot(true_masks, n_classes).permute(0, 3, 1, 2).float(),
+                                     F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float(),
                                      multiclass=True)
 
                 optimizer.zero_grad()  # this ensures that all weight gradients are zeroed before moving on to the next set of gradients
