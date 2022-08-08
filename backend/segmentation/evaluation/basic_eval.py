@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 from tqdm import tqdm
 
-from segmentation.unet_utils.dice_score import multiclass_dice_coeff, dice_coeff
+from segmentation.helper_functions.dice_score import multiclass_dice_coeff, dice_coeff
 
 
 def evaluate(net, dataloader, device):
@@ -45,10 +45,6 @@ def evaluate(net, dataloader, device):
                 # compute the Dice score, ignoring background
                 dice_score += multiclass_dice_coeff(mask_pred[:, 1:, ...], mask_true[:, 1:, ...],
                                                     reduce_batch_first=False)
-
-        # break  # TODO: delete
-
-    net.train()
 
     # Fixes a potential division by zero error
     if num_val_batches == 0:

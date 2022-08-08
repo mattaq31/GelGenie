@@ -17,8 +17,10 @@ num_workers = 4 # parallel threads to use to speed up data processing
 img_scale = 0.5 # TODO: is this necessary to be 0.5?
 validation = 10 # % of the data that is used as validation (0-100)
 base_dir = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models'
-dir_img = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/labelled_gel_dataset/Images_Q1+Q2+selected'
-dir_mask = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/labelled_gel_dataset/Masks_Q1+Q2+selected'
+dir_train_mask = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/standard_set/training/masks'
+dir_train_img = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/standard_set/training/images'
+dir_val_img = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/standard_set/validation/images'
+dir_val_mask = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/standard_set/validation/masks'
 
 #[model]
 name = 'UNet'   # model architecture name

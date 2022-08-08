@@ -11,21 +11,21 @@ import torch
 import segmentation_models_pytorch as smp
 
 from segmentation.unet import UNet
-from segmentation.training.basic_training import train_net
+from segmentation.training.core_training import train_net
 from segmentation.helper_functions.general_functions import create_dir_if_empty
 
 
 def experiment_setup(parameter_config, **kwargs):
     """
     This function resolves conflicts between parameters defined in a config file and/or in the command-line options.
-    :param parameters: Config filepath
+    :param parameter_config: Config filepath
     :param kwargs: All other configuration options extracted from command-line
     :return: Dictionary of all resolved parameters
     """
 
     kwargs = {k: v for (k, v) in kwargs.items() if v is not None}  # filters out none values
 
-    # The default configuration if none are specified
+    # The default configuration options if none are specified
     kwargs_default = {'parameter_config': ("C:/2022_Summer_Intern/Automatic-Gel-Analysis/backend/segmentation/"
                                            "configs/PC_default.toml"),
                       'base_hardware': "EDDIE",
@@ -96,7 +96,7 @@ def experiment_setup(parameter_config, **kwargs):
     params['dir_checkpoint'] = Path(base_dir + '/checkpoints/')
     create_dir_if_empty(params['dir_checkpoint'])
 
-    # Copies the config file
+    # Copies the config file to the experiment folder
     config_file_name = 'config.toml'
     with open(base_dir + '/' + config_file_name, "w") as f:
         toml.dump(params, f)
@@ -153,8 +153,6 @@ def unet_train(parameter_config, **kwargs):
     device = params['device']
     print(f'Using device {device}')
 
-    # Change here to adapt to your data
-    # n_channels=3 for RGB images
     # n_classes is the number of probabilities you want to get per pixel
     if params['model_name'] == 'milesial-UNet':
         net = UNet(n_channels=int(params['n_channels']), n_classes=params['classes'], bilinear=params['bilinear'])  # initializing random weights
@@ -167,17 +165,12 @@ def unet_train(parameter_config, **kwargs):
     else:
         raise RuntimeError(f'Model {params["model_name"]} unidentified, must be milesial-UNet or UnetPlusPlus')
 
-    # TODO: how do we continue training from a model checkpoint?
-
-
-
-
     # prints out model summary to output directory
     model_structure = summary(net, mode='train', depth=5, device=device, verbose=0)
     with open(os.path.join(params['base_dir'], 'model_structure.txt'), 'w', encoding='utf-8') as f:
         f.write(str(model_structure))
 
-    if params['model_name'] == 'milesial-UNet':
+    if params['model_name'] == 'milesial-UNet':  # TODO: combine these into one - not all print statements are necessary.
         print(f'Model:\n'
               f'\t{params["model_name"]}'
               f'Network:\n'
@@ -191,8 +184,6 @@ def unet_train(parameter_config, **kwargs):
               f'\tencoder: resnet18\n'
               f'\t1 input channels\n'
               f'\t2 output channels (classes)\n')
-
-    print('Network Structure:')
 
     load = params['load']
     if load:

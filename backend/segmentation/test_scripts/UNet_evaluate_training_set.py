@@ -66,7 +66,7 @@ def experiment_setup(parameters, **kwargs):
         if params['device'] == 'cpu':
             print("GPU specified but cuda is unavailable, cpu will be used instead")
 
-    if params['base_hardware'] == "PC":  # Paths for working on Kiros's PC
+    if params['base_hardware'] == "PC":  # Paths for working on Kiros' PC
         if params['experiment_name'] == "PC_Gel":
             base_dir = "C:/2022_Summer_Intern/Gel_Images_UNet_Test"
             params['dir_img'] = Path('C:/2022_Summer_Intern/Gel_Images_UNet_Test/Image_cleaned')
@@ -101,7 +101,7 @@ def experiment_setup(parameters, **kwargs):
     params['dir_checkpoint'] = Path(base_dir + '/checkpoints/')
     create_dir_if_empty(params['dir_checkpoint'])
 
-    # Copies the config file
+    # Copies the config file to the experiment folder
     config_file_name = 'config.toml'
     with open(base_dir + '/' + config_file_name, "w") as f:
         toml.dump(params, f)
