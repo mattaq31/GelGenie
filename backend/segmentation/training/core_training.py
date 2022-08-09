@@ -102,7 +102,7 @@ def train_net(net, device, base_hardware='PC', model_name='milesial-UNet', epoch
     if load:
         optimizer.load_state_dict(load['optimizer'])
 
-    if scheduler_used != 'false':  # Scheduler will be used
+    if scheduler_used == 'ReduceLROnPlateau' or scheduler_used == 'CosineAnnealingWarmRestarts':  # Scheduler will be used
         scheduler = define_scheduler(optimizer, scheduler_type=scheduler_used)  # goal: maximize Dice score
     # TODO: optimizer and scheduler need to be reloaded from previous checkpoint if continuing training.
 
