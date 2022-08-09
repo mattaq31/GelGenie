@@ -13,15 +13,16 @@ from segmentation.helper_functions.dice_score import dice_loss
 from ..helper_functions.stat_functions import excel_stats
 from ..helper_functions.display_functions import plot_stats, show_segmentation
 from segmentation.evaluation.basic_eval import evaluate
-from .training_setup import define_optimizer
+from .training_setup import define_optimizer, define_scheduler
 from ..data_handling import prep_dataloader
 
 
 def train_net(net, device, base_hardware='PC', model_name='milesial-UNet', epochs=5, batch_size=8, learning_rate=1e-5,
               val_percent=0.1, save_checkpoint=True, img_scale=0.5, amp=False, dir_train_img=None,
-              dir_train_mask=None, dir_val_img=None, dir_val_mask=None, dir_checkpoint=None,
-              num_workers=1, segmentation_path='', base_dir='', n_channels=1, optimizer_type='adam', 
-              scheduler_used=False, load=False, loss_fn='both', apply_augmentations=False, padding=False):
+              dir_train_mask=None, split_training_dataset=False, dir_val_img=None, dir_val_mask=None,
+              dir_checkpoint=None, num_workers=1, segmentation_path='', base_dir='', n_channels=1,
+              optimizer_type='adam', scheduler_used='false', load=False, loss_fn='both',
+              apply_augmentations=False, padding=False):
     """
     TODO: documentation needs updating here.
     TODO: if not using val_percent anymore, this needs to be removed.
@@ -58,7 +59,7 @@ def train_net(net, device, base_hardware='PC', model_name='milesial-UNet', epoch
     """
 
     train_loader, val_loader, n_train, n_val = \
-        prep_dataloader(dir_train_img, dir_train_mask, dir_val_img, dir_val_mask,
+        prep_dataloader(dir_train_img, dir_train_mask, split_training_dataset, dir_val_img, dir_val_mask,
                         n_channels, img_scale, val_percent, batch_size, num_workers,
                         apply_augmentations, padding)
 
@@ -101,8 +102,8 @@ def train_net(net, device, base_hardware='PC', model_name='milesial-UNet', epoch
     if load:
         optimizer.load_state_dict(load['optimizer'])
 
-    if scheduler_used:  # Scheduler will be used
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=2)  # goal: maximize Dice score
+    if scheduler_used != 'false':  # Scheduler will be used
+        scheduler = define_scheduler(optimizer, scheduler_type=scheduler_used)  # goal: maximize Dice score
     # TODO: optimizer and scheduler need to be reloaded from previous checkpoint if continuing training.
 
         if load:

@@ -45,8 +45,9 @@ def experiment_setup(parameter_config, **kwargs):
                       'bilinear': False,
                       'n_channels': 1,
                       'base_dir': './',
+                      'split_training_dataset': False,
                       'optimizer_type': 'adam',
-                      'scheduler': False,
+                      'scheduler': 'false',
                       'loss': 'both',
                       'apply_augmentations': False,
                       'padding': False}
@@ -85,6 +86,10 @@ def experiment_setup(parameter_config, **kwargs):
     if params['padding'] is False and int(params['batch_size']) != 1:
         print(f'padding switched off but batch_size set to {params["batch_size"]}, now set to 1')
         params['batch_size'] = 1
+
+    if (params['model_name'] == 'UNetPlusPlus' or params['model_name'] == 'UNet') and params['padding'] is False:
+        print(f'The SMP Model {params["model_name"]} is being used but padding is turned off,\n'
+              f'consider turning it on if image size error occurs')
 
     # Make base directory for storing everything
     base_dir = os.path.join(params['base_dir'], params['experiment_name'] + '_' + strftime("%Y_%m_%d_%H;%M;%S"))
@@ -135,10 +140,11 @@ def experiment_setup(parameter_config, **kwargs):
 @click.option('--base_dir', default=None, help='[Path] Directory for output exports')
 @click.option('--dir_train_img', default=None, help='[Path] Directory of training images')
 @click.option('--dir_train_mask', default=None, help='[Path] Directory of training masks')
+@click.option('--split_training_dataset', type=click.BOOL, default=None, help='[Path] Directory of training images')
 @click.option('--dir_val_img', default=None, help='[Path] Directory of validation images')
 @click.option('--dir_val_mask', default=None, help='[Path] Directory of validation masks')
 @click.option('--optimizer_type', default=None, help='[String] Type of optimizer to be used [adam/rmsprop]')
-@click.option('--scheduler', type=click.BOOL, default=None, help='[Bool] Whether a scheduler is used during training')
+@click.option('--scheduler', default=None, help='[String (false for none)] Which scheduler is used during training')
 @click.option('--loss', default=None, help='[String] Components of the Loss function [CrossEntropy/Dice/Both]')
 @click.option('--apply_augmentations', type=click.BOOL, default=None,
               help='[Bool] Whether augmentations are applied to training images')
@@ -201,6 +207,7 @@ def unet_train(parameter_config, **kwargs):
               amp=params['amp'],
               dir_train_img=params['dir_train_img'],
               dir_train_mask=params['dir_train_mask'],
+              split_training_dataset=params['split_training_dataset'],
               dir_val_img=params['dir_val_img'],
               dir_val_mask=params['dir_val_mask'],
               dir_checkpoint=params['dir_checkpoint'],

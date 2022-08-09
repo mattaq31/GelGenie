@@ -16,7 +16,7 @@ from segmentation.helper_functions.general_functions import extract_image_names_
 
 class BasicDataset(Dataset):
     def __init__(self, images_dir: str, masks_dir: str, n_channels: int, scale: float = 1.0, mask_suffix: str = '',
-                 augmentations=None, padding: bool = False):
+                 augmentations=None, padding: bool = False, image_names=None):
         """
         TODO: fill in documentation
         :param images_dir:
@@ -37,7 +37,10 @@ class BasicDataset(Dataset):
         self.scale = scale
         self.mask_suffix = mask_suffix
         self.standard_image_transform = transforms.Compose([transforms.ToTensor()])
-        self.image_names = extract_image_names_from_folder(images_dir)
+        if image_names is not None:
+            self.image_names = image_names
+        else:
+            self.image_names = extract_image_names_from_folder(images_dir)
         self.mask_names = extract_image_names_from_folder(masks_dir)
 
         # this step allows the image and mask to have different file extensions
@@ -65,6 +68,9 @@ class BasicDataset(Dataset):
 
     def __len__(self):
         return len(self.image_names)
+
+    def set_augmentations(self, augmentations):
+        self.augmentations = augmentations
 
     @staticmethod
     def load_image(self, filename, n_channels):
@@ -104,7 +110,8 @@ class BasicDataset(Dataset):
         return final_mask
 
     def __getitem__(self, idx):
-
+        # print('Dataloader is %s, image IDX is: %s, image_name is %s' % ('validation' if not self.augmentations else 'Training', idx, self.image_names[idx]))
+        # return np.zeros((5,5))
         img_file = self.image_names[idx]
         mask_file = self.masks_dict[os.path.basename(img_file).split('.')[0]]
 
@@ -133,7 +140,6 @@ class BasicDataset(Dataset):
 
         img_tensor = self.standard_image_transform(img_array)
         mask_tensor = torch.from_numpy(mask_array)
-
         return {
             'image': img_tensor,
             'mask': mask_tensor.int().contiguous()  # TODO: why do we need this .contiguous() call?

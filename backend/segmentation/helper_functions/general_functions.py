@@ -11,7 +11,7 @@ def create_dir_if_empty(*directories):
 
 def extract_image_names_from_folder(folder, sorted=True, recursive=False):
     filenames = []
-    for extension in ['*.jpg', '*.JPG', '*.png', '*.bmp', '*.tif']:
+    for extension in ['*.jpg', '*.png', '*.bmp', '*.tif']:
         if recursive:
             glob_path = os.path.join(folder, '**', extension)
         else:

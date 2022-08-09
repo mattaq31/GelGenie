@@ -24,11 +24,19 @@ def define_optimizer(optim_weights, lr=1e-4, optimizer_params=None, optimizer_ty
     return optimizer
 
 
-def define_scheduler():
-    # Add this scheduler here:
-    # learning_rate_scheduler = \
-    #     optim.lr_scheduler.CosineAnnealingWarmRestarts(base_optimizer, T_mult=scheduler_params['t_mult'],
-    #                                                    T_0=scheduler_params['restart_period'],
-    #                                                    eta_min=scheduler_params['lr_min'])
+def define_scheduler(base_optimizer, scheduler_type='ReduceLROnPlateau'):
+    if scheduler_type == 'ReduceLROnPlateau':
+        # goal: maximize Dice score
+        learning_rate_scheduler = optim.lr_scheduler.ReduceLROnPlateau(base_optimizer, 'max', patience=2)
 
-    raise NotImplementedError
+    # Add this scheduler here:
+    elif scheduler_type == 'CosineAnnealingWarmRestarts':
+        scheduler_params = {'t_mult': 1,
+                            'restart_period': 10,
+                            'lr_min': 1e-7}
+        learning_rate_scheduler = \
+            optim.lr_scheduler.CosineAnnealingWarmRestarts(base_optimizer, T_mult=scheduler_params['t_mult'],
+                                                           T_0=scheduler_params['restart_period'],
+                                                           eta_min=scheduler_params['lr_min'])
+
+    return learning_rate_scheduler
