@@ -38,5 +38,6 @@ def define_scheduler(base_optimizer, scheduler_type='ReduceLROnPlateau'):
             optim.lr_scheduler.CosineAnnealingWarmRestarts(base_optimizer, T_mult=scheduler_params['t_mult'],
                                                            T_0=scheduler_params['restart_period'],
                                                            eta_min=scheduler_params['lr_min'])
-
+    else:
+        print(f'No scheduler chosen, scheduler = {scheduler_type}')
     return learning_rate_scheduler
