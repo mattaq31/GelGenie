@@ -2,7 +2,7 @@
 """ Full assembly of the parts to form the complete network """
 
 from .unet_parts import *
-from segmentation_models_pytorch import UnetPlusPlus
+from segmentation_models_pytorch import UnetPlusPlus, Unet
 
 
 class UNet(nn.Module):
@@ -39,6 +39,33 @@ class UNet(nn.Module):
 
 
 class smp_UNetPlusPlus(UnetPlusPlus):
+    def __init__(self,
+                 encoder_name="resnet34",
+                 encoder_depth=5,
+                 encoder_weights="imagenet",
+                 decoder_use_batchnorm=True,
+                 decoder_channels=(256, 128, 64, 32, 16),
+                 decoder_attention_type=None,
+                 in_channels=3,
+                 classes=1,
+                 activation=None,
+                 aux_params=None):
+        super().__init__(encoder_name,
+                         encoder_depth,
+                         encoder_weights,
+                         decoder_use_batchnorm,
+                         decoder_channels,
+                         decoder_attention_type,
+                         in_channels,
+                         classes,
+                         activation,
+                         aux_params)
+        self.n_channels = in_channels
+        self.n_classes = classes
+        self.bilinear = False
+
+
+class smp_UNet(Unet):
     def __init__(self,
                  encoder_name="resnet34",
                  encoder_depth=5,
