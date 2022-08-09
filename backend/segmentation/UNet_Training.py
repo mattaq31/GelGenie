@@ -9,7 +9,7 @@ from torchinfo import summary
 
 import torch
 
-from segmentation.unet import UNet, smp_UNetPlusPlus
+from segmentation.unet import UNet, smp_UNetPlusPlus, smp_UNet
 from segmentation.training.core_training import train_net
 from segmentation.helper_functions.general_functions import create_dir_if_empty
 
@@ -119,7 +119,7 @@ def experiment_setup(parameter_config, **kwargs):
                                                        'containing configs for this experiment')
 @click.option('--base_hardware', default=None, help='[String] Where the program is run [EDDIE/PC]')
 @click.option('--core', default=None, help='[String] Which processor is used [GPU/CPU]')
-@click.option('--model_name', default=None, help='[String] Which model is used [milesial-UNet/UNetPlusPlus]')
+@click.option('--model_name', default=None, help='[String] Which model is used [milesial-UNet/UNetPlusPlus/smp-UNet]')
 @click.option('--pe', type=click.INT, default=None, help='[int] How many parallel environments (cores) needed')
 @click.option('--memory', type=click.INT, default=None, help='[int] Required memory per core in GBytes')
 @click.option('--epochs', type=click.INT, default=None, help='[int] Number of epochs desired')
@@ -163,6 +163,12 @@ def unet_train(parameter_config, **kwargs):
         net = UNet(n_channels=int(params['n_channels']), n_classes=params['classes'], bilinear=params['bilinear'])  # initializing random weights
     elif params['model_name'] == 'UNetPlusPlus':
         net = smp_UNetPlusPlus(
+            encoder_name="resnet18",  # choose encoder, e.g. mobilenet_v2 or efficientnet-b7
+            in_channels=1,  # model input channels (1 for gray-scale images, 3 for RGB, etc.)
+            classes=2,  # model output channels (number of classes in your dataset)
+        )
+    elif params['model_name'] == 'smp-UNet':
+        net = smp_UNet(
             encoder_name="resnet18",  # choose encoder, e.g. mobilenet_v2 or efficientnet-b7
             in_channels=1,  # model input channels (1 for gray-scale images, 3 for RGB, etc.)
             classes=2,  # model output channels (number of classes in your dataset)
