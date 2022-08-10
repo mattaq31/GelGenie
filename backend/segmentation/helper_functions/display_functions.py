@@ -87,7 +87,8 @@ def show_segmentation(image, mask_pred, mask_true, epoch_number, dice_score, seg
     threshold_mask_array = np.zeros((height, width))  # [H,W]
     for h in range(height):
         for w in range(width):
-            if mask_pred_array[0][h][w] < 0.5 and mask_pred_array[1][h][w] > 0.5:
+            # The threshold is set to 0.8
+            if mask_pred_array[0][h][w] < 0.2 and mask_pred_array[1][h][w] > 0.8:
                 threshold_mask_array[h][w] = 1
 
     labelled_bands = watershed_seg(threshold_mask_array, 0.5, 0.5)

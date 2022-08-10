@@ -8,6 +8,7 @@ import wandb
 import os
 from pathlib import Path
 import logging
+import numpy as np
 
 from segmentation.helper_functions.dice_score import dice_loss
 from ..helper_functions.stat_functions import excel_stats
@@ -73,10 +74,16 @@ def train_net(net, device, base_hardware='PC', model_name='milesial-UNet', epoch
                                 name=os.path.basename(base_dir),
                                 resume='allow')
 
-    experiment.config.update(dict(epochs=epochs, batch_size=batch_size, learning_rate=learning_rate,
-                                  val_percent=val_percent, save_checkpoint=save_checkpoint, img_scale=img_scale,
-                                  amp=amp, n_channels=n_channels, optimizer_type=optimizer_type,
-                                  scheduler_used=scheduler_used, base_dir=base_dir))
+    experiment.config.update(
+        dict(model_name=model_name, epochs=epochs, batch_size=batch_size, learning_rate=learning_rate,
+             val_percent=val_percent, save_checkpoint=save_checkpoint, img_scale=img_scale,
+             amp=amp, dir_train_img=dir_train_img, dir_train_mask=dir_train_mask,
+             split_training_dataset=split_training_dataset,
+             dir_val_img=dir_val_img, dir_val_mask=dir_val_mask,
+             dir_checkpoint=dir_checkpoint, num_workers=num_workers, segmentation_path=segmentation_path,
+             base_dir=base_dir, n_channels=n_channels,
+             optimizer_type=optimizer_type, scheduler_used=scheduler_used, load=load, loss_fn=loss_fn,
+             apply_augmentations=apply_augmentations, padding=padding))
 
     print("Starting training:\n",
           f"Epochs:          {epochs}\n",
@@ -104,12 +111,10 @@ def train_net(net, device, base_hardware='PC', model_name='milesial-UNet', epoch
 
     if scheduler_used == 'ReduceLROnPlateau' or scheduler_used == 'CosineAnnealingWarmRestarts':  # Scheduler will be used
         scheduler = define_scheduler(optimizer, scheduler_type=scheduler_used)  # goal: maximize Dice score
-    # TODO: optimizer and scheduler need to be reloaded from previous checkpoint if continuing training.
+        # TODO: optimizer and scheduler need to be reloaded from previous checkpoint if continuing training.
 
         if load:
             scheduler.load_state_dict(load['scheduler'])
-
-
 
     criterion = nn.CrossEntropyLoss()
     global_step = 0
@@ -119,7 +124,7 @@ def train_net(net, device, base_hardware='PC', model_name='milesial-UNet', epoch
 
     columns = ['Epoch', 'Image', 'Mask Prediction', 'Separated bands',
                'Super-imposed mask prediction', 'True Mask']
-    table_list = []
+    # table_list = []
 
     # Begin training
     for epoch in range(1, epochs + 1):
@@ -183,11 +188,32 @@ def train_net(net, device, base_hardware='PC', model_name='milesial-UNet', epoch
                                   epoch, dice_score=val_loss_log[-1], segmentation_path=segmentation_path,
                                   n_channels=n_channels)
 
-            table_list.append([f'Epoch {epoch}/{epochs}', wandb.Image(image_array, caption=f'Epoch {epoch}'),
-                               wandb.Image(threshold_mask_array), wandb.Image(labelled_bands),
-                               wandb.Image(combi_mask_array), wandb.Image(mask_true_array)])
+            # table_list.append([f'Epoch {epoch}/{epochs}', wandb.Image(image_array, caption=f'Epoch {epoch}'),
+            #                    wandb.Image(threshold_mask_array), wandb.Image(labelled_bands),
+            #                    wandb.Image(combi_mask_array), wandb.Image(mask_true_array)])
 
-            table = wandb.Table(data=table_list, columns=columns)  # TODO: This table is difficult to view on wandb - fix or remove
+            # table = wandb.Table(data=table_list, columns=columns)
+            # TODO: This table is difficult to view on wandb - fix or remove
+
+            # Creating arrays of training set to log into wandb
+            if n_channels == 1:
+                height = images[0].squeeze().size(dim=0)
+                width = images[0].squeeze().size(dim=1)
+                show_train_image_array = images[0].detach().squeeze().cpu().numpy()
+            elif n_channels == 3:
+                height = images[0].squeeze().size(dim=1)
+                width = images[0].squeeze().size(dim=2)
+                show_train_image_array = np.transpose(images[0].detach().squeeze().cpu().numpy(), (1, 2, 0))  # np array [H, W, C]
+
+            train_pred_array = masks_pred[0].detach().squeeze().cpu().numpy()  # Copies prediction into np array [C, H, W]
+            show_train_pred_thresholded_array = np.zeros((height, width), dtype=int)  # [H,W]
+            for h in range(height):
+                for w in range(width):
+                    # The threshold is set to 0.8
+                    if train_pred_array[0][h][w] < 0.2 and train_pred_array[1][h][w] > 0.8:
+                        show_train_pred_thresholded_array[h][w] = 1
+
+            show_train_mask_array = true_masks[0].detach().squeeze().cpu().numpy()  # Copies true mask[1] into np array [H,W]
 
             # Logging onto wandb
             logging.info('Validation Dice score: {}'.format(val_score))
@@ -195,20 +221,36 @@ def train_net(net, device, base_hardware='PC', model_name='milesial-UNet', epoch
                 'learning rate': optimizer.param_groups[0]['lr'],
                 'validation Dice': val_score,
                 'train': {
-                    'images': wandb.Image(images[0].cpu()),
+                    'images': wandb.Image(show_train_image_array),
                     'masks': {
-                        'true': wandb.Image(true_masks[0].float().cpu()),
-                        'pred': wandb.Image(torch.softmax(masks_pred, dim=1).argmax(dim=1)[0].float().cpu()),
+                        'true': wandb.Image(show_train_mask_array),
+                        'pred': wandb.Image(show_train_pred_thresholded_array),
                     },
                 },
+                # 'train': {
+                #     'images': wandb.Image(np.transpose(images[0].detach().squeeze().cpu().numpy(), (1, 2, 0))),
+                #     'masks': {
+                #         'true': wandb.Image(true_masks[0].float().cpu()),
+                #         'pred': wandb.Image(torch.softmax(masks_pred, dim=1).argmax(dim=1)[0].float().cpu()),
+                #     },
+                # },
                 'val': {
-                    'images': wandb.Image(show_image.cpu()),
+                    'images': wandb.Image(image_array),
                     'masks': {
-                        'true': wandb.Image(show_mask_true.cpu()),
-                        'pred': wandb.Image(show_mask_pred.cpu()),
+                        'true': wandb.Image(mask_true_array),
+                        'pred': wandb.Image(threshold_mask_array, caption='Threshold = 0.8'),
+                        'pred-superimposed': wandb.Image(combi_mask_array),
+                        'labelled-bands': wandb.Image(labelled_bands),
                     },
                 },
-                'table': table,
+                # 'val': {
+                #     'images': wandb.Image(show_image.cpu()),
+                #     'masks': {
+                #         'true': wandb.Image(show_mask_true.cpu()),
+                #         'pred': wandb.Image(show_mask_pred.cpu()),
+                #     },
+                # },
+                # 'table': table,
                 'step': global_step,
                 'epoch': epoch,
                 **histograms  # TODO: remove this histogram
