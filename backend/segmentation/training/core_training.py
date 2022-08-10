@@ -180,8 +180,10 @@ def train_net(net, device, base_hardware='PC', model_name='milesial-UNet', epoch
 
             val_loss_log.append(val_score.item())  # Append dice score
 
-            if scheduler_used:
+            if scheduler_used == 'ReduceLROnPlateau':
                 scheduler.step(val_score)
+            elif scheduler_used == 'CosineAnnealingWarmRestarts':
+                scheduler.step()
 
             image_array, threshold_mask_array, labelled_bands, combi_mask_array, mask_true_array = \
                 show_segmentation(show_image.squeeze(), show_mask_pred.squeeze(), show_mask_true.squeeze(),
@@ -253,7 +255,7 @@ def train_net(net, device, base_hardware='PC', model_name='milesial-UNet', epoch
                 # 'table': table,
                 'step': global_step,
                 'epoch': epoch,
-                **histograms  # TODO: remove this histogram
+                # **histograms  # TODO: remove this histogram
             })
 
             # All batches in the epoch iterated through, append loss values as string type
