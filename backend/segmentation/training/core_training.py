@@ -280,3 +280,14 @@ def train_net(net, device, base_hardware='PC', model_name='milesial-UNet', epoch
 
             torch.save(save_dict, str(dir_checkpoint / 'checkpoint_epoch{}.pth'.format(epoch)))
             logging.info(f'Checkpoint {epoch} saved!')
+
+        if save_checkpoint and val_loss_log[-1] == np.max(val_loss_log):
+            Path(dir_checkpoint).mkdir(parents=True, exist_ok=True)
+            save_dict = {'network': net.state_dict(),
+                         'optimizer': optimizer.state_dict()}
+            if scheduler_used:
+                save_dict['scheduler'] = scheduler.state_dict()
+
+            torch.save(save_dict, str(dir_checkpoint)+'/max_epoch.pth')
+            logging.info(f'Max epoch Checkpoint {epoch} saved!')
+            print(f'Max epoch Checkpoint {epoch} saved!')
