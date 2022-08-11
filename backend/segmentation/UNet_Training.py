@@ -97,6 +97,8 @@ def experiment_setup(parameter_config, **kwargs):
     create_dir_if_empty(base_dir)  # TODO: instead of overwriting, warn user if folder already exists and has data inside
     # os.mkdir raises FileExistsError if directory already exists
 
+    print(f'Base Directory: {base_dir}')
+
     params['base_dir'] = base_dir
     params['dir_checkpoint'] = Path(base_dir + '/checkpoints/')
     create_dir_if_empty(params['dir_checkpoint'])
