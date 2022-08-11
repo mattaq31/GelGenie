@@ -97,8 +97,6 @@ def experiment_setup(parameter_config, **kwargs):
     create_dir_if_empty(base_dir)  # TODO: instead of overwriting, warn user if folder already exists and has data inside
     # os.mkdir raises FileExistsError if directory already exists
 
-    print(f'Base Directory: {base_dir}')
-
     params['base_dir'] = base_dir
     params['dir_checkpoint'] = Path(base_dir + '/checkpoints/')
     create_dir_if_empty(params['dir_checkpoint'])
@@ -192,7 +190,8 @@ def unet_train(parameter_config, **kwargs):
                     f'\t{net.n_channels} input channels\n' \
                     f'\t{net.n_classes} output channels (classes)\n' \
                     f'\tPretrained weights: {params["pretrained"]}' \
-                    f'\t{"Bilinear" if net.bilinear else "Transposed conv"} upscaling (not applicable to UNetPlusPlus)'
+                    f'\t{"Bilinear" if net.bilinear else "Transposed conv"} upscaling (not applicable to UNet++)' \
+                    f'Base Directory: {params["base_dir"]}'
     print(model_created)
     logging.info(model_created)
 
