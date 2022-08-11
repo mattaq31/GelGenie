@@ -85,18 +85,20 @@ def train_net(net, device, base_hardware='PC', model_name='milesial-UNet', epoch
              optimizer_type=optimizer_type, scheduler_used=scheduler_used, load=load, loss_fn=loss_fn,
              apply_augmentations=apply_augmentations, padding=padding))
 
-    print("Starting training:\n",
-          f"Epochs:          {epochs}\n",
-          f"Batch size:      {batch_size}\n",
-          f"Learning rate:   {learning_rate}\n",
-          f"Training size:   {n_train}\n",
-          f"Validation size: {n_val}\n",
-          f"Checkpoints:     {save_checkpoint}\n",
-          f"Device:          {device.type}\n",
-          f"Images scaling:  {img_scale}\n",
-          f"Mixed Precision: {amp}\n",
-          f"Optimizer Type:  {optimizer_type}\n",
-          f"Scheduler Used:  {scheduler_used}")
+    starting_training = f'Starting training:\n' \
+                        f'Epochs:          {epochs}\n' \
+                        f'Batch size:      {batch_size}\n' \
+                        f'Learning rate:   {learning_rate}\n' \
+                        f'Training size:   {n_train}\n' \
+                        f'Validation size: {n_val}\n' \
+                        f'Checkpoints:     {save_checkpoint}\n' \
+                        f'Device:          {device.type}\n' \
+                        f'Images scaling:  {img_scale}\n' \
+                        f'Mixed Precision: {amp}\n' \
+                        f'Optimizer Type:  {optimizer_type}\n' \
+                        f'Scheduler Used:  {scheduler_used}'
+    print(starting_training)
+    logging.info(starting_training)
 
     # 4. Set up the optimizer, the loss, the learning rate scheduler and the loss scaling for AMP
     if optimizer_type == 'rmsprop':
@@ -115,6 +117,8 @@ def train_net(net, device, base_hardware='PC', model_name='milesial-UNet', epoch
 
         if load:
             scheduler.load_state_dict(load['scheduler'])
+
+    grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
 
     criterion = nn.CrossEntropyLoss()
     global_step = 0
@@ -144,23 +148,25 @@ def train_net(net, device, base_hardware='PC', model_name='milesial-UNet', epoch
                 images = images.to(device=device)  # TODO: why is there this torch.long dtype here?
                 true_masks = true_masks.to(device=device, dtype=torch.long)
 
-                masks_pred = net(images)
+                with torch.cuda.amp.autocast(enabled=amp):
+                    masks_pred = net(images)
 
-                if loss_fn == 'both':
-                    loss = criterion(masks_pred, true_masks) \
-                           + dice_loss(F.softmax(masks_pred, dim=1).float(),
-                                       F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float(),
-                                       multiclass=True)
-                elif loss_fn == 'CrossEntropy':
-                    loss = criterion(masks_pred, true_masks)
-                elif loss_fn == 'Dice':
-                    loss = dice_loss(F.softmax(masks_pred, dim=1).float(),
-                                     F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float(),
-                                     multiclass=True)
+                    if loss_fn == 'both':
+                        loss = criterion(masks_pred, true_masks) \
+                               + dice_loss(F.softmax(masks_pred, dim=1).float(),
+                                           F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float(),
+                                           multiclass=True)
+                    elif loss_fn == 'CrossEntropy':
+                        loss = criterion(masks_pred, true_masks)
+                    elif loss_fn == 'Dice':
+                        loss = dice_loss(F.softmax(masks_pred, dim=1).float(),
+                                         F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float(),
+                                         multiclass=True)
 
                 optimizer.zero_grad()  # this ensures that all weight gradients are zeroed before moving on to the next set of gradients
-                loss.backward()  # this calculates the gradient for all weights (backpropagation)
-                optimizer.step()  # here, the optimizer will calculate and make the change necessary for each weight based on its defined rules
+                grad_scaler.scale(loss).backward()  # this calculates the gradient for all weights (backpropagation)
+                grad_scaler.step(optimizer)  # here, the optimizer will calculate and make the change necessary for each weight based on its defined rules
+                grad_scaler.update()
 
                 pbar.update(images.shape[0])
                 global_step += 1

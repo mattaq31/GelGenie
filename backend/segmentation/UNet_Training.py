@@ -30,6 +30,7 @@ def experiment_setup(parameter_config, **kwargs):
                       'base_hardware': "EDDIE",
                       'core': "GPU",
                       'model_name': 'milesial-UNet',
+                      'pretrained': None,
                       'pe': 1,
                       'memory': 64,
                       'epochs': 10,
@@ -120,6 +121,7 @@ def experiment_setup(parameter_config, **kwargs):
 @click.option('--base_hardware', default=None, help='[String] Where the program is run [EDDIE/PC]')
 @click.option('--core', default=None, help='[String] Which processor is used [GPU/CPU]')
 @click.option('--model_name', default=None, help='[String] Which model is used [milesial-UNet/UNetPlusPlus/smp-UNet]')
+@click.option('--pretrained', default=None, help='[String] Which pretrained weight to use [imagenet/ ssl/ swsl]')
 @click.option('--pe', type=click.INT, default=None, help='[int] How many parallel environments (cores) needed')
 @click.option('--memory', type=click.INT, default=None, help='[int] Required memory per core in GBytes')
 @click.option('--epochs', type=click.INT, default=None, help='[int] Number of epochs desired')
@@ -164,6 +166,7 @@ def unet_train(parameter_config, **kwargs):
     elif params['model_name'] == 'UNetPlusPlus':
         net = smp_UNetPlusPlus(
             encoder_name="resnet18",  # choose encoder, e.g. mobilenet_v2 or efficientnet-b7
+            encoder_weights=params['pretrained'],
             in_channels=1,  # model input channels (1 for gray-scale images, 3 for RGB, etc.)
             classes=2,  # model output channels (number of classes in your dataset)
         )
@@ -181,12 +184,15 @@ def unet_train(parameter_config, **kwargs):
     with open(os.path.join(params['base_dir'], 'model_structure.txt'), 'w', encoding='utf-8') as f:
         f.write(str(model_structure))
 
-    print(f'Model:\n'
-          f'\t{params["model_name"]}'
-          f'Network:\n'
-          f'\t{net.n_channels} input channels\n'
-          f'\t{net.n_classes} output channels (classes)\n'
-          f'\t{"Bilinear" if net.bilinear else "Transposed conv"} upscaling (not applicable to UNetPlusPlus)')
+    model_created = f'Model:\n' \
+                    f'\t{params["model_name"]}' \
+                    f'Network:\n' \
+                    f'\t{net.n_channels} input channels\n' \
+                    f'\t{net.n_classes} output channels (classes)\n' \
+                    f'\tPretrained weights: {params["pretrained"]}' \
+                    f'\t{"Bilinear" if net.bilinear else "Transposed conv"} upscaling (not applicable to UNetPlusPlus)'
+    print(model_created)
+    logging.info(model_created)
 
 
     load = params['load']

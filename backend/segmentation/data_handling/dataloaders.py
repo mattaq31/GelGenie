@@ -142,5 +142,61 @@ class BasicDataset(Dataset):
         mask_tensor = torch.from_numpy(mask_array)
         return {
             'image': img_tensor,
+            'image_name': os.path.basename(img_file).split('.')[0],
             'mask': mask_tensor.int().contiguous()  # TODO: why do we need this .contiguous() call?
+        }
+
+
+class ImageDataset(BasicDataset):
+    def __init__(self, images_dir: str, n_channels: int, padding: bool = False):
+        super().__init__(images_dir, n_channels=n_channels, padding=padding)
+        self.images_dir = Path(images_dir)
+        self.n_channels = n_channels
+        self.standard_image_transform = transforms.Compose([transforms.ToTensor()])
+        self.padding = padding
+
+        if padding:
+            max_dimension = 0
+            # loops through provided images and extracts the largest image dimension, for use if padding is selected
+            for root, dirs, files in os.walk(self.images_dir):
+                for name in files:
+                    image_file = os.path.join(root, name)
+                    image = imageio.imread(image_file)  # TODO: investigate the warning here...
+                    max_dimension = max(max_dimension, image.shape[0], image.shape[1])
+            max_dimension = 32 * (max_dimension // 32 + 1)  # to be divisible by 32 TODO: why?
+
+            self.max_dimension = max_dimension
+
+    def __len__(self):
+        return super().__len__()
+
+    @staticmethod
+    def load_image(self, filename, n_channels):
+        return super().load_image(self, filename, n_channels)
+
+    def __getitem__(self, idx):
+        # print('Dataloader is %s, image IDX is: %s, image_name is %s' % ('validation' if not self.augmentations else 'Training', idx, self.image_names[idx]))
+        # return np.zeros((5,5))
+        img_file = self.image_names[idx]
+
+        img_array = self.load_image(self, filename=img_file, n_channels=self.n_channels)
+
+        if self.augmentations:
+            sample = self.augmentations(image=img_array, mask=mask_array)
+            img_array = sample['image']
+            mask_array = sample['mask']
+
+        if self.padding:
+            top = (self.max_dimension - img_array.shape[0]) // 2
+            bottom = self.max_dimension - img_array.shape[0] - top
+            left = (self.max_dimension - img_array.shape[1]) // 2
+            right = self.max_dimension - img_array.shape[1] - left
+
+            img_array = np.pad(img_array, pad_width=((top, bottom), (left, right)), mode='constant')
+
+        img_tensor = self.standard_image_transform(img_array)
+
+        return {
+            'image': img_tensor,
+            'image_name': os.path.basename(img_file).split('.')[0],
         }
