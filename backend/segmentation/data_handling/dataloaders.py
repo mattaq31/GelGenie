@@ -182,9 +182,8 @@ class ImageDataset(BasicDataset):
         img_array = self.load_image(self, filename=img_file, n_channels=self.n_channels)
 
         if self.augmentations:
-            sample = self.augmentations(image=img_array, mask=mask_array)
+            sample = self.augmentations(image=img_array)
             img_array = sample['image']
-            mask_array = sample['mask']
 
         if self.padding:
             top = (self.max_dimension - img_array.shape[0]) // 2

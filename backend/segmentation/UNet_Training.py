@@ -173,6 +173,7 @@ def unet_train(parameter_config, **kwargs):
     elif params['model_name'] == 'smp-UNet':
         net = smp_UNet(
             encoder_name="resnet18",  # choose encoder, e.g. mobilenet_v2 or efficientnet-b7
+            encoder_weights=params['pretrained'],
             in_channels=1,  # model input channels (1 for gray-scale images, 3 for RGB, etc.)
             classes=2,  # model output channels (number of classes in your dataset)
         )
