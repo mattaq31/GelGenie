@@ -10,30 +10,32 @@ def prep_dataloader(dir_train_img, dir_train_mask, split_training_dataset, dir_v
                     apply_augmentations, padding):
     """
     TODO: fill in documentation
-    :param dir_train_img:
-    :param dir_train_mask:
-    :param split_training_dataset:
-    :param dir_val_img:
-    :param dir_val_mask:
-    :param n_channels:
-    :param img_scale:
-    :param val_percent:
-    :param batch_size:
-    :param num_workers:
-    :param apply_augmentations:
-    :param padding:
+    :param dir_train_img: Path of directory of training set images
+    :param dir_train_mask: Path of directory of training set masks
+    :param split_training_dataset: (Bool) Whether to split training dataset into training/ validation datasets
+    :param dir_val_img: Path of directory of validation set images
+    :param dir_val_mask: Path of directory of validation set masks
+    :param n_channels: (int) Number of colour channels for model input
+    :param img_scale: (float) Downscaling factor of the images
+    :param val_percent: (float) % of the data that is used as validation normalized between 0 and 1
+    :param batch_size: (int) Number of images loaded per batch
+    :param num_workers: (int) Number of workers for dataloader (parallel dataloader threads speed up data processing)
+    :param apply_augmentations: (Bool) Whether to apply augmentations when loading training images
+    :param padding: (Bool) Whether to apply padding to images and masks when loading training and validation images
     :return:
     """
 
     # 1. Create dataset
-    if split_training_dataset:
+    if split_training_dataset:  # Split into train / validation partitions
         image_names = extract_image_names_from_folder(dir_train_img)
 
+        # Calculate expected length of validation/training set
         n_val = int(len(image_names) * val_percent)
         n_train = len(image_names) - n_val
 
         rng = np.random.default_rng()
         rng.shuffle(image_names, axis=0)
+        # Slice off the random images with expected length (without no overlap of both sets)
         val_image_names = image_names[:n_val]
         train_image_names = image_names[n_val:]
     else:
@@ -51,10 +53,8 @@ def prep_dataloader(dir_train_img, dir_train_mask, split_training_dataset, dir_v
     val_set = BasicDataset(dir_val_img, dir_val_mask, n_channels, img_scale,
                            augmentations=None, padding=padding,
                            image_names=val_image_names)
-    # 2. Split into train / validation partitions TODO: restore this functionality, make it user-controlled
-    # n_val = int(len(dataset) * val_percent)
-    # n_train = len(dataset) - n_val
-    # train_set, val_set = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(0))
+
+    # Confirm the length of training/ validation sets
     n_train = int(len(train_set))
     n_val = int(len(val_set))
 

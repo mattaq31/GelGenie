@@ -138,7 +138,7 @@ def experiment_setup(parameter_config, **kwargs):
 @click.option('--load', default=None, help='[Bool/Path] Load model from a .pth file')
 @click.option('--classes', type=click.INT, default=None, help='[int] Number of classes/probabilities per pixel')
 @click.option('--bilinear', type=click.BOOL, default=None, help='[Bool] Use bilinear upsampling')
-@click.option('--n_channels', type=click.INT, default=None, help='[int] Input image number of colour channels')
+@click.option('--n_channels', type=click.INT, default=None, help='[int] Number of colour channels for model input')
 @click.option('--base_dir', default=None, help='[Path] Directory for output exports')
 @click.option('--dir_train_img', default=None, help='[Path] Directory of training images')
 @click.option('--dir_train_mask', default=None, help='[Path] Directory of training masks')
@@ -166,14 +166,14 @@ def unet_train(parameter_config, **kwargs):
     elif params['model_name'] == 'UNetPlusPlus':
         net = smp_UNetPlusPlus(
             encoder_name="resnet18",  # choose encoder, e.g. mobilenet_v2 or efficientnet-b7
-            encoder_weights=params['pretrained'],
+            encoder_weights=params['pretrained'],  # choose which pretrained weights to use (or none)
             in_channels=1,  # model input channels (1 for gray-scale images, 3 for RGB, etc.)
             classes=2,  # model output channels (number of classes in your dataset)
         )
     elif params['model_name'] == 'smp-UNet':
         net = smp_UNet(
             encoder_name="resnet18",  # choose encoder, e.g. mobilenet_v2 or efficientnet-b7
-            encoder_weights=params['pretrained'],
+            encoder_weights=params['pretrained'],  # choose which pretrained weights to use (or none)
             in_channels=1,  # model input channels (1 for gray-scale images, 3 for RGB, etc.)
             classes=2,  # model output channels (number of classes in your dataset)
         )
@@ -196,15 +196,14 @@ def unet_train(parameter_config, **kwargs):
     print(model_created)
     logging.info(model_created)
 
-
+    # Loading in progress from previous checkpoint
     load = params['load']
     if load:
         saved_dict = torch.load(load, map_location=device)
-        net.load_state_dict(saved_dict['network'])
+        net.load_state_dict(saved_dict['network'])  # Load in state dictionary of model network
         logging.info(f'Model loaded from {load}')
         print(f'Model loaded from {load}')
         load = saved_dict
-
 
     net.to(device=device)
 

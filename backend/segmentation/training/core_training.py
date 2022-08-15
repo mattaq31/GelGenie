@@ -25,40 +25,36 @@ def train_net(net, device, base_hardware='PC', model_name='milesial-UNet', epoch
               optimizer_type='adam', scheduler_used='false', load=False, loss_fn='both',
               apply_augmentations=False, padding=False):
     """
-    TODO: documentation needs updating here.
-    TODO: if not using val_percent anymore, this needs to be removed.
-    Ideally, you should allow the user to either select a specific
-    validation dataset or specify a percentage of the training set to be converted to the validation set
 
-    :param padding:
-    :param dir_train_img:
-    :param n_channels:
-    :param dir_val_img:
-    :param dir_val_mask:
-    :param model_name:
-    :param base_hardware:
-    :param dir_train_mask:
-    :param scheduler_used:
-    :param loss_fn:
-    :param apply_augmentations:
-    :param net: UNet Model
-    :param device: Device being used (cpu/ cuda)
-    :param epochs: Number of epochs
-    :param batch_size: Batch size for loading data
-    :param learning_rate: Learning rate
-    :param val_percent: Validation set partition percentage
-    :param save_checkpoint: Whether checkpoints are saved
-    :param img_scale: Downscaling factor of the images (between 0 and 1)
-    :param amp: Use mixed precision
-    :param dir_checkpoint: Directory where checkpoints are stored
-    :param num_workers: Number of workers for dataloader
-    :param segmentation_path: Directory to save segmentation images
-    :param base_dir: Path of base directory
-    :param optimizer_type: Type of optimizer to use
-    :param load: False if nothing is loaded, dictionary of state_dicts if loaded
-    :return: None
+    :param net: model network
+    :param device: device used
+    :param base_hardware: (str) base hardware used
+    :param model_name: (str) name of model used
+    :param epochs: (int) number of epochs to run on
+    :param batch_size : (int) number of images to load per batch
+    :param learning_rate: (float) learning rate
+    :param val_percent: (float) percentage of images to include in validation set
+    :param save_checkpoint: (Bool) whether to save checkpoints
+    :param img_scale: (float) Downscaling factor of the images
+    :param amp: (Bool) Use mixed precision
+    :param dir_train_img: Path of directory of training set images
+    :param dir_train_mask: Path of directory of training set masks
+    :param split_training_dataset: (Bool) Whether to split training dataset into training/ validation datasets
+    :param dir_val_img: Path of directory of validation set images
+    :param dir_val_mask: Path of directory of validation set masks
+    :param dir_checkpoint: Path of directory to save checkpoint
+    :param num_workers: (int) Number of workers for dataloader (parallel dataloader threads speed up data processing)
+    :param segmentation_path: Path of directory to output segmentation images
+    :param base_dir: Path of directory to store all outputs
+    :param n_channels: (int) Number of channels for input image
+    :param optimizer_type: (str) Type of optimizer used (or none)
+    :param scheduler_used: (str) Type of scheduler used (or none)
+    :param load: Path of checkpoint file to load in
+    :param loss_fn: (str) Type of loss function to use
+    :param apply_augmentations: (Bool) whether to apply augmentations
+    :param padding: (Bool) whether to pad images and masks
+    :return:
     """
-
     train_loader, val_loader, n_train, n_val = \
         prep_dataloader(dir_train_img, dir_train_mask, split_training_dataset, dir_val_img, dir_val_mask,
                         n_channels, img_scale, val_percent, batch_size, num_workers,
@@ -74,6 +70,7 @@ def train_net(net, device, base_hardware='PC', model_name='milesial-UNet', epoch
                                 name=os.path.basename(base_dir),
                                 resume='allow')
 
+    # Logging parameters for training
     experiment.config.update(
         dict(model_name=model_name, epochs=epochs, batch_size=batch_size, learning_rate=learning_rate,
              val_percent=val_percent, save_checkpoint=save_checkpoint, img_scale=img_scale,
@@ -118,6 +115,7 @@ def train_net(net, device, base_hardware='PC', model_name='milesial-UNet', epoch
         if load:
             scheduler.load_state_dict(load['scheduler'])
 
+    # Use grad scaler if amp is used
     grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
 
     criterion = nn.CrossEntropyLoss()
@@ -125,10 +123,6 @@ def train_net(net, device, base_hardware='PC', model_name='milesial-UNet', epoch
 
     train_loss_log = []
     val_loss_log = []
-
-    columns = ['Epoch', 'Image', 'Mask Prediction', 'Separated bands',
-               'Super-imposed mask prediction', 'True Mask']
-    # table_list = []
 
     # Begin training
     for epoch in range(1, epochs + 1):
@@ -145,9 +139,10 @@ def train_net(net, device, base_hardware='PC', model_name='milesial-UNet', epoch
                     f'but loaded images have {images.shape[1]} channels. Please check that ' \
                     f'the images are loaded correctly, images.shape is  {images.shape}'
 
-                images = images.to(device=device)  # TODO: why is there this torch.long dtype here?
+                images = images.to(device=device)
                 true_masks = true_masks.to(device=device, dtype=torch.long)
 
+                # Use autocast if amp is used
                 with torch.cuda.amp.autocast(enabled=amp):
                     masks_pred = net(images)
 
@@ -171,17 +166,15 @@ def train_net(net, device, base_hardware='PC', model_name='milesial-UNet', epoch
                 pbar.update(images.shape[0])
                 global_step += 1
                 epoch_loss += loss.item()
-                experiment.log({  # TODO: are all these items necessary at this point?
-                    'train loss': loss.item(),
+                experiment.log({  # loss and epoch number can be logged per epoch instead of per batch
+                    # 'train loss': loss.item(),
                     'step': global_step,
-                    'epoch': epoch
+                    # 'epoch': epoch
                 })
                 pbar.set_postfix(**{'loss (batch)': loss.item()})
                 continue
 
             # Evaluation round
-            histograms = {}  # TODO: look at these results in Wandb
-
             val_score, show_image, show_mask_pred, show_mask_true = evaluate(net, val_loader, device)
 
             val_loss_log.append(val_score.item())  # Append dice score
@@ -196,12 +189,6 @@ def train_net(net, device, base_hardware='PC', model_name='milesial-UNet', epoch
                                   epoch, dice_score=val_loss_log[-1], segmentation_path=segmentation_path,
                                   n_channels=n_channels)
 
-            # table_list.append([f'Epoch {epoch}/{epochs}', wandb.Image(image_array, caption=f'Epoch {epoch}'),
-            #                    wandb.Image(threshold_mask_array), wandb.Image(labelled_bands),
-            #                    wandb.Image(combi_mask_array), wandb.Image(mask_true_array)])
-
-            # table = wandb.Table(data=table_list, columns=columns)
-            # TODO: This table is difficult to view on wandb - fix or remove
 
             # Creating arrays of training set to log into wandb
             if n_channels == 1:
@@ -235,13 +222,6 @@ def train_net(net, device, base_hardware='PC', model_name='milesial-UNet', epoch
                         'pred': wandb.Image(show_train_pred_thresholded_array),
                     },
                 },
-                # 'train': {
-                #     'images': wandb.Image(np.transpose(images[0].detach().squeeze().cpu().numpy(), (1, 2, 0))),
-                #     'masks': {
-                #         'true': wandb.Image(true_masks[0].float().cpu()),
-                #         'pred': wandb.Image(torch.softmax(masks_pred, dim=1).argmax(dim=1)[0].float().cpu()),
-                #     },
-                # },
                 'val': {
                     'images': wandb.Image(image_array),
                     'masks': {
@@ -251,20 +231,11 @@ def train_net(net, device, base_hardware='PC', model_name='milesial-UNet', epoch
                         'labelled-bands': wandb.Image(labelled_bands),
                     },
                 },
-                # 'val': {
-                #     'images': wandb.Image(show_image.cpu()),
-                #     'masks': {
-                #         'true': wandb.Image(show_mask_true.cpu()),
-                #         'pred': wandb.Image(show_mask_pred.cpu()),
-                #     },
-                # },
-                # 'table': table,
                 'step': global_step,
                 'epoch': epoch,
-                # **histograms  # TODO: remove this histogram
             })
 
-            # All batches in the epoch iterated through, append loss values as string type
+            # All batches in the epoch iterated through, append loss value of total epoch
             train_loss_log.append(epoch_loss)
 
             plot_stats(train_loss_log, val_loss_log, base_dir)
@@ -280,7 +251,7 @@ def train_net(net, device, base_hardware='PC', model_name='milesial-UNet', epoch
 
             torch.save(save_dict, str(dir_checkpoint / 'checkpoint_epoch{}.pth'.format(epoch)))
             logging.info(f'Checkpoint {epoch} saved!')
-
+        # or save checkpoint when it has the highest validation dice score
         if save_checkpoint and val_loss_log[-1] == np.max(val_loss_log):
             Path(dir_checkpoint).mkdir(parents=True, exist_ok=True)
             save_dict = {'network': net.state_dict(),

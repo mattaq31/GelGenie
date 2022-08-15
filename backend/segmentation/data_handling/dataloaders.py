@@ -18,14 +18,14 @@ class BasicDataset(Dataset):
     def __init__(self, images_dir: str, masks_dir: str, n_channels: int, scale: float = 1.0, mask_suffix: str = '',
                  augmentations=None, padding: bool = False, image_names=None):
         """
-        TODO: fill in documentation
-        :param images_dir:
-        :param masks_dir:
-        :param n_channels:
-        :param scale:
-        :param mask_suffix:
-        :param augmentations:
-        :param padding:
+        :param images_dir: Path of image directory
+        :param masks_dir: Path of mask directory
+        :param n_channels: (int) Number of colour channels for model input
+        :param scale: (float) Downscaling factor of the images
+        :param mask_suffix: (string) suffix added to mask files
+        :param augmentations: getter function for augmentation function
+        :param padding: (Bool) Whether to apply padding to images and masks
+        :param image_names: ([String]) List of image names selected
         """
 
         assert (n_channels == 1 or n_channels == 3), 'Dataset number of channels must be either 1 or 3'
@@ -36,12 +36,12 @@ class BasicDataset(Dataset):
         self.n_channels = n_channels
         self.scale = scale
         self.mask_suffix = mask_suffix
-        self.standard_image_transform = transforms.Compose([transforms.ToTensor()])
+        self.standard_image_transform = transforms.Compose([transforms.ToTensor()])  # Transforms image to tensor
         if image_names is not None:
-            self.image_names = image_names
+            self.image_names = image_names  # Only include selected image names
         else:
-            self.image_names = extract_image_names_from_folder(images_dir)
-        self.mask_names = extract_image_names_from_folder(masks_dir)
+            self.image_names = extract_image_names_from_folder(images_dir)  # Select all image names from directory
+        self.mask_names = extract_image_names_from_folder(masks_dir)  # Select all mask names from directory
 
         # this step allows the image and mask to have different file extensions
         self.masks_dict = {os.path.basename(mask).split('.')[0]: mask for mask in self.mask_names}
@@ -54,9 +54,9 @@ class BasicDataset(Dataset):
             for root, dirs, files in os.walk(self.images_dir):
                 for name in files:
                     image_file = os.path.join(root, name)
-                    image = imageio.imread(image_file)  # TODO: investigate the warning here...
+                    image = imageio.imread(image_file)
                     max_dimension = max(max_dimension, image.shape[0], image.shape[1])
-            max_dimension = 32 * (max_dimension // 32 + 1)  # to be divisible by 32 TODO: why?
+            max_dimension = 32 * (max_dimension // 32 + 1)  # to be divisible by 32 as required by smp-UNet/ UNet++
 
             self.max_dimension = max_dimension
 
@@ -66,11 +66,8 @@ class BasicDataset(Dataset):
             raise RuntimeError(f'No images found in {masks_dir}, make sure you put your masks there')
         logging.info(f'Creating dataset with {len(self.image_names)} examples')
 
-    def __len__(self):
+    def __len__(self):  # Gets length of dataset
         return len(self.image_names)
-
-    def set_augmentations(self, augmentations):
-        self.augmentations = augmentations
 
     @staticmethod
     def load_image(self, filename, n_channels):
@@ -91,11 +88,11 @@ class BasicDataset(Dataset):
 
         # Normalizing image
         if image.dtype == 'uint8':
-            max_val = 255
+            max_val = 255  # values are 0 - 256
         elif image.dtype == 'uint16':
-            max_val = 65535
+            max_val = 65535  # values are 0 - 65536
         else:
-            raise RuntimeError('Image type not recognized.')
+            raise RuntimeError(f'Image type {image.dtype} not recognized, only accepts uint8 or uint16 now.')
 
         image = image.astype(np.float32) / max_val
 
@@ -104,16 +101,16 @@ class BasicDataset(Dataset):
     @staticmethod
     def load_mask(filename):
         mask = np.array(Image.open(filename))
-        unique = np.unique(mask)
-        # TODO: add a description for the below
+        unique = np.unique(mask)  # Acquire unique pixel values of the mask
+        # Final pixel value = Index of original pixel value in the list of unique pixel values
+        # np.where(unique==i) creates a tuple containing array of indexes, in this case only 1 index will be available
+        # i.e. [5, 9, 7] --> [0, 2, 1]
         final_mask = np.array([[np.where(unique == i)[0][0] for i in j] for j in mask])
         return final_mask
 
     def __getitem__(self, idx):
-        # print('Dataloader is %s, image IDX is: %s, image_name is %s' % ('validation' if not self.augmentations else 'Training', idx, self.image_names[idx]))
-        # return np.zeros((5,5))
         img_file = self.image_names[idx]
-        mask_file = self.masks_dict[os.path.basename(img_file).split('.')[0]]
+        mask_file = self.masks_dict[os.path.basename(img_file).split('.')[0]]  # Get mask file with same name
 
         if os.path.basename(img_file).split('.')[0] != os.path.basename(mask_file).split('.')[0]:
             raise RuntimeError('Gel and mask images do not match - there is some mismatch in the data folders provided')
@@ -125,30 +122,36 @@ class BasicDataset(Dataset):
             f'Image and mask should be the same size, but are {img_array.shape} and {mask_array.shape}'
 
         if self.augmentations:
-            sample = self.augmentations(image=img_array, mask=mask_array)
+            sample = self.augmentations(image=img_array, mask=mask_array)  # Apply augmentations
             img_array = sample['image']
             mask_array = sample['mask']
 
         if self.padding:
-            top = (self.max_dimension - img_array.shape[0]) // 2
-            bottom = self.max_dimension - img_array.shape[0] - top
-            left = (self.max_dimension - img_array.shape[1]) // 2
-            right = self.max_dimension - img_array.shape[1] - left
+            top = (self.max_dimension - img_array.shape[0]) // 2  # Get amount of pixels to pad at top of image
+            bottom = self.max_dimension - img_array.shape[0] - top  # Get amount of pixels to pad at bottom of image
+            left = (self.max_dimension - img_array.shape[1]) // 2  # Get amount of pixels to pad at left of image
+            right = self.max_dimension - img_array.shape[1] - left  # Get amount of pixels to pad at right of image
 
-            img_array = np.pad(img_array, pad_width=((top, bottom), (left, right)), mode='constant')
-            mask_array = np.pad(mask_array, pad_width=((top, bottom), (left, right)), mode='constant')
+            img_array = np.pad(img_array, pad_width=((top, bottom), (left, right)), mode='constant')  # Pad with 0 value
+            mask_array = np.pad(mask_array, pad_width=((top, bottom), (left, right)), mode='constant')  # Pad with 0
 
         img_tensor = self.standard_image_transform(img_array)
         mask_tensor = torch.from_numpy(mask_array)
         return {
             'image': img_tensor,
             'image_name': os.path.basename(img_file).split('.')[0],
-            'mask': mask_tensor.int().contiguous()  # TODO: why do we need this .contiguous() call?
+            'mask': mask_tensor.int()  # .contiguous() is not required and removed
         }
 
 
 class ImageDataset(BasicDataset):
     def __init__(self, images_dir: str, n_channels: int, padding: bool = False):
+        """
+        For datasets of image only, used in model_eval if no masks are provided
+        :param images_dir: Path of image directory
+        :param n_channels: (int) Number of colour channels for model input
+        :param padding: (Bool) Whether to apply padding
+        """
         super().__init__(images_dir, n_channels=n_channels, padding=padding)
         self.images_dir = Path(images_dir)
         self.n_channels = n_channels
@@ -163,7 +166,7 @@ class ImageDataset(BasicDataset):
                     image_file = os.path.join(root, name)
                     image = imageio.imread(image_file)  # TODO: investigate the warning here...
                     max_dimension = max(max_dimension, image.shape[0], image.shape[1])
-            max_dimension = 32 * (max_dimension // 32 + 1)  # to be divisible by 32 TODO: why?
+            max_dimension = 32 * (max_dimension // 32 + 1)  # to be divisible by 32 as required by smp-UNet/ UNet++
 
             self.max_dimension = max_dimension
 
@@ -175,23 +178,21 @@ class ImageDataset(BasicDataset):
         return super().load_image(self, filename, n_channels)
 
     def __getitem__(self, idx):
-        # print('Dataloader is %s, image IDX is: %s, image_name is %s' % ('validation' if not self.augmentations else 'Training', idx, self.image_names[idx]))
-        # return np.zeros((5,5))
         img_file = self.image_names[idx]
 
         img_array = self.load_image(self, filename=img_file, n_channels=self.n_channels)
 
         if self.augmentations:
-            sample = self.augmentations(image=img_array)
+            sample = self.augmentations(image=img_array)  # Apply augmentations
             img_array = sample['image']
 
         if self.padding:
-            top = (self.max_dimension - img_array.shape[0]) // 2
-            bottom = self.max_dimension - img_array.shape[0] - top
-            left = (self.max_dimension - img_array.shape[1]) // 2
-            right = self.max_dimension - img_array.shape[1] - left
+            top = (self.max_dimension - img_array.shape[0]) // 2  # Get amount of pixels to pad at top of image
+            bottom = self.max_dimension - img_array.shape[0] - top  # Get amount of pixels to pad at bottom of image
+            left = (self.max_dimension - img_array.shape[1]) // 2  # Get amount of pixels to pad at left of image
+            right = self.max_dimension - img_array.shape[1] - left  # Get amount of pixels to pad at right of image
 
-            img_array = np.pad(img_array, pad_width=((top, bottom), (left, right)), mode='constant')
+        img_array = np.pad(img_array, pad_width=((top, bottom), (left, right)), mode='constant')  # Pad with 0 value
 
         img_tensor = self.standard_image_transform(img_array)
 
