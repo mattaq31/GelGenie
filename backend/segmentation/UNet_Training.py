@@ -211,6 +211,7 @@ def unet_train(parameter_config, **kwargs):
               device=device,
               base_hardware=params['base_hardware'],
               model_name=params['model_name'],
+              pretrained=params['pretrained'],
               epochs=params['epochs'],
               batch_size=params['batch_size'],
               learning_rate=params['lr'],

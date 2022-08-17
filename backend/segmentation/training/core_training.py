@@ -18,8 +18,8 @@ from .training_setup import define_optimizer, define_scheduler
 from ..data_handling import prep_dataloader
 
 
-def train_net(net, device, base_hardware='PC', model_name='milesial-UNet', epochs=5, batch_size=8, learning_rate=1e-5,
-              val_percent=0.1, save_checkpoint=True, img_scale=0.5, amp=False, dir_train_img=None,
+def train_net(net, device, base_hardware='PC', model_name='milesial-UNet', pretrained=None, epochs=5, batch_size=8,
+              learning_rate=1e-5, val_percent=0.1, save_checkpoint=True, img_scale=0.5, amp=False, dir_train_img=None,
               dir_train_mask=None, split_training_dataset=False, dir_val_img=None, dir_val_mask=None,
               dir_checkpoint=None, num_workers=1, segmentation_path='', base_dir='', n_channels=1,
               optimizer_type='adam', scheduler_used='false', load=False, loss_fn='both',
@@ -72,8 +72,8 @@ def train_net(net, device, base_hardware='PC', model_name='milesial-UNet', epoch
 
     # Logging parameters for training
     experiment.config.update(
-        dict(model_name=model_name, epochs=epochs, batch_size=batch_size, learning_rate=learning_rate,
-             val_percent=val_percent, save_checkpoint=save_checkpoint, img_scale=img_scale,
+        dict(model_name=model_name, pretrained=pretrained, epochs=epochs, batch_size=batch_size,
+             learning_rate=learning_rate, val_percent=val_percent, save_checkpoint=save_checkpoint, img_scale=img_scale,
              amp=amp, dir_train_img=dir_train_img, dir_train_mask=dir_train_mask,
              split_training_dataset=split_training_dataset,
              dir_val_img=dir_val_img, dir_val_mask=dir_val_mask,
