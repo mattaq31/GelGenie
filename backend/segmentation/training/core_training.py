@@ -256,7 +256,7 @@ def train_net(net, device, base_hardware='PC', model_name='milesial-UNet', epoch
             Path(dir_checkpoint).mkdir(parents=True, exist_ok=True)
             save_dict = {'network': net.state_dict(),
                          'optimizer': optimizer.state_dict()}
-            if scheduler_used:
+            if scheduler_used == 'ReduceLROnPlateau' or scheduler_used == 'CosineAnnealingWarmRestarts':
                 save_dict['scheduler'] = scheduler.state_dict()
 
             torch.save(save_dict, str(dir_checkpoint)+'/max_epoch.pth')
