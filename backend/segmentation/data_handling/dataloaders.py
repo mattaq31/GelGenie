@@ -152,7 +152,7 @@ class ImageDataset(BasicDataset):
         :param n_channels: (int) Number of colour channels for model input
         :param padding: (Bool) Whether to apply padding
         """
-        super().__init__(images_dir, n_channels=n_channels, padding=padding)
+        super().__init__(images_dir, images_dir, n_channels=n_channels, padding=padding)
         self.images_dir = Path(images_dir)
         self.n_channels = n_channels
         self.standard_image_transform = transforms.Compose([transforms.ToTensor()])

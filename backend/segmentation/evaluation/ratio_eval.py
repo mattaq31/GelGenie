@@ -115,29 +115,30 @@ def model_eval(images_path, masks_path, checkpoint_path, net_name):
         ax[0].imshow(original_image, cmap='gray', interpolation='none')
         ax[0].imshow(np.ma.masked_array(labels, ~blobs), cmap=plt.cm.rainbow)
         ax[0].set_title('Predicted Mask', fontsize=60)
-        for ri, ci, di, count in zip(r, c, d, range(nlabels)):
-            ax[0].annotate(f'{count + 1}: V={round(volume_labels[count + 1], 1)}', xy=(ci, ri), xytext=(0, -5),
-                           textcoords='offset points', ha='center', va='top',
-                           fontsize=8, color='blue')
+        # for ri, ci, di, count in zip(r, c, d, range(nlabels)):
+        #     ax[0].annotate(f'{count + 1}: V={round(volume_labels[count + 1], 1)}', xy=(ci, ri), xytext=(0, -5),
+        #                    textcoords='offset points', ha='center', va='top',
+        #                    fontsize=8, color='blue')
 
-        # use a boolean condition to find where pixel values are 1
-        true_gel_blobs = true_mask_array == 1
+        if masks_path:
+            # use a boolean condition to find where pixel values are 1
+            true_gel_blobs = true_mask_array == 1
 
-        # label connected regions that satisfy this condition, connect regions that are only connected diagonally
-        true_gel_bands, nbands = ndimage.label(true_gel_blobs, structure=[[1, 1, 1],
-                                                                          [1, 1, 1],
-                                                                          [1, 1, 1]])
-        ax[1].imshow(original_image, cmap='gray', interpolation='none')
-        ax[1].imshow(np.ma.masked_array(true_gel_bands, ~true_gel_blobs), cmap=plt.cm.rainbow)
-        ax[1].set_title('True Mask', fontsize=60)
+            # label connected regions that satisfy this condition, connect regions that are only connected diagonally
+            true_gel_bands, nbands = ndimage.label(true_gel_blobs, structure=[[1, 1, 1],
+                                                                              [1, 1, 1],
+                                                                              [1, 1, 1]])
+            ax[1].imshow(original_image, cmap='gray', interpolation='none')
+            ax[1].imshow(np.ma.masked_array(true_gel_bands, ~true_gel_blobs), cmap=plt.cm.rainbow)
+            ax[1].set_title('True Mask', fontsize=60)
 
-        # Evaluation on predicted mask and compute the Dice score
-        mask_pred = (F.sigmoid(mask_pred) > 0.5).float()
-        dice_score = \
-            dice_coeff(mask_pred,
-                       F.one_hot(true_mask.to(dtype=torch.long), net.n_classes).permute(0, 3, 1, 2).float(),
-                       reduce_batch_first=False).item()
-        fig.supxlabel(f'Dice Score: {dice_score}', fontsize=60)  # Print dice score at bottom of plot
+            # Evaluation on predicted mask and compute the Dice score
+            mask_pred = (F.sigmoid(mask_pred) > 0.5).float()
+            dice_score = \
+                dice_coeff(mask_pred,
+                           F.one_hot(true_mask.to(dtype=torch.long), net.n_classes).permute(0, 3, 1, 2).float(),
+                           reduce_batch_first=False).item()
+            fig.supxlabel(f'Dice Score: {dice_score}', fontsize=60)  # Print dice score at bottom of plot
 
         for aa in ax.flat:
             aa.set_axis_off()
