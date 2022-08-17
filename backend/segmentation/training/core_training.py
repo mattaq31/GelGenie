@@ -238,9 +238,9 @@ def train_net(net, device, base_hardware='PC', model_name='milesial-UNet', epoch
             # All batches in the epoch iterated through, append loss value of total epoch
             train_loss_log.append(epoch_loss)
 
-            plot_stats(train_loss_log, val_loss_log, base_dir)
+            plot_stats(base_dir, train_loss_log, val_loss_log)
 
-            excel_stats(train_loss_log, val_loss_log, base_dir)
+            excel_stats(base_dir, train_loss_log, val_loss_log)
 
         if save_checkpoint and (epoch == epochs or epoch % 10 == 0):  # Only save checkpoints every 10 epochs
             Path(dir_checkpoint).mkdir(parents=True, exist_ok=True)

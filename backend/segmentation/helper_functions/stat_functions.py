@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 
-def excel_stats(train_loss_log, val_loss_log, base_dir):
+def excel_stats(base_dir, train_loss_log, val_loss_log):
     loss_array = np.array([train_loss_log, val_loss_log]).T
     loss_dataframe = pd.DataFrame(loss_array, columns=['Training Loss', 'Validation Dice Score'])
     loss_dataframe.index.names = ['Epoch']
