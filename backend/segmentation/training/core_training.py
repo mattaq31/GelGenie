@@ -215,6 +215,7 @@ def train_net(net, device, base_hardware='PC', model_name='milesial-UNet', pretr
             experiment.log({
                 'learning rate': optimizer.param_groups[0]['lr'],
                 'validation Dice': val_score,
+                'train loss': loss.item(),
                 'train': {
                     'images': wandb.Image(show_train_image_array),
                     'masks': {
@@ -246,7 +247,7 @@ def train_net(net, device, base_hardware='PC', model_name='milesial-UNet', pretr
             Path(dir_checkpoint).mkdir(parents=True, exist_ok=True)
             save_dict = {'network': net.state_dict(),
                          'optimizer': optimizer.state_dict()}
-            if scheduler_used:
+            if scheduler_used == 'ReduceLROnPlateau' or scheduler_used == 'CosineAnnealingWarmRestarts':
                 save_dict['scheduler'] = scheduler.state_dict()
 
             torch.save(save_dict, str(dir_checkpoint / 'checkpoint_epoch{}.pth'.format(epoch)))
