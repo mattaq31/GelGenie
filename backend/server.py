@@ -19,12 +19,13 @@ from gel_tools import GelAnalysis
 os.chdir(os.path.abspath(os.path.join(__file__, os.path.pardir)))
 
 # Create an async aiohttp server
-sio = socketio.AsyncServer(cors_allowed_origins='*')
+sio = socketio.AsyncServer(cors_allowed_origins='*', max_http_buffer_size=(50*1000*1000))  # 50 MB max buffer size (very imp)
 app = web.Application()
 sio.attach(app)
 
 gel_analysis = GelAnalysis()  # main gel analysis object
 profile_image = None  # temp global variable TODO: replace
+
 
 @sio.on("imageToRead")
 async def imageToRead(sid, source_b64):
@@ -36,7 +37,6 @@ async def imageToRead(sid, source_b64):
     :return: PNG image and estimated otsu percentage.
     """
     global gel_analysis
-
     # Load image from b64 received from JS, giving width and height
     gel_analysis.set_image(image=source_b64.split('base64,')[-1], image_type='b64')
 
