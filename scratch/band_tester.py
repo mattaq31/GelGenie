@@ -16,7 +16,7 @@ from gel_tools.utils import convert_pil_image_base_64, convert_numpy_image_base_
 
 if __name__ == '__main__':
 
-    analyser = GelAnalysis("../scratch_data/tbe_2_2_lod_v6.tif", image_type='file')
+    analyser = GelAnalysis("../scratch_data/2_cropped.png", image_type='file')
     plt.figure()
     plt.imshow(analyser.np_image, cmap='gray')
     plt.show()
