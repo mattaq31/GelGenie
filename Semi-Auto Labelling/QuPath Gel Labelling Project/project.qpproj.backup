@@ -1,0 +1,93 @@
+{
+  "version": "0.4.3",
+  "createTimestamp": 1688931950853,
+  "modifyTimestamp": 1688931950853,
+  "uri": "file:/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/main_code/Semi-Auto%20Labelling/QuPath%20Gel%20Labelling%20Project/project.qpproj",
+  "lastID": 6,
+  "images": [
+    {
+      "serverBuilder": {
+        "builderType": "uri",
+        "providerClassName": "qupath.lib.images.servers.bioformats.BioFormatsServerBuilder",
+        "uri": "file:/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/main_code/Semi-Auto%20Labelling/Kiros%20QuPath/Nathan%20Gels%20Q1%20Original/Ivan-gels%20.png",
+        "args": [
+          "--series",
+          "0"
+        ]
+      },
+      "entryID": 1,
+      "randomizedName": "c8fcd9a0-e65c-44ac-89d2-a71fa93dbd9d",
+      "imageName": "Ivan-gels .png",
+      "metadata": {}
+    },
+    {
+      "serverBuilder": {
+        "builderType": "uri",
+        "providerClassName": "qupath.lib.images.servers.bioformats.BioFormatsServerBuilder",
+        "uri": "file:/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/originals/matthew_gels/891.tif",
+        "args": [
+          "--series",
+          "0"
+        ]
+      },
+      "entryID": 2,
+      "randomizedName": "06c1c658-8297-4fd3-a89a-5d38d2f477b6",
+      "imageName": "891.tif",
+      "metadata": {}
+    },
+    {
+      "serverBuilder": {
+        "builderType": "uri",
+        "providerClassName": "qupath.imagej.images.servers.ImageJServerBuilder",
+        "uri": "file:/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/maximal_set/nathan_gels/Masks/Ivan-gels%20.tif",
+        "args": []
+      },
+      "entryID": 3,
+      "randomizedName": "c1ad278b-c495-4ad4-9c20-a08a16dfb54e",
+      "imageName": "Ivan-gels .tif",
+      "metadata": {}
+    },
+    {
+      "serverBuilder": {
+        "builderType": "uri",
+        "providerClassName": "qupath.imagej.images.servers.ImageJServerBuilder",
+        "uri": "file:/Users/matt/Desktop/ivan_mask.tif",
+        "args": []
+      },
+      "entryID": 4,
+      "randomizedName": "1eb81db7-fd76-484b-97b2-eef9d1f62cd3",
+      "imageName": "ivan_mask.tif",
+      "metadata": {}
+    },
+    {
+      "serverBuilder": {
+        "builderType": "uri",
+        "providerClassName": "qupath.lib.images.servers.bioformats.BioFormatsServerBuilder",
+        "uri": "file:/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/maximal_set/lsdb_gels/Images/C39-4.JPG",
+        "args": [
+          "--series",
+          "0"
+        ]
+      },
+      "entryID": 5,
+      "randomizedName": "2b5ed7e4-1031-4b71-846e-4a005d5f9169",
+      "imageName": "C39-4.JPG",
+      "metadata": {}
+    },
+    {
+      "serverBuilder": {
+        "builderType": "uri",
+        "providerClassName": "qupath.lib.images.servers.bioformats.BioFormatsServerBuilder",
+        "uri": "file:/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/maximal_set/nathan_gels/Images/Ivan-gels%20.png",
+        "args": [
+          "--series",
+          "0"
+        ]
+      },
+      "entryID": 6,
+      "randomizedName": "b325c14f-2638-4a5e-bc26-845a864f5f90",
+      "imageName": "Ivan-gels .png",
+      "metadata": {}
+    }
+  ]
+}

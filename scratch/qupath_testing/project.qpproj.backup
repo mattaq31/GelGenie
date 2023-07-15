@@ -1,0 +1,65 @@
+{
+  "version": "0.3.2",
+  "createTimestamp": 1656239538426,
+  "modifyTimestamp": 1656239538426,
+  "uri": "file:/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/analysis/qupath_testing/project.qpproj",
+  "lastID": 2,
+  "images": [
+    {
+      "serverBuilder": {
+        "builderType": "uri",
+        "providerClassName": "qupath.lib.images.servers.bioformats.BioFormatsServerBuilder",
+        "uri": "file:/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/LSDB_data/caps/C39-4.JPG",
+        "args": [
+          "--series",
+          "0"
+        ],
+        "metadata": {
+          "name": "C39-4.JPG",
+          "width": 420,
+          "height": 221,
+          "sizeZ": 1,
+          "sizeT": 1,
+          "channelType": "DEFAULT",
+          "isRGB": false,
+          "pixelType": "UINT8",
+          "levels": [
+            {
+              "downsample": 1.0,
+              "width": 420,
+              "height": 221
+            }
+          ],
+          "channels": [
+            {
+              "name": "Channel 1",
+              "color": -1
+            }
+          ],
+          "pixelCalibration": {
+            "pixelWidth": {
+              "value": 1.0,
+              "unit": "px"
+            },
+            "pixelHeight": {
+              "value": 1.0,
+              "unit": "px"
+            },
+            "zSpacing": {
+              "value": 1.0,
+              "unit": "z-slice"
+            },
+            "timeUnit": "SECONDS",
+            "timepoints": []
+          },
+          "preferredTileWidth": 420,
+          "preferredTileHeight": 221
+        }
+      },
+      "entryID": 2,
+      "randomizedName": "d7bb6f61-fd6c-4047-874c-a8540e96655c",
+      "imageName": "C39-4.JPG",
+      "metadata": {}
+    }
+  ]
+}

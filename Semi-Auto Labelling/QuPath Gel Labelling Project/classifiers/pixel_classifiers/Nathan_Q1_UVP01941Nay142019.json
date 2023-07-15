@@ -1,0 +1,286 @@
+{
+  "pixel_classifier_type": "OpenCVPixelClassifier",
+  "metadata": {
+    "inputPadding": 0,
+    "inputResolution": {
+      "pixelWidth": {
+        "value": 1.0,
+        "unit": "px"
+      },
+      "pixelHeight": {
+        "value": 1.0,
+        "unit": "px"
+      },
+      "zSpacing": {
+        "value": 1.0,
+        "unit": "z-slice"
+      },
+      "timeUnit": "SECONDS",
+      "timepoints": []
+    },
+    "inputWidth": 512,
+    "inputHeight": 512,
+    "inputNumChannels": 3,
+    "outputType": "CLASSIFICATION",
+    "outputChannels": [
+      {
+        "name": "Background",
+        "color": -7662170
+      },
+      {
+        "name": "Gel Band",
+        "color": -6067699
+      }
+    ],
+    "classificationLabels": {
+      "0": {
+        "name": "Background",
+        "color": [
+          139,
+          21,
+          166
+        ]
+      },
+      "1": {
+        "name": "Gel Band",
+        "color": [
+          163,
+          106,
+          13
+        ]
+      }
+    }
+  },
+  "op": {
+    "type": "data.op.channels",
+    "colorTransforms": [
+      {
+        "channelName": "Red"
+      },
+      {
+        "channelName": "Green"
+      },
+      {
+        "channelName": "Blue"
+      }
+    ],
+    "op": {
+      "type": "op.core.sequential",
+      "ops": [
+        {
+          "type": "op.core.sequential",
+          "ops": [
+            {
+              "type": "op.core.split-merge",
+              "ops": [
+                {
+                  "type": "op.filters.multiscale",
+                  "features": [
+                    "GAUSSIAN"
+                  ],
+                  "sigmaX": 0.5,
+                  "sigmaY": 0.5
+                },
+                {
+                  "type": "op.filters.multiscale",
+                  "features": [
+                    "GAUSSIAN"
+                  ],
+                  "sigmaX": 1.0,
+                  "sigmaY": 1.0
+                },
+                {
+                  "type": "op.filters.multiscale",
+                  "features": [
+                    "GAUSSIAN"
+                  ],
+                  "sigmaX": 2.0,
+                  "sigmaY": 2.0
+                },
+                {
+                  "type": "op.filters.multiscale",
+                  "features": [
+                    "GAUSSIAN"
+                  ],
+                  "sigmaX": 4.0,
+                  "sigmaY": 4.0
+                },
+                {
+                  "type": "op.filters.multiscale",
+                  "features": [
+                    "GAUSSIAN"
+                  ],
+                  "sigmaX": 8.0,
+                  "sigmaY": 8.0
+                }
+              ]
+            },
+            {
+              "type": "op.ml.feature-preprocessor",
+              "preprocessor": {
+                "normalizer": {
+                  "offsets": [
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  "scales": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "missingValue": 0.0
+                },
+                "inputLength": 15,
+                "outputLength": 15
+              }
+            }
+          ]
+        },
+        {
+          "type": "op.ml.opencv-statmodel",
+          "model": {
+            "class": "ANN_MLP",
+            "statmodel": {
+              "opencv_ml_ann_mlp": {
+                "format": 3,
+                "layer_sizes": [
+                  15,
+                  2
+                ],
+                "activation_function": "SIGMOID_SYM",
+                "f_param1": 1.0,
+                "f_param2": 1.0,
+                "min_val": -9.4999999999999996e-01,
+                "max_val": 9.4999999999999996e-01,
+                "min_val1": -9.7999999999999998e-01,
+                "max_val1": 9.7999999999999998e-01,
+                "training_params": {
+                  "train_method": "RPROP",
+                  "dw0": 1.0000000000000001e-01,
+                  "dw_plus": 1.2000000000000000e+00,
+                  "dw_minus": 5.0000000000000000e-01,
+                  "dw_min": 1.1920928955078125e-07,
+                  "dw_max": 50.0,
+                  "term_criteria": {
+                    "epsilon": 1.0000000000000000e-02,
+                    "iterations": 1000
+                  }
+                },
+                "input_scale": [
+                  2.1198496267209353e-02,
+                  -6.8225575688123330e-01,
+                  2.1198496267209353e-02,
+                  -6.8225575688123330e-01,
+                  2.1198496267209353e-02,
+                  -6.8225575688123330e-01,
+                  2.1988280301831080e-02,
+                  -6.8640445023936991e-01,
+                  2.1988280301831080e-02,
+                  -6.8640445023936991e-01,
+                  2.1988280301831080e-02,
+                  -6.8640445023936991e-01,
+                  2.2558689524645018e-02,
+                  -6.9912075091778603e-01,
+                  2.2558689524645018e-02,
+                  -6.9912075091778603e-01,
+                  2.2558689524645018e-02,
+                  -6.9912075091778603e-01,
+                  2.4176802975104748e-02,
+                  -7.3268873651347921e-01,
+                  2.4176802975104748e-02,
+                  -7.3268873651347921e-01,
+                  2.4176802975104748e-02,
+                  -7.3268873651347921e-01,
+                  2.6991207504782906e-02,
+                  -7.9068759189352544e-01,
+                  2.6991207504782906e-02,
+                  -7.9068759189352544e-01,
+                  2.6991207504782906e-02,
+                  -7.9068759189352544e-01
+                ],
+                "output_scale": [
+                  1.0,
+                  0.0,
+                  1.0,
+                  0.0
+                ],
+                "inv_output_scale": [
+                  1.0,
+                  0.0,
+                  1.0,
+                  0.0
+                ],
+                "weights": [
+                  [
+                    -8.4493841392409474e-01,
+                    -3.1853120224316842e-02,
+                    2.9513328662926908e-01,
+                    4.9194331725448393e-01,
+                    -4.0246788482771700e-01,
+                    7.8080817341368319e-02,
+                    -8.6171446911217298e-01,
+                    2.0208991060874437e-01,
+                    -7.6572758154401788e-01,
+                    1.1069152193238185e+00,
+                    -5.4374618824941789e-01,
+                    -7.7889520024078326e-02,
+                    8.5056224510181311e-01,
+                    2.3727808652999927e-01,
+                    -4.2853672743560267e-01,
+                    -2.3553780456146245e-01,
+                    -4.9463770658860562e-01,
+                    1.1959223178588037e+00,
+                    8.1329265875581691e-01,
+                    -4.0905476996609680e-01,
+                    8.7393867919660084e-01,
+                    -3.2926502234390420e-01,
+                    2.0498036702681383e-01,
+                    -4.1979230637524745e-01,
+                    -3.9912106304542250e-01,
+                    1.0019307534589192e+00,
+                    -3.1476923232830178e-01,
+                    -5.8407427148099744e-01,
+                    -1.6952609831879850e-01,
+                    -5.7219143680523077e-01,
+                    2.8911797914762549e+00,
+                    -2.7880898423468534e+00
+                  ]
+                ]
+              }
+            }
+          },
+          "requestProbabilities": false
+        },
+        {
+          "type": "op.core.convert",
+          "pixelType": "UINT8"
+        }
+      ]
+    }
+  }
+}

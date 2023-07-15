@@ -1,0 +1,17 @@
+used image from: https://international.neb.com/products/n0550-quick-load-purple-1-kb-plus-dna-ladder#Product%20Information
+Analyzed 3KB and 1.5KB bands.
+expected (ground truth) 120/57  = 2.1
+
+Default parameters:
+direct area 125/102 = 1.22
+weighted 65/47 = 1.38
+total_pixel_count 4197838/3031058 = 1.385 
+
+Using foreground/background/repetition of 32/26/2:
+
+direct area 219/140 = 1.5642857142857143
+weighted 148/70 = 2.11
+total_pixel_count 9654462/4535793 = 2.128 
+
+imagej 3248.234/1559.556 = 2.083
+gelanalyzer 875/429 = 2.04

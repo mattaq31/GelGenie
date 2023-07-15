@@ -136,8 +136,8 @@ dmypy.json
 
 # Data Location
 data/*
-scratch_data/*
+scratch/scratch_data/*
 
 samples/
 node_modules/
-backend/segmentation/wandb/*
+gelgenie/segmentation/wandb/*

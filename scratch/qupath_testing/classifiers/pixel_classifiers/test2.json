@@ -1,0 +1,212 @@
+{
+  "pixel_classifier_type": "OpenCVPixelClassifier",
+  "metadata": {
+    "inputPadding": 0,
+    "inputResolution": {
+      "pixelWidth": {
+        "value": 1.0,
+        "unit": "px"
+      },
+      "pixelHeight": {
+        "value": 1.0,
+        "unit": "px"
+      },
+      "zSpacing": {
+        "value": 1.0,
+        "unit": "z-slice"
+      },
+      "timeUnit": "SECONDS",
+      "timepoints": []
+    },
+    "inputWidth": 512,
+    "inputHeight": 512,
+    "inputNumChannels": 3,
+    "outputType": "CLASSIFICATION",
+    "outputChannels": [
+      {
+        "name": "Band",
+        "color": -14708418
+      },
+      {
+        "name": "Negative",
+        "color": -9408287
+      }
+    ],
+    "classificationLabels": {
+      "0": {
+        "name": "Band",
+        "colorRGB": -14708418
+      },
+      "1": {
+        "name": "Negative",
+        "colorRGB": -9408287
+      }
+    }
+  },
+  "op": {
+    "type": "data.op.channels",
+    "colorTransforms": [
+      {
+        "channelName": "Channel 1"
+      }
+    ],
+    "op": {
+      "type": "op.core.sequential",
+      "ops": [
+        {
+          "type": "op.core.sequential",
+          "ops": [
+            {
+              "type": "op.core.split-merge",
+              "ops": [
+                {
+                  "type": "op.filters.multiscale",
+                  "features": [
+                    "GAUSSIAN",
+                    "GRADIENT_MAGNITUDE",
+                    "HESSIAN_EIGENVALUE_MAX",
+                    "HESSIAN_EIGENVALUE_MIN"
+                  ],
+                  "sigmaX": 1.0,
+                  "sigmaY": 1.0
+                },
+                {
+                  "type": "op.filters.multiscale",
+                  "features": [
+                    "GAUSSIAN",
+                    "GRADIENT_MAGNITUDE",
+                    "HESSIAN_EIGENVALUE_MAX",
+                    "HESSIAN_EIGENVALUE_MIN"
+                  ],
+                  "sigmaX": 2.0,
+                  "sigmaY": 2.0
+                }
+              ]
+            },
+            {
+              "type": "op.ml.feature-preprocessor",
+              "preprocessor": {
+                "normalizer": {
+                  "offsets": [
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  "scales": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "missingValue": 0.0
+                },
+                "inputLength": 8,
+                "outputLength": 8
+              }
+            }
+          ]
+        },
+        {
+          "type": "op.ml.opencv-statmodel",
+          "model": {
+            "class": "ANN_MLP",
+            "statmodel": {
+              "opencv_ml_ann_mlp": {
+                "format": 3,
+                "layer_sizes": [
+                  8,
+                  2
+                ],
+                "activation_function": "SIGMOID_SYM",
+                "f_param1": 1.0,
+                "f_param2": 1.0,
+                "min_val": -9.4999999999999996e-01,
+                "max_val": 9.4999999999999996e-01,
+                "min_val1": -9.7999999999999998e-01,
+                "max_val1": 9.7999999999999998e-01,
+                "training_params": {
+                  "train_method": "RPROP",
+                  "dw0": 1.0000000000000001e-01,
+                  "dw_plus": 1.2000000000000000e+00,
+                  "dw_minus": 5.0000000000000000e-01,
+                  "dw_min": 1.1920928955078125e-07,
+                  "dw_max": 50.0,
+                  "term_criteria": {
+                    "epsilon": 1.0000000000000000e-02,
+                    "iterations": 1000
+                  }
+                },
+                "input_scale": [
+                  2.6517369509254596e-02,
+                  -5.1289663141911890e-01,
+                  1.3091262241522444e-01,
+                  -2.5331389589876269e-01,
+                  8.6448581750571352e-01,
+                  -2.7105316461945633e-01,
+                  2.0133343256216174e-01,
+                  2.5228971575283599e-01,
+                  3.1594401894308434e-02,
+                  -5.7679646531505369e-01,
+                  2.1951326378794009e-01,
+                  -2.5634238107850998e-01,
+                  1.5814574424058534e+00,
+                  2.2336153707162052e-02,
+                  3.5198635299608327e-01,
+                  1.9391934152756424e-01
+                ],
+                "output_scale": [
+                  1.0,
+                  0.0,
+                  1.0,
+                  0.0
+                ],
+                "inv_output_scale": [
+                  1.0,
+                  0.0,
+                  1.0,
+                  0.0
+                ],
+                "weights": [
+                  [
+                    1.6564337972759042e+00,
+                    -1.8770715524441828e+00,
+                    2.7965054978292687e+00,
+                    -1.8164255320033988e+00,
+                    1.1799035517228304e-01,
+                    -8.2069872973186103e-02,
+                    -3.5520786803121731e+00,
+                    1.9102511481545772e+00,
+                    1.7356446296559813e+00,
+                    -3.1971334435283016e+00,
+                    1.9576260229505817e+00,
+                    -3.0518903095187979e+00,
+                    -1.8398019660981864e+00,
+                    1.9005019638922551e+00,
+                    -3.1189009386356021e+00,
+                    2.0427670909756825e+00,
+                    -3.1850019177886053e+00,
+                    2.5665635284544832e+00
+                  ]
+                ]
+              }
+            }
+          },
+          "requestProbabilities": false
+        },
+        {
+          "type": "op.core.convert",
+          "pixelType": "UINT8"
+        }
+      ]
+    }
+  }
+}
