@@ -1,12 +1,21 @@
-from pathlib import Path
-
-import numpy as np
+import os
 import pandas as pd
 
 
-def excel_stats(base_dir, train_loss_log, val_loss_log):
-    loss_array = np.array([train_loss_log, val_loss_log]).T
-    loss_dataframe = pd.DataFrame(loss_array, columns=['Training Loss', 'Validation Dice Score'])
-    loss_dataframe.index.names = ['Epoch']
-    loss_dataframe.index += 1
-    loss_dataframe.to_csv(Path(base_dir + '/loss.csv'))
+def save_statistics(experiment_log_dir, filename, stats_dict, selected_data=None, append=True):
+
+    true_filename = os.path.join(experiment_log_dir, filename)
+
+    pd_data = pd.DataFrame.from_dict(stats_dict)
+
+    if selected_data is not None and os.path.isfile(true_filename):
+        if type(selected_data) == int:
+            selected_data = [selected_data]
+        pd_data = pd_data.loc[selected_data]
+
+    if not os.path.isfile(true_filename):  # if there is no file in place, no point in appending
+        append = False
+
+    # TODO: the below can output numbers with too many DPs.  Need to either decide on good level of precision (e.g. 6 DP)
+    # or ignore.  More details here: https://stackoverflow.com/questions/12877189/float64-with-pandas-to-csv
+    pd_data.to_csv(true_filename, mode='a' if append else 'w', header=not append, index=False)

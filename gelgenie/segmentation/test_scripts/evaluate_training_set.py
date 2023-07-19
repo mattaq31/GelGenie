@@ -9,10 +9,10 @@ import wandb
 from pathlib import Path
 import logging
 
-from segmentation.data_handling.dataloaders import BasicDataset
+from segmentation.data_handling.dataloaders import ImageMaskDataset
 from segmentation.helper_functions.dice_score import dice_loss
 from segmentation.helper_functions.stat_functions import excel_stats
-from segmentation.helper_functions.display_functions import plot_stats, show_segmentation
+from segmentation.helper_functions.display_functions import plot_stats, visualise_segmentation
 from segmentation.evaluation.basic_eval import evaluate
 
 
@@ -51,7 +51,7 @@ def train_net(net,
     """
 
     # 1. Create dataset
-    dataset = BasicDataset(dir_img, dir_mask, img_scale)
+    dataset = ImageMaskDataset(dir_img, dir_mask, img_scale)
 
     # 2. Split into train / validation partitions
     n_val = int(len(dataset) * val_percent)
@@ -183,11 +183,11 @@ def train_net(net,
                 break  # TODO: delete
 
             # Show segmentation images for this epoch
-            show_segmentation(show_image.squeeze(), show_mask_pred.squeeze(), show_mask_true.squeeze(),
-                              epoch, dice_score=val_loss_log[-1], segmentation_path=segmentation_path)
+            visualise_segmentation(show_image.squeeze(), show_mask_pred.squeeze(), show_mask_true.squeeze(),
+                                   epoch, dice_score=val_loss_log[-1], segmentation_path=segmentation_path)
 
-            show_segmentation(test_image.squeeze(), test_mask_pred.squeeze(), test_mask_true.squeeze(),
-                              epoch_number=f"test_epoch{epoch}", dice_score=test_dice_log[-1], segmentation_path=segmentation_path)
+            visualise_segmentation(test_image.squeeze(), test_mask_pred.squeeze(), test_mask_true.squeeze(),
+                                   epoch_number=f"test_epoch{epoch}", dice_score=test_dice_log[-1], segmentation_path=segmentation_path)
 
 
             # All batches in the epoch iterated through, append loss values as string type

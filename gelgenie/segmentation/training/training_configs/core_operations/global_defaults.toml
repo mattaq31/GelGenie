@@ -1,0 +1,39 @@
+experiment_name = "UNDEFINED_MODEL"  # configuration name
+base_dir = 'UNDEFINED'
+
+[processing]
+base_hardware = "UNDEFINED"   # Where the program is run [EDDIE/PC]
+device = "cpu"    # Which processor is used [GPU/CPU]
+pe = 1          # How many parallel environments (cores) needed
+memory = 64     # Required memory per core in GBytes
+
+[data]
+n_channels = 1
+batch_size = 1  # Batch size for dataloader
+num_workers = 4 # parallel threads to use to speed up data processing
+img_scale = 0.5
+val_percent = 10 # % of the data that is used as validation (0-100)
+dir_train_mask = 'UNDEFINED'
+dir_train_img = 'UNDEFINED'
+dir_val_img = 'UNDEFINED'
+dir_val_mask = 'UNDEFINED'
+split_training_dataset = false
+apply_augmentations = false
+padding = true
+
+[model]
+model_name = 'UNDEFINED'   # model architecture name
+classes = 2     # Number of possible segmentation classes
+bilinear = false # Use bilinear upsampling within down/up blocks in unet network
+
+[training]
+loss = 'both'
+lr = 1e-5       # learning rate
+epochs = 10     # Number of epochs to run
+grad_scaler = false     # Use mixed precision for faster training
+load_checkpoint = false    # Load model from a .pth file (Bool/Path)
+optimizer_type = 'adam' # Use adam optimizer
+scheduler_type = false  # No scheduler is used
+save_checkpoint = true # Whether model checkpoints are saved
+checkpoint_frequency = 1 # How often checkpoints are saved (per epoch)
+

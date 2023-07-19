@@ -1,0 +1,39 @@
+experiment_name = "EDDIE_Gel_Final"  # configuration name
+
+#[processing_unit]
+base_hardware = "EDDIE"   # Where the program is run [EDDIE/PC]
+
+#[batch_file]
+core = "GPU"    # Which processor is used [GPU/CPU]
+pe = 1          # How many parallel environments (cores) needed
+memory = 64     # Required memory per core in GBytes
+
+#[data]
+n_channels = 1
+batch_size = 1  # Batch size for dataloader
+num_workers = 1 # parallel threads to use to speed up data processing
+img_scale = 0.5 # TODO: is this necessary to be 0.5?
+validation = 10 # % of the data that is used as validation (0-100)
+base_dir = '/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/Gel_Images/Final_Set/Models'
+dir_train_img = '/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/Gel_Images/Final_Set/Training_Set/Images/'
+dir_train_mask = '/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/Gel_Images/Final_Set/Training_Set/Masks/'
+split_training_dataset = false
+dir_val_img = '/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/Gel_Images/Final_Set/Validation_Set/Images/'
+dir_val_mask = '/exports/csce/eddie/eng/groups/DunnGroup/kiros/2022_summer_intern/Gel_Images/Final_Set/Validation_Set/Masks/'
+apply_augmentations = true
+padding = true
+
+#[model]
+model_name = 'milesial-UNet'   # model architecture name
+lr = 1e-5       # learning rate
+classes = 2     # Number of possible segmentation classes
+bilinear = false # Use bilinear upsampling within down/up blocks in unet network
+
+#[training]
+epochs = 10     # Number of epochs to run
+amp = false     # Use mixed precision TODO: change variable name to something more descriptive
+load = false    # Load model from a .pth file (Bool/Path)
+optimizer_type = 'adam' # Use adam optimizer
+scheduler = false  # No scheduler is used
+loss = 'both'  # loss calculated by CrossEntropy + Dice
+save_checkpoint = true # Whether model checkpoints are saved

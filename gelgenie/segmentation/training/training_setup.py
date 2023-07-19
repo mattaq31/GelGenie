@@ -1,6 +1,24 @@
 from torch import optim as optim
 
 
+def core_setup(network, lr=1e-5, optimizer_type='adam', scheduler_type=None, **kwargs):
+
+    if optimizer_type == 'rmsprop':
+        optimizer = define_optimizer(network.parameters(), lr=lr, optimizer_type='rmsprop',
+                                          optimizer_params={'weight_decay': 1e-8, 'momentum': 0.9, 'alpha': 0.99})
+    elif optimizer_type == 'adam':
+        optimizer = define_optimizer(network.parameters(), lr=lr, optimizer_type='adam')
+    else:
+        raise RuntimeError('Optimizer not recognized')
+
+    if scheduler_type == 'ReduceLROnPlateau' or scheduler_type == 'CosineAnnealingWarmRestarts':
+        scheduler = define_scheduler(optimizer, scheduler_type=scheduler_type)  # goal: maximize Dice score
+    else:
+        scheduler = None
+
+    return optimizer, scheduler
+
+
 def define_optimizer(optim_weights, lr=1e-4, optimizer_params=None, optimizer_type='Adam'):
     if optimizer_type.lower() == 'adam':
         if optimizer_params is not None:
@@ -20,16 +38,15 @@ def define_optimizer(optim_weights, lr=1e-4, optimizer_params=None, optimizer_ty
                                       weight_decay=weight_decay, momentum=momentum)
         else:
             optimizer = optim.RMSprop(filter(lambda p: p.requires_grad, optim_weights), lr=lr)
+    else:
+        raise RuntimeError('Optimizer not recognized')
 
     return optimizer
 
 
 def define_scheduler(base_optimizer, scheduler_type='ReduceLROnPlateau'):
     if scheduler_type == 'ReduceLROnPlateau':
-        # goal: maximize Dice score
         learning_rate_scheduler = optim.lr_scheduler.ReduceLROnPlateau(base_optimizer, 'max', patience=2)
-
-    # Add this scheduler here:
     elif scheduler_type == 'CosineAnnealingWarmRestarts':
         scheduler_params = {'t_mult': 1,
                             'restart_period': 10,
@@ -39,5 +56,6 @@ def define_scheduler(base_optimizer, scheduler_type='ReduceLROnPlateau'):
                                                            T_0=scheduler_params['restart_period'],
                                                            eta_min=scheduler_params['lr_min'])
     else:
-        print(f'No scheduler chosen, scheduler = {scheduler_type}')
+        raise RuntimeError('Scheduler not recognized')
+
     return learning_rate_scheduler

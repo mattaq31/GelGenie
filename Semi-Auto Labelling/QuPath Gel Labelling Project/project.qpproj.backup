@@ -3,90 +3,163 @@
   "createTimestamp": 1688931950853,
   "modifyTimestamp": 1688931950853,
   "uri": "file:/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/main_code/Semi-Auto%20Labelling/QuPath%20Gel%20Labelling%20Project/project.qpproj",
-  "lastID": 6,
+  "lastID": 12,
   "images": [
     {
       "serverBuilder": {
         "builderType": "uri",
         "providerClassName": "qupath.lib.images.servers.bioformats.BioFormatsServerBuilder",
-        "uri": "file:/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/main_code/Semi-Auto%20Labelling/Kiros%20QuPath/Nathan%20Gels%20Q1%20Original/Ivan-gels%20.png",
+        "uri": "file:/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/gel_testing/1_ruler.tif",
         "args": [
           "--series",
           "0"
         ]
       },
-      "entryID": 1,
-      "randomizedName": "c8fcd9a0-e65c-44ac-89d2-a71fa93dbd9d",
-      "imageName": "Ivan-gels .png",
+      "entryID": 7,
+      "randomizedName": "216d4cfc-38e6-4aa4-b8db-f319b3b352db",
+      "imageName": "1_ruler.tif",
       "metadata": {}
     },
     {
       "serverBuilder": {
         "builderType": "uri",
         "providerClassName": "qupath.lib.images.servers.bioformats.BioFormatsServerBuilder",
-        "uri": "file:/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/originals/matthew_gels/891.tif",
+        "uri": "file:/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/gel_testing/tbe_2_2_lod_v6.png",
         "args": [
           "--series",
           "0"
         ]
       },
-      "entryID": 2,
-      "randomizedName": "06c1c658-8297-4fd3-a89a-5d38d2f477b6",
-      "imageName": "891.tif",
-      "metadata": {}
-    },
-    {
-      "serverBuilder": {
-        "builderType": "uri",
-        "providerClassName": "qupath.imagej.images.servers.ImageJServerBuilder",
-        "uri": "file:/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/maximal_set/nathan_gels/Masks/Ivan-gels%20.tif",
-        "args": []
-      },
-      "entryID": 3,
-      "randomizedName": "c1ad278b-c495-4ad4-9c20-a08a16dfb54e",
-      "imageName": "Ivan-gels .tif",
-      "metadata": {}
-    },
-    {
-      "serverBuilder": {
-        "builderType": "uri",
-        "providerClassName": "qupath.imagej.images.servers.ImageJServerBuilder",
-        "uri": "file:/Users/matt/Desktop/ivan_mask.tif",
-        "args": []
-      },
-      "entryID": 4,
-      "randomizedName": "1eb81db7-fd76-484b-97b2-eef9d1f62cd3",
-      "imageName": "ivan_mask.tif",
+      "entryID": 8,
+      "randomizedName": "e4b59c1f-4c76-415c-ae9c-6b4996274464",
+      "imageName": "tbe_2_2_lod_v6.png",
       "metadata": {}
     },
     {
       "serverBuilder": {
         "builderType": "uri",
         "providerClassName": "qupath.lib.images.servers.bioformats.BioFormatsServerBuilder",
-        "uri": "file:/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/maximal_set/lsdb_gels/Images/C39-4.JPG",
+        "uri": "file:/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/gel_testing/gel_1_biodoc_2.tif",
         "args": [
           "--series",
           "0"
         ]
       },
-      "entryID": 5,
-      "randomizedName": "2b5ed7e4-1031-4b71-846e-4a005d5f9169",
-      "imageName": "C39-4.JPG",
+      "entryID": 9,
+      "randomizedName": "39c2c11c-7165-4b73-aaa1-46f84bf07b2b",
+      "imageName": "gel_1_biodoc_2.tif",
       "metadata": {}
     },
     {
       "serverBuilder": {
         "builderType": "uri",
         "providerClassName": "qupath.lib.images.servers.bioformats.BioFormatsServerBuilder",
-        "uri": "file:/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/maximal_set/nathan_gels/Images/Ivan-gels%20.png",
+        "uri": "file:/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/gel_testing/455.tif",
         "args": [
           "--series",
           "0"
-        ]
+        ],
+        "metadata": {
+          "name": "455.tif",
+          "width": 1360,
+          "height": 1024,
+          "sizeZ": 1,
+          "sizeT": 1,
+          "channelType": "DEFAULT",
+          "isRGB": false,
+          "pixelType": "UINT8",
+          "levels": [
+            {
+              "downsample": 1.0,
+              "width": 1360,
+              "height": 1024
+            }
+          ],
+          "channels": [
+            {
+              "name": "Channel 1",
+              "color": -1
+            }
+          ],
+          "pixelCalibration": {
+            "pixelWidth": {
+              "value": 1.0,
+              "unit": "px"
+            },
+            "pixelHeight": {
+              "value": 1.0,
+              "unit": "px"
+            },
+            "zSpacing": {
+              "value": 1.0,
+              "unit": "z-slice"
+            },
+            "timeUnit": "SECONDS",
+            "timepoints": []
+          },
+          "preferredTileWidth": 1360,
+          "preferredTileHeight": 36
+        }
       },
-      "entryID": 6,
-      "randomizedName": "b325c14f-2638-4a5e-bc26-845a864f5f90",
-      "imageName": "Ivan-gels .png",
+      "entryID": 10,
+      "randomizedName": "63664649-2957-40b4-a858-c512ba174e0c",
+      "imageName": "455.tif",
+      "metadata": {}
+    },
+    {
+      "serverBuilder": {
+        "builderType": "uri",
+        "providerClassName": "qupath.lib.images.servers.bioformats.BioFormatsServerBuilder",
+        "uri": "file:/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/gel_testing/224.tif",
+        "args": [
+          "--series",
+          "0"
+        ],
+        "metadata": {
+          "name": "224.tif",
+          "width": 1360,
+          "height": 1024,
+          "sizeZ": 1,
+          "sizeT": 1,
+          "channelType": "DEFAULT",
+          "isRGB": false,
+          "pixelType": "UINT16",
+          "levels": [
+            {
+              "downsample": 1.0,
+              "width": 1360,
+              "height": 1024
+            }
+          ],
+          "channels": [
+            {
+              "name": "Channel 1",
+              "color": -1
+            }
+          ],
+          "pixelCalibration": {
+            "pixelWidth": {
+              "value": 1.0,
+              "unit": "px"
+            },
+            "pixelHeight": {
+              "value": 1.0,
+              "unit": "px"
+            },
+            "zSpacing": {
+              "value": 1.0,
+              "unit": "z-slice"
+            },
+            "timeUnit": "SECONDS",
+            "timepoints": []
+          },
+          "preferredTileWidth": 1360,
+          "preferredTileHeight": 33
+        }
+      },
+      "entryID": 11,
+      "randomizedName": "5aea2153-96f0-4a1f-a1c4-ba028fc4d63f",
+      "imageName": "224.tif",
       "metadata": {}
     }
   ]

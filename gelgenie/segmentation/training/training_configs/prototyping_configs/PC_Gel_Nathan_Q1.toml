@@ -1,0 +1,33 @@
+experiment_name = "PC_Gel_Nathan_Q1"  # configuration name
+
+#[processing_unit]
+base_hardware = "PC"   # Where the program is run [EDDIE/PC]
+
+#[batch_file]
+core = "CPU"    # Which processor is used [GPU/CPU]
+pe = 1          # How many parallel environments (cores) needed
+memory = 64     # Required memory per core in GBytes
+
+#[data]
+n_channels = 1
+batch_size = 4  # Batch size for dataloader
+num_workers = 1 # parallel threads to use to speed up data processing
+img_scale = 0.5 # TODO: is this necessary to be 0.5?
+validation = 10 # % of the data that is used as validation (0-100)
+base_dir = 'C:/2022_Summer_Intern/Gel_Images_UNet_Test/Models'
+dir_img = 'C:/2022_Summer_Intern/Gel_Images_UNet_Test/Images_Q1'
+dir_mask = 'C:/2022_Summer_Intern/Gel_Images_UNet_Test/Masks_Q1'
+
+#[model]
+name = 'UNet'   # model architecture name
+lr = 1e-5       # learning rate
+classes = 2     # Number of possible segmentation classes
+bilinear = false # Use bilinear upsampling within down/up blocks in unet network
+
+#[training]
+epochs = 10     # Number of epochs to run
+amp = false     # Use mixed precision TODO: change variable name to something more descriptive
+load = false    # Load model from a .pth file (Bool/Path)
+optimizer_type = 'adam' # Use adam optimizer
+scheduler = false  # No scheduler is used
+save_checkpoint = true # Whether model checkpoints are saved

@@ -9,7 +9,7 @@ from scipy import ndimage
 from gelgenie.segmentation.helper_functions.dice_score import dice_coeff
 
 from gelgenie.segmentation.unet import UNet, smp_UNet, smp_UNetPlusPlus
-from gelgenie.segmentation.data_handling.dataloaders import BasicDataset, ImageDataset
+from gelgenie.segmentation.data_handling.dataloaders import ImageMaskDataset, ImageDataset
 
 
 @click.command()
@@ -48,7 +48,7 @@ def model_eval(images_path, masks_path, checkpoint_path, net_name):
     if masks_path is None:
         test_set = ImageDataset(images_path, n_channels=1, padding=padding)  # Only images loaded
     else:
-        test_set = BasicDataset(images_path, masks_path, n_channels=1, padding=padding)  # Both images and masks loaded
+        test_set = ImageMaskDataset(images_path, masks_path, n_channels=1, padding=padding)  # Both images and masks loaded
 
     test_loader = DataLoader(test_set, shuffle=False, batch_size=1, num_workers=0, pin_memory=True)
     net.train()

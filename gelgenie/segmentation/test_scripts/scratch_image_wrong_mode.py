@@ -1,4 +1,4 @@
-from segmentation.data_handling import prep_dataloader
+from segmentation.data_handling import prep_train_val_dataloaders
 from tqdm import tqdm
 
 from segmentation.unet import UNet
@@ -18,7 +18,7 @@ if __name__ == '__main__':
     net = UNet(n_channels=int(n_channels), n_classes=classes, bilinear=bilinear)
 
     train_loader, val_loader, n_train, n_val = \
-            prep_dataloader(dir_img, dir_mask, n_channels, img_scale, val_percent, batch_size, num_workers)
+            prep_train_val_dataloaders(dir_img, dir_mask, n_channels, img_scale, val_percent, batch_size, num_workers)
 
     for epoch in range(1, epochs + 1):
         net.train()
