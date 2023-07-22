@@ -1,35 +1,36 @@
 from torchinfo import summary
 from gelgenie.segmentation.helper_functions.general_functions import create_summary_table
 import torch.nn as nn
+import os
+import ast
+from pydoc import locate
 
 
-def model_configure(model_name='milesial-UNet',
-                    n_channels=1, classes=2, bilinear=True,
-                    pretrained='imagenet', device='cpu'):
-    from gelgenie.segmentation.networks.UNets.unet_model import UNet, smp_UNetPlusPlus, smp_UNet
+available_models = {}
+all_models_folder = os.path.abspath(os.path.join(__file__, os.path.pardir))
 
-    # n_classes is the number of probabilities you want to get per pixel
-    if model_name == 'milesial-UNet':
-        net = UNet(n_channels=int(n_channels), n_classes=classes, bilinear=bilinear)  # initializing random weights
-    elif model_name == 'UNetPlusPlus':
-        net = smp_UNetPlusPlus(
-            encoder_name="resnet18",  # choose encoder, e.g. mobilenet_v2 or efficientnet-b7
-            encoder_weights=pretrained,  # choose which pretrained weights to use (or none)
-            in_channels=1,  # model input channels (1 for gray-scale images, 3 for RGB, etc.)
-            classes=2,  # model output channels (number of classes in your dataset)
-        )
-    elif model_name == 'smp-UNet':
-        net = smp_UNet(
-            encoder_name="resnet18",  # choose encoder, e.g. mobilenet_v2 or efficientnet-b7
-            encoder_weights=pretrained,  # choose which pretrained weights to use (or none)
-            in_channels=1,  # model input channels (1 for gray-scale images, 3 for RGB, etc.)
-            classes=2,  # model output channels (number of classes in your dataset)
-        )
-    elif model_name == 'dummy':
-        net = DummyModel(int(n_channels), classes, bilinear)
+# quick logic searching for all folders in models directory
+model_categories = [f.name for f in os.scandir(all_models_folder) if (f.is_dir() and '__' not in f.name)]
+# Main logic for searching for handler files and registering model architectures in system.
+for category in model_categories:
+    handler_file = os.path.join(all_models_folder, category, 'model_gateway.py')
+    if not os.path.isfile(handler_file):
+        continue
+    p = ast.parse(open(handler_file, 'r').read())
+    classes = [node.name for node in ast.walk(p) if isinstance(node, ast.ClassDef)]
+    for _class in classes:
+        available_models[_class.lower()] = ('gelgenie.segmentation.networks.'+category+'.model_gateway.'+_class)
 
+
+def model_configure(model_name='dummy', device='cpu', **kwargs):
+
+    if model_name == 'dummy':
+        net = DummyModel(1, kwargs['classes'])
     else:
-        raise RuntimeError(f'Model {model_name} unidentified, must be milesial-UNet or UNetPlusPlus')
+        if model_name not in available_models:
+            raise RuntimeError(f'Model {model_name} unidentified, available models include: {available_models}')
+        else:
+            net = locate(available_models[model_name])(**kwargs)
 
     net.to(device=device)
 
@@ -37,21 +38,19 @@ def model_configure(model_name='milesial-UNet',
     model_structure = summary(net, mode='train', depth=5, device=device, verbose=0)
     model_info = [['Network', model_name],
                   ['Trainable Parameters', model_structure.trainable_params],
-                  ['Input channels', n_channels],
-                  ['Output channels', classes],
-                  ['Downscaling operation', 'Bilinear' if bilinear else 'Transposed conv'],
-                  ]
+                  ['Output channels', kwargs['classes']],
+                  ]  # TODO: anything else to add here?
     model_docstring = create_summary_table("Model Summary", ['Parameter', 'Value'], ['cyan', 'green'], model_info)
 
     return net, model_structure, model_docstring
 
 
 class DummyModel(nn.Module):
-    def __init__(self, n_channels, n_classes, bilinear=False):
+    def __init__(self, in_channels, n_classes):
         super(DummyModel, self).__init__()
-        self.n_channels = n_channels
+        self.n_channels = in_channels
         self.n_classes = n_classes
-        self.main_module = nn.Conv2d(n_channels, n_classes, kernel_size=3, padding=1, bias=False)
+        self.main_module = nn.Conv2d(in_channels, n_classes, kernel_size=3, padding=1, bias=False)
 
     def forward(self, x):
         return self.main_module(x)

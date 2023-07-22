@@ -1,27 +1,25 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import toml
 
 from tqdm import tqdm
 import wandb
 import os
 from os.path import join
-from pathlib import Path
-import logging
-import numpy as np
+
 from time import strftime
 from rich import print as rprint
 from collections import defaultdict
 
 from gelgenie.segmentation.helper_functions.dice_score import dice_loss
-from ..helper_functions.stat_functions import save_statistics
+from ..helper_functions.stat_functions import save_statistics, load_statistics
 from ..helper_functions.display_functions import plot_stats, visualise_segmentation
 from ..helper_functions.general_functions import create_dir_if_empty, create_summary_table
-from gelgenie.segmentation.evaluation.basic_eval import evaluate
-from .training_setup import core_setup, define_optimizer, define_scheduler
+from .training_setup import core_setup
 from ..data_handling import prep_train_val_dataloaders
 from ..networks import model_configure
-from gelgenie.segmentation.helper_functions.dice_score import multiclass_dice_coeff, dice_coeff
+from gelgenie.segmentation.helper_functions.dice_score import multiclass_dice_coeff
 
 
 class TrainingHandler:
@@ -29,35 +27,54 @@ class TrainingHandler:
                  training_parameters, processing_parameters,
                  data_parameters, model_parameters):
 
-        # basic setup TODO: update naming when resuming from a previous experiment
-        self.main_folder = join(base_dir, experiment_name + '_' + strftime("%Y_%m_%d_%H;%M;%S"))
+        self.main_folder = join(base_dir, experiment_name)
+
+        # basic setup
+        if training_parameters['load_checkpoint']:
+            saved_config = toml.load(join(self.main_folder, 'config.toml'))
+            unique_id = saved_config['training']['wandb_id']
+        else:
+            unique_id = wandb.util.generate_id()
+
+        training_parameters['wandb_id'] = unique_id
+
+        if os.path.exists(self.main_folder) and not training_parameters['load_checkpoint']:
+            next_id = 1
+            while os.path.exists(self.main_folder):  # continues to generate new names until an unused one is found
+                self.main_folder = join(base_dir, '%s_%d' % (experiment_name, next_id))
+                next_id += 1
+            rprint('[bold red]Original folder name was already taken, so the id %d'
+                   ' was appended to the current experiment name.[/ bold red]' % (next_id-1))
+
         self.checkpoints_folder = join(self.main_folder, 'checkpoints')
         self.example_output_folder = join(self.main_folder, 'segmentation_samples')
         self.logs_folder = join(self.main_folder, 'training_logs')
         self.device = processing_parameters['device']
         self.device = torch.device('cuda' if self.device.lower() == 'gpu' else 'cpu')
+        self.wandb_track = training_parameters['wandb_track']
+        self.resumed_model = True if training_parameters['load_checkpoint'] else False
 
-        # Initialise wandb logging TODO: allow user to turn wandb on/off, TODO: deal with useless parameters in input files
-        if processing_parameters['base_hardware'] == 'EDDIE':
-            self.wandb_package = wandb.init(project='GelGenie Final Phase', entity='dunn-group', resume='allow',
-                                            name=os.path.basename(self.main_folder),
-                                            settings=wandb.Settings(start_method="fork"))
-        else:
-            self.wandb_package = wandb.init(project='GelGenie Final Phase', entity='dunn-group',
-                                            name=os.path.basename(self.main_folder),
-                                            resume='allow')
+        # Initialise wandb logging
+        if self.wandb_track:
+            if processing_parameters['base_hardware'] == 'EDDIE':
+                self.wandb_package = wandb.init(project='GelGenie Final Phase', entity='dunn-group', resume='allow',
+                                                name=os.path.basename(self.main_folder), id=unique_id,
+                                                settings=wandb.Settings(start_method="fork"))
+            else:
+                self.wandb_package = wandb.init(project='GelGenie Final Phase', entity='dunn-group',
+                                                name=os.path.basename(self.main_folder), id=unique_id,
+                                                resume='allow')
 
-        if os.path.exists(self.main_folder):
-            raise RuntimeError('Main experiment folder already exists - make sure to not overwrite!')
         create_dir_if_empty(self.main_folder, self.checkpoints_folder, self.example_output_folder, self.logs_folder)
 
         # model setup
         self.net, model_structure, model_docstring = model_configure(device=self.device, **model_parameters)
 
-        with open(join(self.main_folder, 'model_structure.txt'), 'w', encoding='utf-8') as f:
-            f.write(str(model_structure))
-        with open(join(self.main_folder, 'model_summary.txt'), 'w', encoding='utf-8') as f:
-            rprint(model_docstring, file=f)
+        if not self.resumed_model:
+            with open(join(self.main_folder, 'model_structure.txt'), 'w', encoding='utf-8') as f:
+                f.write(str(model_structure))
+            with open(join(self.main_folder, 'model_summary.txt'), 'w', encoding='utf-8') as f:
+                rprint(model_docstring, file=f)
         rprint(model_docstring)
 
         # training details setup
@@ -80,9 +97,10 @@ class TrainingHandler:
         self.train_loader, self.val_loader, self.train_image_count, self.val_image_count = prep_train_val_dataloaders(
             **data_parameters)
 
+        time_started = strftime("%Y_%m_%d_%H;%M;%S")
         # diagnostic strings
         diagnostic_info = [['Starting epoch', self.current_epoch],
-                           ['Epochs to run', self.max_epochs - self.current_epoch],
+                           ['Epochs to run', self.max_epochs - self.current_epoch + 1],
                            ['Device', str(self.device)],
                            ['Learning rate', str(self.optimizer.param_groups[0]['lr'])],
                            ['Training set images', str(self.train_image_count)],
@@ -91,35 +109,42 @@ class TrainingHandler:
                            ['Checkpoints', str(self.checkpoint_saving)],
                            ['Optimizer', training_parameters['optimizer_type']],
                            ['Scheduler', training_parameters['scheduler_type']],
-                           ['Network', model_parameters['model_name']]
+                           ['Network', model_parameters['model_name']],
+                           ['Date/time started', time_started],
                            ]
 
-        # Logging parameters for training
-        self.wandb_package.config.update(dict(training_parameters=training_parameters,
-                                              processing_parameters=processing_parameters,
-                                              data_parameters=data_parameters,
-                                              model_parameters=model_parameters))
+        time_log = join(self.main_folder, 'time_log.txt')
+        with open(time_log, 'a' if os.path.exists(time_log) else 'w') as f:
+            if self.resumed_model:
+                f.write('Time resumed training run: %s\n' % time_started)
+            else:
+                f.write('Time initiated first training run: %s\n' % time_started)
+
+        if self.wandb_track and not self.resumed_model:
+            # Logging parameters for training
+            self.wandb_package.config.update(dict(training_parameters=training_parameters,
+                                                  processing_parameters=processing_parameters,
+                                                  data_parameters=data_parameters,
+                                                  model_parameters=model_parameters))
 
         summary_table = create_summary_table("Training Summary", ['Parameter', 'Value'], ['cyan', 'green'],
                                              diagnostic_info)
         rprint(summary_table)
 
-        # TODO: add wandb logging
-
     def load_checkpoint(self, checkpoint):
         """
         Loads checkpoint model, optimizer and scheduler weights
-        :param checkpoint: Name of model checkpoint (must be stored in checkpoints folder)
+        :param checkpoint: Model checkpoint epoch number (must be stored in checkpoints folder)
         :return: None
         """
-        filepath = join(self.checkpoints_folder, checkpoint)
+        filepath = join(self.checkpoints_folder, 'checkpoint_epoch_%s.pth' % checkpoint)
         saved_dict = torch.load(filepath, map_location=self.device)
         self.net.load_state_dict(saved_dict['network'])  # Load in state dictionary of model network
         self.optimizer.load_state_dict(saved_dict['optimizer'])
         if self.scheduler:
             self.scheduler.load_state_dict(saved_dict['scheduler'])
         self.current_epoch = saved_dict['epoch'] + 1
-        rprint(f'[bold orange] Model, optimizer and scheduler weights loaded from {checkpoint} '
+        rprint(f'[bold orange] Model, optimizer and scheduler weights loaded from '
                f'(epoch {self.current_epoch})[/bold orange]')
 
     def save_checkpoint(self, name):
@@ -200,7 +225,8 @@ class TrainingHandler:
         self.net.eval()
 
         # iterate over the validation set
-        with tqdm(total=len(self.val_loader), desc=f'Epoch {epoch}/{self.max_epochs} validation', unit='batch', leave=False) as pbar:
+        with tqdm(total=len(self.val_loader), desc=f'Epoch {epoch}/{self.max_epochs} validation', unit='batch',
+                  leave=False) as pbar:
             for b_index, batch in enumerate(self.val_loader):
                 image, mask_true = batch['image'], batch['mask']
 
@@ -249,9 +275,13 @@ class TrainingHandler:
         Runs the full training process, including training, validation, log saving and model checkpointing.
         :return: None
         """
-        # TODO: deal with reloading stats when reloading a checkpoint
 
-        total_metrics = defaultdict(list)
+        if self.resumed_model:
+            old_metrics = load_statistics(self.logs_folder, 'training_stats.csv', config='pd')
+            total_metrics = defaultdict(list, old_metrics.to_dict(orient='list'))
+        else:
+            total_metrics = defaultdict(list)
+
         # Begin training
         for epoch in range(self.current_epoch, self.max_epochs + 1):
 
@@ -279,30 +309,32 @@ class TrainingHandler:
             # save results to file
             save_statistics(experiment_log_dir=self.logs_folder, filename='training_stats.csv',
                             stats_dict=total_metrics,
-                            selected_data=epoch-1 if epoch > 1 else None,
+                            selected_data=epoch - 1 if epoch > 1 else None,
                             append=True if epoch > 1 else False)
 
-            # log to wandb
-            self.wandb_package.log({
-                'Learning rate': current_epoch_metrics['Learning Rate'],
-                'Validation Dice': current_epoch_metrics['Dice Score'],
-                'Train loss': current_epoch_metrics['Training Loss'],
-                'Validation sample': {
-                    'Input': wandb.Image(seg_sample_package['image']),
-                    'Segmentation': {
-                        'True': wandb.Image(seg_sample_package['mask_true']),
-                        'Predicted': wandb.Image(seg_sample_package['threshold_mask']),
-                        'Predicted-superimposed': wandb.Image(seg_sample_package['combi_mask']),
+            if self.wandb_track:
+                # log to wandb
+                self.wandb_package.log({
+                    'Learning rate': current_epoch_metrics['Learning Rate'],
+                    'Validation Dice': current_epoch_metrics['Dice Score'],
+                    'Train loss': current_epoch_metrics['Training Loss'],
+                    'Validation sample': {
+                        'Input': wandb.Image(seg_sample_package['image']),
+                        'Segmentation': {
+                            'True': wandb.Image(seg_sample_package['mask_true']),
+                            'Predicted': wandb.Image(seg_sample_package['threshold_mask']),
+                            'Predicted-superimposed': wandb.Image(seg_sample_package['combi_mask']),
+                        },
                     },
-                },
-                'epoch': epoch,
-            })
+                    'epoch': epoch,
+                })
 
             if self.checkpoint_saving and (epoch == self.max_epochs or epoch % self.checkpoint_save_frequency == 0):
                 self.save_checkpoint('checkpoint_epoch_%s.pth' % epoch)
 
             if self.model_cleanup_frequency > 0 and epoch % self.model_cleanup_frequency == 0:
-                top_epoch_idx = sorted(range(len(total_metrics['Dice Loss'])), key=lambda i: total_metrics['Dice Loss'][i])[-5:]
+                top_epoch_idx = sorted(range(len(total_metrics['Dice Loss'])),
+                                       key=lambda i: total_metrics['Dice Loss'][i])[-5:]
                 top_epochs = [total_metrics['Epoch'][i] for i in top_epoch_idx]
                 deleted_epochs = []
                 for epoch_id in total_metrics['Epoch']:
@@ -312,5 +344,7 @@ class TrainingHandler:
                             os.remove(model_file)
                             deleted_epochs.append(epoch_id)
                 rprint('[bold red]Deleted checkpoints for epochs: %s[/bold red]' % deleted_epochs)
+            self.current_epoch += 1
             print('--------------------------')
-        self.wandb_package.finish()
+        if self.wandb_track:
+            self.wandb_package.finish()

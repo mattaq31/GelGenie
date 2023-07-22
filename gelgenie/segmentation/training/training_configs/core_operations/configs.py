@@ -48,7 +48,14 @@ def apply_defaults(params):
     :return: Full parameters dictionary with defaults applied if any were missing
     """
     new_params = copy.copy(global_default_config)
-    new_params.update(params)
+
+    for root_key, root_content in new_params.items():
+        if isinstance(root_content, dict):
+            new_params[root_key].update(params[root_key])
+        else:
+            if root_key in params:
+                new_params[root_key] = params[root_key]
+
     for root_key, root_content in new_params.items():
         if isinstance(root_content, dict):
             for inner_key, inner_content in root_content.items():

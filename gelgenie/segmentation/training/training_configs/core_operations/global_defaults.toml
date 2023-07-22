@@ -11,7 +11,6 @@ memory = 64     # Required memory per core in GBytes
 n_channels = 1
 batch_size = 1  # Batch size for dataloader
 num_workers = 4 # parallel threads to use to speed up data processing
-img_scale = 0.5
 val_percent = 10 # % of the data that is used as validation (0-100)
 dir_train_mask = 'UNDEFINED'
 dir_train_img = 'UNDEFINED'
@@ -24,8 +23,7 @@ padding = true
 [model]
 model_name = 'UNDEFINED'   # model architecture name
 classes = 2     # Number of possible segmentation classes
-bilinear = false # Use bilinear upsampling within down/up blocks in unet network
-
+in_channels = 1 # Number of input channels
 [training]
 loss = 'both'
 lr = 1e-5       # learning rate
@@ -36,4 +34,4 @@ optimizer_type = 'adam' # Use adam optimizer
 scheduler_type = false  # No scheduler is used
 save_checkpoint = true # Whether model checkpoints are saved
 checkpoint_frequency = 1 # How often checkpoints are saved (per epoch)
-
+wandb_track = true # Whether to track training with wandb

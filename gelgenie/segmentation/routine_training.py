@@ -6,13 +6,11 @@ import rich_click as click
 # config param
 @click.option('--parameter_config', default=None, help='[Path] location of TOML parameters file, '
                                                        'containing configs for this experiment')
-@click.option('--user_default_config', '-u', default=None, help='[String] Default training config to use')
+@click.option('--user_default_config', '-u', default=None, help='[String] Default user training config to use')
 # model params
 @click.option('--model_name', default=None, help='[String] Which model is used [milesial-UNet/UNetPlusPlus/smp-UNet]')
-@click.option('--pretrained', default=None, help='[String] Which pretrained weight to use [imagenet/ ssl/ swsl]')
-@click.option('--load_checkpoint', default=None, help='[Bool/Path] Load model from a .pth file')
+@click.option('--load_checkpoint', default=None, help='[Bool/String] Load model with specific epoch number from a .pth file in the model checkpoints folder')
 @click.option('--classes', type=click.INT, default=None, help='[int] Number of classes/probabilities per pixel')
-@click.option('--bilinear', type=click.BOOL, default=None, help='[Bool] Use bilinear upsampling')
 # processing params
 @click.option('--base_hardware', default=None, help='[String] Where the program is run [EDDIE/PC]')
 @click.option('--core', default=None, help='[String] Which processor is used [GPU/CPU]')
@@ -24,18 +22,19 @@ import rich_click as click
 @click.option('--save_checkpoint', type=click.BOOL, default=None, help='[Bool] Whether checkpoints are saved')
 @click.option('--checkpoint_frequency', type=click.INT, default=None, help='[int] How often checkpoints are saved')
 @click.option('--model_cleanup_frequency', type=click.INT, default=None, help='[int] How often checkpoints are cleanup during training')
-@click.option('--grad_scaler', type=click.BOOL, default=None, help='[Bool] Use mixed precision')
+@click.option('--grad_scaler', type=click.BOOL, default=None, help='[Bool] Set to true to enable mixed precision gradient scaling (should improve performance)')
 @click.option('--base_dir', default=None, help='[Path] Directory for output exports')
 @click.option('--optimizer_type', default=None, help='[String] Type of optimizer to be used [adam/rmsprop]')
 @click.option('--scheduler_type', default=None, help='[String (false for none)] Which scheduler is used during training')
-@click.option('--loss', default=None, help='[String] Components of the Loss function [CrossEntropy/Dice/Both]')
+@click.option('--loss', default=None, type=click.STRING, help='[String] Components of the Loss function [CrossEntropy/Dice/Both]')
+@click.option('--wandb_track', default=None, type=click.BOOL, help='[Bool] Set to false to turn off wandb logging')
 # data params
 # essential
-@click.option('--dir_train_img', default=None, help='[Path] Directory of training images')
+@click.option('--dir_train_img', type=click.STRING, default=None, help='[Path] Directory of training images')
 @click.option('--dir_train_mask', default=None, help='[Path] Directory of training masks')
-@click.option('--split_training_dataset', type=click.BOOL, default=None, help='[Path] Directory of training images')
-@click.option('--dir_val_img', default=None, help='[Path] Directory of validation images')
-@click.option('--dir_val_mask', default=None, help='[Path] Directory of validation masks')
+@click.option('--split_training_dataset', type=click.BOOL, default=None, help='[Bool] Turn on training dataset splitting')
+@click.option('--dir_val_img', type=click.STRING, default=None, help='[Path] Directory of validation images')
+@click.option('--dir_val_mask', type=click.STRING, default=None, help='[Path] Directory of validation masks')
 # non-essential
 @click.option('--num_workers', type=click.INT, default=None,
               help='[int] How many workers for dataloader simultaneously ,'
@@ -43,8 +42,7 @@ import rich_click as click
 @click.option('--batch_size', type=click.INT, default=None, help='[int] Batch size for dataloader')
 @click.option('--validation', type=click.INT, default=None,
               help='[int] % of the data that is used as validation (0-100)')
-@click.option('--img_scale', type=click.FLOAT, default=None, help='[Float] Downscaling factor of the images')
-@click.option('--n_channels', type=click.INT, default=None, help='[int] Number of colour channels for model input')
+@click.option('--in_channels', type=click.INT, default=None, help='[int] Number of colour channels for model input')
 @click.option('--apply_augmentations', type=click.BOOL, default=None,
               help='[Bool] Whether augmentations are applied to training images')
 @click.option('--padding', type=click.BOOL, default=None, help='[Bool] Whether padding is applied to training images')
@@ -83,7 +81,12 @@ def segmentation_network_trainer(parameter_config, user_default_config, **kwargs
                                    processing_parameters=combined_params['processing'])
 
     # Copies the config file to the experiment folder for safekeeping
-    with open(join(main_trainer.main_folder, 'config.toml'), "w") as f:
+    if combined_params['training']['load_checkpoint']:
+        config_output_file = join(main_trainer.main_folder, 'config_from_epoch_%s.toml' % combined_params['training']['load_checkpoint'])
+    else:
+        config_output_file = join(main_trainer.main_folder, 'config.toml')
+
+    with open(config_output_file, "w") as f:
         toml.dump(combined_params, f)
         f.close()
 

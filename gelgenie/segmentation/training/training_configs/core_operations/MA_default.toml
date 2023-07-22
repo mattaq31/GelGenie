@@ -1,4 +1,4 @@
-experiment_name = "MA_unet_default"  # configuration name
+experiment_name = "MA_unet_internal_testing"  # configuration name
 base_dir = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models'
 
 [processing]
@@ -11,8 +11,6 @@ memory = 64     # Required memory per core in GBytes
 n_channels = 1 # channels to output to model
 batch_size = 1  # Batch size for dataloader
 num_workers = 1 # parallel threads to use to speed up data processing
-img_scale = 0.5 # TODO: is this necessary to be 0.5?
-val_percent = 10 # % of the data that is used as validation (0-100)
 dir_train_mask = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/dummy_set/masks_train'
 dir_train_img = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/dummy_set/images_train'
 dir_val_img = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/dummy_set/images_val'
@@ -22,18 +20,18 @@ apply_augmentations = true
 padding = true # pads all image with zeros to same size to allow for a batch size higher than 1
 
 [model]
-model_name = 'dummy'   # model architecture name
+model_name = 'smp_unet'   # model architecture name
 classes = 2     # Number of possible segmentation classes
-bilinear = false # Use bilinear upsampling within down/up blocks in unet network
-
+encoder_name = 'resnet18'
 [training]
 loss = 'both'
 lr = 1e-5       # learning rate
 epochs = 2     # Number of epochs to run
 grad_scaler = false     # Use mixed precision for faster training
-load_checkpoint = false    # Load model from a .pth file (Bool/Path)
+load_checkpoint = false    # Load model from a .pth file (Bool/epoch ID)
 optimizer_type = 'adam' # Use adam optimizer
 scheduler_type = 'ReduceLROnPlateau'  # No scheduler is used
 save_checkpoint = true # Whether model checkpoints are saved
 checkpoint_frequency = 1 # How often checkpoints are saved (per epoch)
 model_cleanup_frequency = 20 # How often old checkpoints are deleted (in epochs)
+wandb_track = false # Whether to track training with wandb

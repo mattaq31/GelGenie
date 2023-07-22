@@ -14,13 +14,12 @@ from gelgenie.segmentation.helper_functions.general_functions import extract_ima
 
 
 class ImageMaskDataset(Dataset):
-    def __init__(self, images_dir: str, masks_dir: str, n_channels: int, scale: float = 1.0, mask_suffix: str = '',
+    def __init__(self, images_dir: str, masks_dir: str, n_channels: int, mask_suffix: str = '',
                  augmentations=None, padding: bool = False, image_names=None):
         """
         :param images_dir: Path of image directory
         :param masks_dir: Path of mask directory
         :param n_channels: (int) Number of colour channels for model input
-        :param scale: (float) Downscaling factor of the images
         :param mask_suffix: (string) suffix added to mask files
         :param augmentations: getter function for augmentation function
         :param padding: (Bool) Whether to apply padding to images and masks
@@ -28,12 +27,9 @@ class ImageMaskDataset(Dataset):
         """
 
         assert (n_channels == 1 or n_channels == 3), 'Dataset number of channels must be either 1 or 3'
-        assert 0 < scale <= 1, 'Image scaling must be between 0 and 1'
-
         self.images_dir = Path(images_dir)
         self.masks_dir = Path(masks_dir)
         self.n_channels = n_channels
-        self.scale = scale
         self.mask_suffix = mask_suffix
         self.standard_image_transform = transforms.Compose([transforms.ToTensor()])  # Transforms image to tensor
         if image_names is not None:
@@ -151,10 +147,10 @@ class ImageMaskDataset(Dataset):
         }
 
 
-class ImageDataset(ImageMaskDataset):
+class ImageDataset(ImageMaskDataset):  # TODO: fix the inheritance here - should be the other way round!
     def __init__(self, images_dir: str, n_channels: int, padding: bool = False):
         """
-        For datasets of image only, used in model_eval if no masks are provided
+        For datasets of images only, used in model_eval if no masks are provided
         :param images_dir: Path of image directory
         :param n_channels: (int) Number of colour channels for model input
         :param padding: (Bool) Whether to apply padding
@@ -171,23 +167,16 @@ class ImageDataset(ImageMaskDataset):
             for root, dirs, files in os.walk(self.images_dir):
                 for name in files:
                     image_file = os.path.join(root, name)
-                    image = imageio.imread(image_file)  # TODO: investigate the warning here...
+                    image = imageio.v2.imread(image_file)
                     max_dimension = max(max_dimension, image.shape[0], image.shape[1])
             max_dimension = 32 * (max_dimension // 32 + 1)  # to be divisible by 32 as required by smp-UNet/ UNet++
 
             self.max_dimension = max_dimension
 
-    def __len__(self):
-        return super().__len__()
-
-    @staticmethod
-    def load_image(self, filename, n_channels):
-        return super().load_image(self, filename, n_channels)
-
     def __getitem__(self, idx):
         img_file = self.image_names[idx]
 
-        img_array = self.load_image(self, filename=img_file, n_channels=self.n_channels)
+        img_array = self.load_image(filename=img_file, n_channels=self.n_channels)
 
         if self.augmentations:
             sample = self.augmentations(image=img_array)  # Apply augmentations
@@ -198,8 +187,7 @@ class ImageDataset(ImageMaskDataset):
             bottom = self.max_dimension - img_array.shape[0] - top  # Get amount of pixels to pad at bottom of image
             left = (self.max_dimension - img_array.shape[1]) // 2  # Get amount of pixels to pad at left of image
             right = self.max_dimension - img_array.shape[1] - left  # Get amount of pixels to pad at right of image
-
-        img_array = np.pad(img_array, pad_width=((top, bottom), (left, right)), mode='constant')  # Pad with 0 value
+            img_array = np.pad(img_array, pad_width=((top, bottom), (left, right)), mode='constant')  # Pad with 0 value
 
         img_tensor = self.standard_image_transform(img_array)
 

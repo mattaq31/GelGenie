@@ -6,7 +6,7 @@ from gelgenie.segmentation.helper_functions.general_functions import extract_ima
 
 
 def prep_train_val_dataloaders(dir_train_img, dir_train_mask, split_training_dataset, dir_val_img, dir_val_mask,
-                               n_channels, img_scale, val_percent, batch_size, num_workers,
+                               n_channels, val_percent, batch_size, num_workers,
                                apply_augmentations, padding):
     """
     Prepares a matched training and validation dataloader for training a segmentation model.
@@ -16,7 +16,6 @@ def prep_train_val_dataloaders(dir_train_img, dir_train_mask, split_training_dat
     :param dir_val_img: Path of directory of validation set images
     :param dir_val_mask: Path of directory of validation set masks
     :param n_channels: (int) Number of colour channels for model input
-    :param img_scale: (float) Downscaling factor of the images
     :param val_percent: (float) % of the data that is used as validation normalized between 0 and 1
     :param batch_size: (int) Number of images loaded per batch
     :param num_workers: (int) Number of workers for dataloader (parallel dataloader threads speed up data processing)
@@ -45,11 +44,11 @@ def prep_train_val_dataloaders(dir_train_img, dir_train_mask, split_training_dat
         train_image_names = None
         val_image_names = None
 
-    train_set = ImageMaskDataset(dir_train_img, dir_train_mask, n_channels, img_scale,
+    train_set = ImageMaskDataset(dir_train_img, dir_train_mask, n_channels,
                                  augmentations=get_training_augmentation() if apply_augmentations else None,
                                  padding=padding, image_names=train_image_names)
 
-    val_set = ImageMaskDataset(dir_val_img, dir_val_mask, n_channels, img_scale,
+    val_set = ImageMaskDataset(dir_val_img, dir_val_mask, n_channels,
                                augmentations=None, padding=padding,
                                image_names=val_image_names)
 
