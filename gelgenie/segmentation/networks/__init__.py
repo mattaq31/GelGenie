@@ -4,6 +4,7 @@ import torch.nn as nn
 import os
 import ast
 from pydoc import locate
+import torch
 
 
 available_models = {}
@@ -31,6 +32,10 @@ def model_configure(model_name='dummy', device='cpu', **kwargs):
             raise RuntimeError(f'Model {model_name} unidentified, available models include: {available_models}')
         else:
             net = locate(available_models[model_name])(**kwargs)
+
+    if int(torch.__version__[0]) > 1:
+        print('Compiling model using PyTorch 2.0 compile')
+        net = torch.compile(net)
 
     net.to(device=device)
 

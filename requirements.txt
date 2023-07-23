@@ -19,3 +19,4 @@ toml>=0.10.2
 torchinfo>=1.7.0
 rich>=13.2
 rich-click>=1.6.1
+opencv>=4.5.1

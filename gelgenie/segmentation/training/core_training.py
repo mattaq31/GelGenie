@@ -49,8 +49,9 @@ class TrainingHandler:
         self.checkpoints_folder = join(self.main_folder, 'checkpoints')
         self.example_output_folder = join(self.main_folder, 'segmentation_samples')
         self.logs_folder = join(self.main_folder, 'training_logs')
-        self.device = processing_parameters['device']
-        self.device = torch.device('cuda' if self.device.lower() == 'gpu' else 'cpu')
+
+        self.device = torch.device('cuda' if processing_parameters['device'].lower() == 'gpu' else 'cpu')
+
         self.wandb_track = training_parameters['wandb_track']
         self.resumed_model = True if training_parameters['load_checkpoint'] else False
 

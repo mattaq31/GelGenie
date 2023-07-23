@@ -39,15 +39,15 @@ class milesial_UNet(nn.Module):
 
 
 class smp_UNetPlusPlus(UnetPlusPlus):
-    def __init__(self, in_channels=1, classes=2, **kwargs):
-        super().__init__(in_channels=in_channels, classes=classes, **kwargs)
+    def __init__(self, in_channels=1, classes=2, encoder_weights=None, **kwargs):
+        super().__init__(in_channels=in_channels, classes=classes, encoder_weights=encoder_weights, **kwargs)
         self.n_channels = in_channels
         self.n_classes = classes
 
 
 class smp_UNet(Unet):
-    def __init__(self, in_channels=1, classes=2, **kwargs):
-        super().__init__(in_channels=in_channels, classes=classes, **kwargs)
+    def __init__(self, in_channels=1, classes=2, encoder_weights=None, **kwargs):
+        super().__init__(in_channels=in_channels, classes=classes, encoder_weights=encoder_weights, **kwargs)
         self.n_channels = in_channels
         self.n_classes = classes
 
