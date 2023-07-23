@@ -35,6 +35,7 @@ def model_configure(model_name='dummy', device='cpu', **kwargs):
 
     if int(torch.__version__[0]) > 1:
         print('Compiling model using PyTorch 2.0 compile')
+        torch._dynamo.config.suppress_errors = True
         net = torch.compile(net)
 
     net.to(device=device)

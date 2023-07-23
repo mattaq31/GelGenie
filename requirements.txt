@@ -21,3 +21,4 @@ rich>=13.2
 rich-click>=1.6.1
 opencv>=4.5.1
 torchshow>=0.4.2
+segmentation-models-pytorch>=0.3.0
