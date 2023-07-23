@@ -50,3 +50,4 @@ class smp_UNet(Unet):
         super().__init__(in_channels=in_channels, classes=classes, **kwargs)
         self.n_channels = in_channels
         self.n_classes = classes
+

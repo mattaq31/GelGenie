@@ -14,7 +14,7 @@ from gelgenie.segmentation.helper_functions.general_functions import extract_ima
 
 
 class ImageMaskDataset(Dataset):
-    def __init__(self, images_dir: str, masks_dir: str, n_channels: int, mask_suffix: str = '',
+    def __init__(self, images_dir, masks_dir, n_channels: int, mask_suffix: str = '',
                  augmentations=None, padding: bool = False, image_names=None):
         """
         :param images_dir: Path of image directory
@@ -27,17 +27,28 @@ class ImageMaskDataset(Dataset):
         """
 
         assert (n_channels == 1 or n_channels == 3), 'Dataset number of channels must be either 1 or 3'
-        self.images_dir = Path(images_dir)
-        self.masks_dir = Path(masks_dir)
+
         self.n_channels = n_channels
         self.mask_suffix = mask_suffix
         self.standard_image_transform = transforms.Compose([transforms.ToTensor()])  # Transforms image to tensor
+
+        self.image_names = []
+        self.mask_names = []
+
         if image_names is not None:
             self.image_names = image_names  # Only include selected image names
         else:
-            self.image_names = extract_image_names_from_folder(images_dir)  # Select all image names from directory
+            if isinstance(images_dir, list):  # include images from multiple directories
+                for im_dir in images_dir:
+                    self.image_names.extend(extract_image_names_from_folder(im_dir))
+            else:
+                self.image_names.extend(extract_image_names_from_folder(images_dir))
 
-        self.mask_names = extract_image_names_from_folder(masks_dir)  # Select all mask names from directory
+        if isinstance(masks_dir, list):
+            for m_dir in masks_dir:
+                self.mask_names.extend(extract_image_names_from_folder(m_dir))
+        else:
+            self.mask_names.extend(extract_image_names_from_folder(masks_dir))
 
         # this step allows the image and mask to have different file extensions
         self.masks_dict = {os.path.basename(mask).split('.')[0]: mask for mask in self.mask_names}
@@ -47,11 +58,9 @@ class ImageMaskDataset(Dataset):
         if padding:
             max_dimension = 0
             # loops through provided images and extracts the largest image dimension for use if padding is selected
-            for root, dirs, files in os.walk(self.images_dir):
-                for name in files:
-                    image_file = os.path.join(root, name)
-                    image = imageio.v2.imread(image_file)  # TODO: does this need updating?
-                    max_dimension = max(max_dimension, image.shape[0], image.shape[1])
+            for file in self.image_names:  # TODO: should this be changed to rectangular rather than square images?
+                image = imageio.v2.imread(file)  # TODO: does this need updating?
+                max_dimension = max(max_dimension, image.shape[0], image.shape[1])
             max_dimension = 32 * (max_dimension // 32 + 1)  # to be divisible by 32 as required by smp-UNet/ UNet++
 
             self.max_dimension = max_dimension

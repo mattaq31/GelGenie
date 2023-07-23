@@ -25,7 +25,7 @@ def prep_train_val_dataloaders(dir_train_img, dir_train_mask, split_training_dat
     """
 
     # Create datasets
-    if split_training_dataset:  # Split into train / validation partitions
+    if split_training_dataset:  # Split into train / validation partitions TODO: extend this to the multiple folders case
         image_names = extract_image_names_from_folder(dir_train_img)
 
         # Calculate expected length of validation set
