@@ -23,7 +23,7 @@ for category in model_categories:
         available_models[_class.lower()] = ('gelgenie.segmentation.networks.'+category+'.model_gateway.'+_class)
 
 
-def model_configure(model_name='dummy', device='cpu', **kwargs):
+def model_configure(model_name='dummy', device='cpu', pytorch_2_compile=False, **kwargs):
 
     if model_name == 'dummy':
         net = DummyModel(1, kwargs['classes'])
@@ -33,9 +33,8 @@ def model_configure(model_name='dummy', device='cpu', **kwargs):
         else:
             net = locate(available_models[model_name])(**kwargs)
 
-    if int(torch.__version__[0]) > 1:
+    if int(torch.__version__[0]) > 1 and pytorch_2_compile:
         print('Compiling model using PyTorch 2.0 compile')
-        torch._dynamo.config.suppress_errors = True
         net = torch.compile(net)
 
     net.to(device=device)
