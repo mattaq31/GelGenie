@@ -88,7 +88,7 @@ def environment_checks(params):
         raise RuntimeError('Cannot both request a training dataset split and provide validation image/mask folders')
 
     # Checks if number of workers exceed available threads when using EDDIE, and if so fixes the issue
-    if params['processing']['base_hardware'] == "EDDIE" and params['processing']['core'] == "GPU":
+    if params['processing']['base_hardware'] == "EDDIE" and params['processing']['device'] == "GPU":
         if params['data']['num_workers'] > params['processing']['pe']:
             params['data']['num_workers'] = params['processing']['pe']
             rprint(f"[bold magenta]Number of workers ({params['data']['num_workers']}) specified exceeds "
