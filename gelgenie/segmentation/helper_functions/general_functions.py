@@ -2,6 +2,78 @@ import glob
 import os
 import re
 from rich.table import Table
+import rich_click as click
+import subprocess
+import shutil
+from gelgenie.segmentation.helper_functions.stat_functions import load_statistics
+
+
+@click.command()
+@click.option('--loc', default='/exports/csce/eddie/eng/groups/DunnGroup/matthew/models_gelgenie',
+              help='server source directory', show_default=True)
+@click.option('--name', '-n', help='experiment folder')
+@click.option('--server', default='eddie', help='server name', show_default=True)
+@click.option('--out', default='/Users/matt/Desktop/', help='output directory', show_default=True)
+@click.option('--verbose', is_flag=True)
+@click.option('--pull_last_epoch_results', '-pl', is_flag=True)
+@click.option('--pull_best_epoch_results', '-pb', is_flag=True)
+def pull_server_data(loc, name, server, out, verbose, pull_last_epoch_results, pull_best_epoch_results):
+
+    data_contents = ['training_logs/metric_plots.pdf', 'training_logs/training_stats.csv', 'time_log.txt',
+                     'config.toml', 'model_summary.txt', 'model_structure.txt']
+
+    data_combined = '{'
+    for d in data_contents:
+        data_combined = data_combined + d + ','
+    data_combined = data_combined[:-1]
+    data_combined += '}'
+
+    data_combined = os.path.join(loc, name, data_combined)
+    out_folder = os.path.join(out, name)
+    results_folder = os.path.join(out_folder, 'training_logs')
+    samples_folder = os.path.join(out_folder, 'segmentation_samples')
+
+    create_dir_if_empty(out_folder, results_folder, samples_folder)
+
+    command = 'scp %s:%s %s' % (server, data_combined, out_folder)
+    if verbose:
+        print('Command run:', command)
+    process = subprocess.Popen(command,
+                               shell=True,
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
+    stdout, stderr = process.communicate()
+
+    if verbose:
+        print(stdout)
+        print(stderr)
+    for stats_file in ['metric_plots.pdf', 'training_stats.csv']:
+        shutil.move(os.path.join(out_folder, stats_file), os.path.join(results_folder, stats_file))
+
+    if pull_last_epoch_results:
+        summary_file = load_statistics(results_folder, 'training_stats.csv', config='pd')  # loads model training stats
+        load_epoch = len(summary_file['Training Loss'])
+        epoch_file = os.path.join(loc, name, 'segmentation_samples', 'sample_epoch_%s.pdf' % load_epoch)
+
+        command = 'scp %s:%s %s' % (server, epoch_file, samples_folder)
+        print(command)
+        process = subprocess.Popen(command,
+                                   shell=True,
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+
+    if pull_best_epoch_results:
+        summary_file = load_statistics(results_folder, 'training_stats.csv', config='pd')  # loads model training stats
+        load_epoch = summary_file['Dice Score'].idxmax()
+        epoch_file = os.path.join(loc, name, 'segmentation_samples', 'sample_epoch_%s.pdf' % load_epoch)
+
+        command = 'scp %s:%s %s' % (server, epoch_file, samples_folder)
+        process = subprocess.Popen(command,
+                                   shell=True,
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
 
 
 def create_summary_table(title, columns, col_colors, data):

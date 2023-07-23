@@ -334,8 +334,8 @@ class TrainingHandler:
                 self.save_checkpoint('checkpoint_epoch_%s.pth' % epoch)
 
             if self.model_cleanup_frequency > 0 and epoch % self.model_cleanup_frequency == 0:
-                top_epoch_idx = sorted(range(len(total_metrics['Dice Loss'])),
-                                       key=lambda i: total_metrics['Dice Loss'][i])[-5:]
+                top_epoch_idx = sorted(range(len(total_metrics['Dice Score'])),
+                                       key=lambda i: total_metrics['Dice Score'][i])[-5:]
                 top_epochs = [total_metrics['Epoch'][i] for i in top_epoch_idx]
                 deleted_epochs = []
                 for epoch_id in total_metrics['Epoch']:

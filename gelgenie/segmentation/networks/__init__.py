@@ -33,7 +33,7 @@ def model_configure(model_name='dummy', device='cpu', pytorch_2_compile=False, *
         else:
             net = locate(available_models[model_name])(**kwargs)
 
-    if int(torch.__version__[0]) > 1 and pytorch_2_compile:
+    if int(torch.__version__[0]) > 1 and pytorch_2_compile:  # TODO: can this be tested at some point?
         print('Compiling model using PyTorch 2.0 compile')
         net = torch.compile(net)
 
