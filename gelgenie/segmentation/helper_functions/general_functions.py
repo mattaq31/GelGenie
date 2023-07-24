@@ -65,7 +65,7 @@ def pull_server_data(loc, name, server, out, verbose, pull_last_epoch_results, p
 
     if pull_best_epoch_results:
         summary_file = load_statistics(results_folder, 'training_stats.csv', config='pd')  # loads model training stats
-        load_epoch = summary_file['Dice Score'].idxmax()
+        load_epoch = summary_file['Dice Score'].idxmax() + 1
         epoch_file = os.path.join(loc, name, 'segmentation_samples', 'sample_epoch_%s.pdf' % load_epoch)
 
         command = 'scp %s:%s %s' % (server, epoch_file, samples_folder)
