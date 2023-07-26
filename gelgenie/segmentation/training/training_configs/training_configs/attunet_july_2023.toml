@@ -1,4 +1,4 @@
-experiment_name = "base_smp_unet_small_data_cosine_annealing"  # configuration name
+experiment_name = "attunet_july_2023"  # configuration name
 base_dir = '/exports/csce/eddie/eng/groups/DunnGroup/matthew/models_gelgenie'
 
 [processing]
@@ -9,7 +9,7 @@ memory = 64     # Required memory per core in GBytes
 
 [data]
 n_channels = 1 # channels to output to model
-batch_size = 2  # Batch size for dataloader
+batch_size = 8  # Batch size for dataloader
 num_workers = 1 # parallel threads to use to speed up data processing
 
 dir_train_mask = ['/exports/csce/eddie/eng/groups/DunnGroup/matthew/gel_data/lsdb_gels/masks',
@@ -28,9 +28,8 @@ apply_augmentations = true
 padding = true # pads all image with zeros to same size to allow for a batch size higher than 1
 
 [model]
-model_name = 'smp_unet'   # model architecture name
+model_name = 'monai_attunet'   # model architecture name
 classes = 2     # Number of possible segmentation classes
-encoder_name = 'resnet18'
 [training]
 loss = 'both'
 lr = 1e-4       # learning rate
@@ -38,7 +37,6 @@ epochs = 400     # Number of epochs to run
 grad_scaler = true     # Use mixed precision for faster training
 load_checkpoint = false    # Load model from a .pth file (Bool/epoch ID)
 optimizer_type = 'adam' # Use adam optimizer
-scheduler_type = 'CosineAnnealingWarmRestarts'
 save_checkpoint = true # Whether model checkpoints are saved
 checkpoint_frequency = 1 # How often checkpoints are saved (per epoch)
 model_cleanup_frequency = 20 # How often old checkpoints are deleted (in epochs)

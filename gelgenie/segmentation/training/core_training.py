@@ -300,7 +300,7 @@ class TrainingHandler:
             elif type(self.scheduler).__name__ == 'CosineAnnealingWarmRestarts':
                 self.scheduler.step()
 
-            stat_plotting = [['Training Loss', 'Dice Score']]
+            stat_plotting = [['Training Loss', 'Dice Score'], ['Learning Rate']]
             if 'Dice Loss' in current_epoch_metrics and 'Cross-Entropy Loss' in current_epoch_metrics:
                 stat_plotting += [['Dice Loss', 'Cross-Entropy Loss']]
 
@@ -335,7 +335,7 @@ class TrainingHandler:
 
             if self.model_cleanup_frequency > 0 and epoch % self.model_cleanup_frequency == 0:
                 top_epoch_idx = sorted(range(len(total_metrics['Dice Score'])),
-                                       key=lambda i: total_metrics['Dice Score'][i])[-5:]
+                                       key=lambda i: total_metrics['Dice Score'][i])[-2:]
                 top_epochs = [total_metrics['Epoch'][i] for i in top_epoch_idx]
                 deleted_epochs = []
                 for epoch_id in total_metrics['Epoch']:
