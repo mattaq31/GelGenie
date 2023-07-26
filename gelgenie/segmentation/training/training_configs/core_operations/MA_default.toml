@@ -39,8 +39,10 @@ epochs = 2     # Number of epochs to run
 grad_scaler = false     # Use mixed precision for faster training
 load_checkpoint = false    # Load model from a .pth file (Bool/epoch ID)
 optimizer_type = 'adam' # Use adam optimizer
-scheduler_type = 'ReduceLROnPlateau'  # No scheduler is used
+scheduler_type = 'CosineAnnealingWarmRestarts'  # No scheduler is used
 save_checkpoint = true # Whether model checkpoints are saved
 checkpoint_frequency = 1 # How often checkpoints are saved (per epoch)
 model_cleanup_frequency = 20 # How often old checkpoints are deleted (in epochs)
 wandb_track = false # Whether to track training with wandb
+[training.scheduler_specs]
+restart_period = 100

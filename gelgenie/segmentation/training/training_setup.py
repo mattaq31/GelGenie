@@ -1,7 +1,7 @@
 from torch import optim as optim
 
 
-def core_setup(network, lr=1e-5, optimizer_type='adam', scheduler_type=None, **kwargs):
+def core_setup(network, lr=1e-5, optimizer_type='adam', scheduler_type=None, scheduler_specs=None, **kwargs):
 
     if optimizer_type == 'rmsprop':
         optimizer = define_optimizer(network.parameters(), lr=lr, optimizer_type='rmsprop',
@@ -12,7 +12,7 @@ def core_setup(network, lr=1e-5, optimizer_type='adam', scheduler_type=None, **k
         raise RuntimeError('Optimizer not recognized')
 
     if scheduler_type == 'ReduceLROnPlateau' or scheduler_type == 'CosineAnnealingWarmRestarts':
-        scheduler = define_scheduler(optimizer, scheduler_type=scheduler_type)  # goal: maximize Dice score
+        scheduler = define_scheduler(optimizer, scheduler_type=scheduler_type, scheduler_specs=scheduler_specs)
     else:
         scheduler = None
 
@@ -44,12 +44,14 @@ def define_optimizer(optim_weights, lr=1e-4, optimizer_params=None, optimizer_ty
     return optimizer
 
 
-def define_scheduler(base_optimizer, scheduler_type='ReduceLROnPlateau'):
+def define_scheduler(base_optimizer, scheduler_type='ReduceLROnPlateau', scheduler_specs=None):
     if scheduler_type == 'ReduceLROnPlateau':
         learning_rate_scheduler = optim.lr_scheduler.ReduceLROnPlateau(base_optimizer, 'max', patience=2)
     elif scheduler_type == 'CosineAnnealingWarmRestarts':
+        if scheduler_specs is None:
+            scheduler_specs = {'restart_period': 10}
         scheduler_params = {'t_mult': 1,
-                            'restart_period': 10,
+                            'restart_period': scheduler_specs['restart_period'],
                             'lr_min': 1e-7}
         learning_rate_scheduler = \
             optim.lr_scheduler.CosineAnnealingWarmRestarts(base_optimizer, T_mult=scheduler_params['t_mult'],
