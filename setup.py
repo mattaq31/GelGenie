@@ -12,6 +12,7 @@ setup(
     [console_scripts]
     gelseg_train=gelgenie.segmentation.routine_training:segmentation_network_trainer
     pull_model=gelgenie.segmentation.helper_functions.general_functions:pull_server_data
+    gen_eddie_qsub=gelgenie.segmentation.routine_training:generate_eddie_batch_file
 ''',
 )
 

@@ -5,7 +5,6 @@ base_dir = 'UNDEFINED'
 base_hardware = "UNDEFINED"   # Where the program is run [EDDIE/PC]
 device = "cpu"    # Which processor is used [GPU/CPU]
 pe = 1          # How many parallel environments (cores) needed
-memory = 64     # Required memory per core in GBytes
 
 [data]
 n_channels = 1

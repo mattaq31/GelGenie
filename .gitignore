@@ -141,3 +141,5 @@ scratch/scratch_data/*
 samples/
 node_modules/
 gelgenie/segmentation/wandb/*
+qupath/*
+qupath-extension-template/*

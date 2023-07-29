@@ -4,8 +4,10 @@ import os
 import copy
 from rich import print as rprint
 
-core_operations_folder = os.path.abspath(os.path.join(__file__, os.path.pardir))
-global_default_config = toml.load(os.path.join(core_operations_folder, 'global_defaults.toml'))
+training_folder = os.path.abspath(os.path.join(__file__, os.path.pardir))
+defaults_folder = os.path.join(training_folder, 'config_files', 'defaults')
+global_default_config = toml.load(os.path.join(defaults_folder,
+                                               'global_defaults.toml'))
 
 
 def get_user_config(user):
@@ -15,9 +17,11 @@ def get_user_config(user):
     :return: Dictionary of training parameters
     """
     if user == 'kiros':
-        kwargs = toml.load(os.path.join(core_operations_folder, 'KK_default.toml'))
+        kwargs = toml.load(os.path.join(defaults_folder,
+                                        'KK_default.toml'))
     elif user == 'matthew':
-        kwargs = toml.load(os.path.join(core_operations_folder, 'MA_default.toml'))
+        kwargs = toml.load(os.path.join(defaults_folder,
+                                        'MA_default.toml'))
     else:
         raise RuntimeError(f'User {user} not recognized')
 

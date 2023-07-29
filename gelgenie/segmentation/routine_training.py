@@ -1,5 +1,39 @@
 import sys
 import rich_click as click
+import os
+
+segmentation_folder = os.path.abspath(os.path.join(__file__, os.path.pardir))
+
+
+@click.command()
+@click.option('--config_name', '-c', default=None,
+              help='[String] Name or path of the config file to be read in (without .toml)')
+@click.option('--batch_file', '-b', default=None,
+              help='[String] Name or path of the batch file to be generated (with/without .sh)')
+def generate_eddie_batch_file(config_name, batch_file):
+    """
+    Generates a batch file for running model training on the eddie cluster.
+    """
+
+    default_batch_file = os.path.join(segmentation_folder, 'EDDIE_scripts', 'eddie_model_training_template.sh')
+
+    with open(default_batch_file, 'r') as f:
+        template_lines = f.readlines()
+
+    for index, line in enumerate(template_lines):
+        if 'YYYYYY' in line:
+            if os.path.exists(config_name):
+                template_lines[index] = 'gelseg_train --parameter_config %s\n' % config_name
+            else:
+                template_lines[index] = template_lines[index].replace('YYYYYY', config_name.replace('.toml', ''))
+            break
+
+    if '.sh' not in batch_file:
+        batch_file = batch_file + '.sh'
+
+    with open(batch_file, 'w') as f:
+        for line in template_lines:
+            f.write(line)
 
 
 @click.command()
@@ -9,30 +43,35 @@ import rich_click as click
 @click.option('--user_default_config', '-u', default=None, help='[String] Default user training config to use')
 # model params
 @click.option('--model_name', default=None, help='[String] Which model is used [milesial-UNet/UNetPlusPlus/smp-UNet]')
-@click.option('--load_checkpoint', default=None, help='[Bool/String] Load model with specific epoch number from a .pth file in the model checkpoints folder')
+@click.option('--load_checkpoint', default=None,
+              help='[Bool/String] Load model with specific epoch number from a .pth file in the model checkpoints folder')
 @click.option('--classes', type=click.INT, default=None, help='[int] Number of classes/probabilities per pixel')
 # processing params
 @click.option('--base_hardware', default=None, help='[String] Where the program is run [EDDIE/PC]')
-@click.option('--core', default=None, help='[String] Which processor is used [GPU/CPU]')
+@click.option('--device', default=None, help='[String] Which processor is used [GPU/CPU]')
 @click.option('--pe', type=click.INT, default=None, help='[int] How many parallel environments (cores) needed')
-@click.option('--memory', type=click.INT, default=None, help='[int] Required memory per core in GBytes')
 # training params
 @click.option('--epochs', type=click.INT, default=None, help='[int] Number of epochs desired')
 @click.option('--lr', type=click.FLOAT, default=None, help='[float] Learning Rate')
 @click.option('--save_checkpoint', type=click.BOOL, default=None, help='[Bool] Whether checkpoints are saved')
 @click.option('--checkpoint_frequency', type=click.INT, default=None, help='[int] How often checkpoints are saved')
-@click.option('--model_cleanup_frequency', type=click.INT, default=None, help='[int] How often checkpoints are cleanup during training')
-@click.option('--grad_scaler', type=click.BOOL, default=None, help='[Bool] Set to true to enable mixed precision gradient scaling (should improve performance)')
+@click.option('--model_cleanup_frequency', type=click.INT, default=None,
+              help='[int] How often checkpoints are cleanup during training')
+@click.option('--grad_scaler', type=click.BOOL, default=None,
+              help='[Bool] Set to true to enable mixed precision gradient scaling (should improve performance)')
 @click.option('--base_dir', default=None, help='[Path] Directory for output exports')
 @click.option('--optimizer_type', default=None, help='[String] Type of optimizer to be used [adam/rmsprop]')
-@click.option('--scheduler_type', default=None, help='[String (false for none)] Which scheduler is used during training')
-@click.option('--loss', default=None, type=click.STRING, help='[String] Components of the Loss function [CrossEntropy/Dice/Both]')
+@click.option('--scheduler_type', default=None,
+              help='[String (false for none)] Which scheduler is used during training')
+@click.option('--loss', default=None, type=click.STRING,
+              help='[String] Components of the Loss function [CrossEntropy/Dice/Both]')
 @click.option('--wandb_track', default=None, type=click.BOOL, help='[Bool] Set to false to turn off wandb logging')
 # data params
 # essential
 @click.option('--dir_train_img', type=click.STRING, default=None, help='[Path] Directory of training images')
 @click.option('--dir_train_mask', default=None, help='[Path] Directory of training masks')
-@click.option('--split_training_dataset', type=click.BOOL, default=None, help='[Bool] Turn on training dataset splitting')
+@click.option('--split_training_dataset', type=click.BOOL, default=None,
+              help='[Bool] Turn on training dataset splitting')
 @click.option('--dir_val_img', type=click.STRING, default=None, help='[Path] Directory of validation images')
 @click.option('--dir_val_mask', type=click.STRING, default=None, help='[Path] Directory of validation masks')
 # non-essential
@@ -47,10 +86,9 @@ import rich_click as click
               help='[Bool] Whether augmentations are applied to training images')
 @click.option('--padding', type=click.BOOL, default=None, help='[Bool] Whether padding is applied to training images')
 def segmentation_network_trainer(parameter_config, user_default_config, **kwargs):
-
     import toml
     from os.path import join
-    from gelgenie.segmentation.training.training_configs.core_operations.configs import get_user_config, \
+    from segmentation.training.environment_setup import get_user_config, \
         cli_sort_and_classify, apply_defaults, environment_checks
     from gelgenie.segmentation.training.core_training import TrainingHandler
 
@@ -82,7 +120,8 @@ def segmentation_network_trainer(parameter_config, user_default_config, **kwargs
 
     # Copies the config file to the experiment folder for safekeeping
     if combined_params['training']['load_checkpoint']:
-        config_output_file = join(main_trainer.main_folder, 'config_from_epoch_%s.toml' % combined_params['training']['load_checkpoint'])
+        config_output_file = join(main_trainer.main_folder,
+                                  'config_from_epoch_%s.toml' % combined_params['training']['load_checkpoint'])
     else:
         config_output_file = join(main_trainer.main_folder, 'config.toml')
 

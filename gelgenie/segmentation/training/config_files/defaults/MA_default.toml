@@ -5,7 +5,6 @@ base_dir = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/seg
 base_hardware = "MA_mac"   # Where the program is run [EDDIE/PC]
 device = "GPU"    # Which processor is used [GPU/CPU]
 pe = 1          # How many parallel environments (cores) needed
-memory = 64     # Required memory per core in GBytes
 
 [data]
 n_channels = 1 # channels to output to model

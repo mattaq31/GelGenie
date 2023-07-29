@@ -7,9 +7,9 @@ mask_path = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/da
 originals_path = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/originals/matthew_gels'
 output_image_path = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/maximal_set/matthew_gels/images'
 
-mask_path = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/maximal_set/lsdb_gels/masks'
-originals_path = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/originals/LSDB_data/est-pcr'
-output_image_path = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/maximal_set/lsdb_gels/images'
+# mask_path = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/maximal_set/lsdb_gels/masks'
+# originals_path = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/originals/LSDB_data/caps'
+# output_image_path = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/maximal_set/lsdb_gels/images'
 
 original_images = extract_image_names_from_folder(originals_path)
 original_filenames = [file.split('/')[-1].split('.')[0] for file in original_images]

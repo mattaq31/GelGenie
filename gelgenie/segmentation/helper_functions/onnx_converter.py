@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 from torch.utils.data import DataLoader
 import torch.nn.functional as F
 
-from gelgenie.segmentation.networks.UNets.model_gateway import smp_UNet
+from gelgenie.segmentation.networks.UNets.model_gateway import smp_UNet, smp_UNetPlusPlus
 from gelgenie.segmentation.data_handling.dataloaders import ImageDataset
 
 import numpy as np
@@ -18,7 +18,12 @@ from onnxsim import simplify
 
 
 def load_model(checkpoint):
-    net = smp_UNet(
+    # net = smp_UNet(
+    #             encoder_name="resnet18",  # choose encoder, e.g. mobilenet_v2 or efficientnet-b7
+    #             in_channels=1,  # model input channels (1 for gray-scale images, 3 for RGB, etc.)
+    #             classes=2,  # model output channels (number of classes in your dataset)
+    #         )
+    net = smp_UNetPlusPlus(
                 encoder_name="resnet18",  # choose encoder, e.g. mobilenet_v2 or efficientnet-b7
                 in_channels=1,  # model input channels (1 for gray-scale images, 3 for RGB, etc.)
                 classes=2,  # model output channels (number of classes in your dataset)
@@ -35,8 +40,13 @@ def to_numpy(tensor):
 
 # prepping model
 checkpoint_file_path = "/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models/base_smp_unet_small_data/checkpoints/checkpoint_epoch_400.pth"
+checkpoint_file_path = "/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models/smp_unet++_small_data/checkpoints/checkpoint_epoch_260.pth"
+checkpoint_file_path = "/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models/smp_unet++_july28_james/checkpoints/checkpoint_epoch_132.pth"
+
 n_channels = 1
 model_name = 'base_smp_unet_chkpt_400'
+model_name = 'smp_unetplusplus_chkpt_260'
+model_name = 'u++_132_james'
 
 net = load_model(checkpoint_file_path)
 

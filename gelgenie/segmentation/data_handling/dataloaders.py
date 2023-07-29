@@ -64,6 +64,7 @@ class ImageMaskDataset(Dataset):
             max_dimension = 32 * (max_dimension // 32 + 1)  # to be divisible by 32 as required by smp-UNet/ UNet++
 
             self.max_dimension = max_dimension
+            rprint(f'[bold blue]Padding images to {max_dimension}x{max_dimension}[/bold blue]')
 
         if not self.image_names:
             raise RuntimeError(f'No images found in {images_dir}, make sure you put your images there.')
