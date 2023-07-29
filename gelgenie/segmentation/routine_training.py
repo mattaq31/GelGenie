@@ -88,7 +88,7 @@ def generate_eddie_batch_file(config_name, batch_file):
 def segmentation_network_trainer(parameter_config, user_default_config, **kwargs):
     import toml
     from os.path import join
-    from segmentation.training.environment_setup import get_user_config, \
+    from gelgenie.segmentation.training.environment_setup import get_user_config, \
         cli_sort_and_classify, apply_defaults, environment_checks
     from gelgenie.segmentation.training.core_training import TrainingHandler
 
