@@ -41,12 +41,16 @@ def to_numpy(tensor):
 # prepping model
 checkpoint_file_path = "/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models/base_smp_unet_small_data/checkpoints/checkpoint_epoch_400.pth"
 checkpoint_file_path = "/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models/smp_unet++_small_data/checkpoints/checkpoint_epoch_260.pth"
-checkpoint_file_path = "/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models/smp_unet++_july28_james/checkpoints/checkpoint_epoch_132.pth"
+checkpoint_file_path = "/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models/smp_unet++_july28_james/checkpoints/checkpoint_epoch_600.pth"
+checkpoint_file_path = "/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models/smp_unet++_july28_nathan/checkpoints/checkpoint_epoch_504.pth"
+# checkpoint_file_path = "/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models/smp_unet++_july28_1/checkpoints/checkpoint_epoch_306.pth"
 
 n_channels = 1
 model_name = 'base_smp_unet_chkpt_400'
 model_name = 'smp_unetplusplus_chkpt_260'
-model_name = 'u++_132_james'
+model_name = 'u++_600_james'
+model_name = 'u++_504_nathan'
+# model_name = 'u++_306_full'
 
 net = load_model(checkpoint_file_path)
 

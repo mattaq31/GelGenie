@@ -13,7 +13,7 @@ from segmentation.data_handling.dataloaders import ImageMaskDataset
 from segmentation.helper_functions.dice_score import dice_loss
 from segmentation.helper_functions.stat_functions import excel_stats
 from segmentation.helper_functions.display_functions import plot_stats, visualise_segmentation
-from segmentation.evaluation.basic_eval import evaluate
+from segmentation.scratch_scripts.basic_eval import evaluate
 
 
 def train_net(net,

@@ -54,23 +54,24 @@ class ImageMaskDataset(Dataset):
         self.masks_dict = {os.path.basename(mask).split('.')[0]: mask for mask in self.mask_names}
         self.augmentations = augmentations
         self.padding = padding
-
-        if padding:
-            max_dimension = 0
-            # loops through provided images and extracts the largest image dimension for use if padding is selected
-            for file in self.image_names:  # TODO: should this be changed to rectangular rather than square images?
-                image = imageio.v2.imread(file)  # TODO: does this need updating?
-                max_dimension = max(max_dimension, image.shape[0], image.shape[1])
-            max_dimension = 32 * (max_dimension // 32 + 1)  # to be divisible by 32 as required by smp-UNet/ UNet++
-
-            self.max_dimension = max_dimension
-            rprint(f'[bold blue]Padding images to {max_dimension}x{max_dimension}[/bold blue]')
+        self.max_dimension = self.find_padding()
 
         if not self.image_names:
             raise RuntimeError(f'No images found in {images_dir}, make sure you put your images there.')
         if not self.mask_names:
             raise RuntimeError(f'No images found in {masks_dir}, make sure you put your masks there.')
         rprint(f'[bold blue]Created dataset with {len(self.image_names)} images.[/bold blue]')
+
+    def find_padding(self):
+        max_dimension = 0
+        # loops through provided images and extracts the largest image dimension for use if padding is selected
+        for file in self.image_names:  # TODO: should this be changed to rectangular rather than square images?
+            image = imageio.v2.imread(file)  # TODO: does this need updating?
+            max_dimension = max(max_dimension, image.shape[0], image.shape[1])
+        max_dimension = 32 * (max_dimension // 32 + 1)  # to be divisible by 32 as required by smp-UNet/ UNet++
+
+        rprint(f'[bold blue]Padding images to {max_dimension}x{max_dimension}[/bold blue]')
+        return max_dimension
 
     def __len__(self):  # Gets length of dataset
         return len(self.image_names)
@@ -166,22 +167,6 @@ class ImageDataset(ImageMaskDataset):  # TODO: fix the inheritance here - should
         :param padding: (Bool) Whether to apply padding
         """
         super().__init__(images_dir, images_dir, n_channels=n_channels, padding=padding)
-        self.images_dir = Path(images_dir)
-        self.n_channels = n_channels
-        self.standard_image_transform = transforms.Compose([transforms.ToTensor()])
-        self.padding = padding
-
-        if padding:
-            max_dimension = 0
-            # loops through provided images and extracts the largest image dimension, for use if padding is selected
-            for root, dirs, files in os.walk(self.images_dir):
-                for name in files:
-                    image_file = os.path.join(root, name)
-                    image = imageio.v2.imread(image_file)
-                    max_dimension = max(max_dimension, image.shape[0], image.shape[1])
-            max_dimension = 32 * (max_dimension // 32 + 1)  # to be divisible by 32 as required by smp-UNet/ UNet++
-
-            self.max_dimension = max_dimension
 
     def __getitem__(self, idx):
         img_file = self.image_names[idx]
