@@ -103,7 +103,8 @@ class TrainingHandler:
         self.loss_weighting = training_parameters['loss_weighting']
 
         if self.loss_weighting and 'class_imbalance' in self.loss_weighting:
-            self.main_loss_fn = nn.CrossEntropyLoss(weight=torch.tensor(self.class_weighting.astype(np.float32)))
+            self.main_loss_fn = nn.CrossEntropyLoss(
+                weight=torch.tensor(self.class_weighting.astype(np.float32)).to(device=self.device))
         else:
             self.main_loss_fn = nn.CrossEntropyLoss()
 

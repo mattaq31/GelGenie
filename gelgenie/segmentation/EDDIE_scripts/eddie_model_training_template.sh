@@ -3,6 +3,7 @@
 #$ -cwd
 #$ -l h_rt=12:00:00
 # Request 1 GPU:
+#$ -q gpu
 #$ -pe gpu-a100 1
 #$ -l h_vmem=128G
 #$ -M m.aquilina@ed.ac.uk
