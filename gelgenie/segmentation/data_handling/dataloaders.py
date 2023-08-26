@@ -3,6 +3,7 @@ from pathlib import Path
 import imageio
 import cv2
 import os
+from os.path import join
 from PIL import Image
 import numpy as np
 import torch
@@ -14,7 +15,7 @@ from gelgenie.segmentation.helper_functions.general_functions import extract_ima
 
 
 class ImageMaskDataset(Dataset):
-    def __init__(self, images_dir, masks_dir, n_channels: int, mask_suffix: str = '',
+    def __init__(self, images_dir, masks_dir, n_channels: int, mask_suffix: str = '.tif',
                  augmentations=None, padding: bool = False, image_names=None):
         """
         :param images_dir: Path of image directory
@@ -37,21 +38,29 @@ class ImageMaskDataset(Dataset):
 
         if image_names is not None:
             self.image_names = image_names  # Only include selected image names
+            for curr_im in image_names:
+                corresponding_mask_im = join(masks_dir, os.path.basename(curr_im).split('.')[0] + mask_suffix)
+                if not os.path.isfile(corresponding_mask_im):
+                    raise RuntimeError(f'Could not find corresponding mask image for {curr_im}.')
+                self.mask_names.append(corresponding_mask_im)
         else:
             if isinstance(images_dir, list):  # include images from multiple directories
-                for im_dir in images_dir:
-                    self.image_names.extend(extract_image_names_from_folder(im_dir))
+                if not isinstance(masks_dir, list):
+                    raise RuntimeError('If images_dir is a list, masks_dir must also be a list')
+                for im_dir, mask_dir in zip(images_dir, masks_dir):
+                    curr_folder_images = extract_image_names_from_folder(im_dir)
+                    for curr_im in curr_folder_images:
+                        corresponding_mask_im = join(mask_dir, os.path.basename(curr_im).split('.')[0] + mask_suffix)
+                        if not os.path.isfile(corresponding_mask_im):
+                            raise RuntimeError(f'Could not find corresponding mask image for {curr_im} '
+                                               f'or mask/image folder ordering does not match.')
+                        self.mask_names.append(corresponding_mask_im)
+                    self.image_names.extend(curr_folder_images)
             else:
                 self.image_names.extend(extract_image_names_from_folder(images_dir))
-
-        if isinstance(masks_dir, list):
-            for m_dir in masks_dir:
-                self.mask_names.extend(extract_image_names_from_folder(m_dir))
-        else:
-            self.mask_names.extend(extract_image_names_from_folder(masks_dir))
+                self.mask_names.extend(extract_image_names_from_folder(masks_dir))
 
         # this step allows the image and mask to have different file extensions
-        self.masks_dict = {os.path.basename(mask).split('.')[0]: mask for mask in self.mask_names}
         self.augmentations = augmentations
         self.padding = padding
         self.class_weighting, self.max_dimension = self.find_padding_and_classes()
@@ -136,7 +145,7 @@ class ImageMaskDataset(Dataset):
 
     def __getitem__(self, idx):
         img_file = self.image_names[idx]
-        mask_file = self.masks_dict[os.path.basename(img_file).split('.')[0]]  # Get mask file with same name
+        mask_file = self.mask_names[idx]  # Get mask file with same name
 
         if os.path.basename(img_file).split('.')[0] != os.path.basename(mask_file).split('.')[0]:
             raise RuntimeError('Gel and mask images do not match - there is some mismatch in the data folders provided')
