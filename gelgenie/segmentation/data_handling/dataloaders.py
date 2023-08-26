@@ -54,27 +54,39 @@ class ImageMaskDataset(Dataset):
         self.masks_dict = {os.path.basename(mask).split('.')[0]: mask for mask in self.mask_names}
         self.augmentations = augmentations
         self.padding = padding
-        self.max_dimension = self.find_padding()
+        self.class_weighting, self.max_dimension = self.find_padding_and_classes()
 
         if not self.image_names:
             raise RuntimeError(f'No images found in {images_dir}, make sure you put your images there.')
         if not self.mask_names:
             raise RuntimeError(f'No images found in {masks_dir}, make sure you put your masks there.')
+        if len(self.mask_names) != len(self.image_names):
+            raise RuntimeError(f'Number of images and masks do not match, there are {len(self.image_names)} images '
+                               f'and {len(self.mask_names)} masks.')
         rprint(f'[bold blue]Created dataset with {len(self.image_names)} images.[/bold blue]')
 
-    def find_padding(self):
+    def find_padding_and_classes(self):
         max_dimension = 0
         # loops through provided images and extracts the largest image dimension for use if padding is selected
-        for file in self.image_names:  # TODO: should this be changed to rectangular rather than square images?
+        class_counts = np.zeros((1, 2), dtype=int)
+        for file in self.mask_names:  # TODO: should this be changed to rectangular rather than square images?
             image = imageio.v2.imread(file)  # TODO: does this need updating?
             max_dimension = max(max_dimension, image.shape[0], image.shape[1])
+            unique, counts = np.unique(image, return_counts=True)
+            class_counts[0, unique] += counts
+
         max_dimension = 32 * (max_dimension // 32 + 1)  # to be divisible by 32 as required by smp-UNet/ UNet++
 
+        class_weighting = np.sum(class_counts) / (2 * class_counts)  # calculates class weighting
+
         rprint(f'[bold blue]Padding images to {max_dimension}x{max_dimension}[/bold blue]')
-        return max_dimension
+        rprint(f'[bold blue]Class weighting is {class_weighting[:, 0]} for background, '
+               f'{class_weighting[:, 1]} for bands[/bold blue]')
+
+        return class_weighting, max_dimension
 
     def __len__(self):  # Gets length of dataset
-        return len(self.image_names)
+        return len(self.mask_names)
 
     @staticmethod
     def load_image(filename, n_channels):

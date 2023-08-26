@@ -7,6 +7,7 @@ from tqdm import tqdm
 import wandb
 import os
 from os.path import join
+import numpy as np
 
 from time import strftime
 from rich import print as rprint
@@ -87,8 +88,6 @@ class TrainingHandler:
         self.model_cleanup_frequency = training_parameters['model_cleanup_frequency']
         self.grad_scaler = torch.cuda.amp.GradScaler(enabled=training_parameters['grad_scaler'])  # CUDA only function
         self.use_amp_scaler = training_parameters['grad_scaler']
-        self.main_loss_fn = nn.CrossEntropyLoss()
-        self.loss_definition = training_parameters['loss']
 
         # model loading
         if training_parameters['load_checkpoint']:
@@ -97,6 +96,16 @@ class TrainingHandler:
         # data setup
         self.train_loader, self.val_loader, self.train_image_count, self.val_image_count = prep_train_val_dataloaders(
             **data_parameters)
+
+        self.class_weighting = self.train_loader.dataset.class_weighting  # class imbalance weighting
+
+        self.loss_definition = training_parameters['loss']
+        self.loss_weighting = training_parameters['loss_weighting']
+
+        if self.loss_weighting and 'class_imbalance' in self.loss_weighting:
+            self.main_loss_fn = nn.CrossEntropyLoss(weight=torch.tensor(self.class_weighting.astype(np.float32)))
+        else:
+            self.main_loss_fn = nn.CrossEntropyLoss()
 
         time_started = strftime("%Y_%m_%d_%H;%M;%S")
         # diagnostic strings

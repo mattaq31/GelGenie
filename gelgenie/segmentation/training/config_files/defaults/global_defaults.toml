@@ -25,6 +25,7 @@ classes = 2     # Number of possible segmentation classes
 in_channels = 1 # Number of input channels
 [training]
 loss = 'both'
+loss_weighting = false
 lr = 1e-5       # learning rate
 epochs = 10     # Number of epochs to run
 grad_scaler = false     # Use mixed precision for faster training
