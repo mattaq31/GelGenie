@@ -45,3 +45,5 @@ def segment_and_analyze(model, input_folder, output_folder):
         plt.suptitle('Segmentation result for image %s' % batch['image_name'][0])
         plt.tight_layout()
         plt.savefig(os.path.join(output_folder, '%s segmentation.pdf' % batch['image_name'][0]), dpi=300)
+        plt.close(fig)
+
