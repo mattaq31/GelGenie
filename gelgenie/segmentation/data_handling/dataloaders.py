@@ -1,5 +1,4 @@
 # code here modified from https://github.com/milesial/Pytorch-UNet/tree/e36c782fbfc976b7326182a47dd7213bd3360a7e
-from pathlib import Path
 import imageio
 import cv2
 import os
@@ -15,13 +14,15 @@ from gelgenie.segmentation.helper_functions.general_functions import extract_ima
 
 
 class ImageDataset(Dataset):
-    def __init__(self, images_dir: str, n_channels: int, padding: bool = False, image_names=None, augmentations=None):
+    def __init__(self, images_dir: str, n_channels: int, padding: bool = False,
+                 individual_padding=False, image_names=None, augmentations=None):
         """
         For datasets of images only, used in model_eval if no masks are provided
         :param images_dir: Path of image directory
         :param n_channels: (int) Number of colour channels for model input
         :param augmentations: getter function for augmentation function
-        :param padding: (Bool) Whether to apply padding to images and masks
+        :param padding: (Bool) Whether to apply padding to images and masks to a constant value for the entire dataset
+        :pararm individual_padding: (Bool) Whether to apply padding to images and masks individually (for UNet)
         :param image_names: ([String]) List of image names selected
         """
 
@@ -35,6 +36,7 @@ class ImageDataset(Dataset):
 
         self.augmentations = augmentations
         self.padding = padding
+        self.individual_padding = individual_padding
         self.data_metrics = self.extract_full_dataset_metrics()
         self.max_dimension = self.data_metrics['Max Dimension']
 
@@ -63,8 +65,8 @@ class ImageDataset(Dataset):
             max_dimension = max(max_dimension, image.shape[0], image.shape[1])
 
         max_dimension = 32 * (max_dimension // 32 + 1)  # to be divisible by 32 as required by smp-UNet/ UNet++
-
-        rprint(f'[bold blue]Padding images to {max_dimension}x{max_dimension}[/bold blue]')
+        if self.padding:
+            rprint(f'[bold blue]Padding images to {max_dimension}x{max_dimension}[/bold blue]')
 
         return {'Max Dimension': max_dimension}
 
@@ -107,6 +109,17 @@ class ImageDataset(Dataset):
         right = self.max_dimension - img_array.shape[1] - left  # Get amount of pixels to pad at right of image
         return (top, bottom), (left, right)
 
+    @staticmethod
+    def get_individual_padding(img_array):
+        new_vert = 32 * (img_array.shape[0] // 32 + 1)
+        new_horiz = 32 * (img_array.shape[1] // 32 + 1)
+
+        top = (new_vert - img_array.shape[0]) // 2  # Get amount of pixels to pad at top of image
+        bottom = new_vert - img_array.shape[0] - top  # Get amount of pixels to pad at bottom of image
+        left = (new_horiz - img_array.shape[1]) // 2  # Get amount of pixels to pad at left of image
+        right = new_horiz - img_array.shape[1] - left  # Get amount of pixels to pad at right of image
+        return (top, bottom), (left, right)
+
     def __getitem__(self, idx):
         img_file = self.image_names[idx]
 
@@ -119,6 +132,9 @@ class ImageDataset(Dataset):
         if self.padding:
             vertical, horizontal = self.get_padding(img_array)
             img_array = np.pad(img_array, pad_width=(vertical, horizontal), mode='constant')  # Pad with 0 value
+        elif self.individual_padding:
+            vertical, horizontal = self.get_individual_padding(img_array)
+            img_array = np.pad(img_array, pad_width=(vertical, horizontal), mode='constant')  # Pad with 0 value
 
         img_tensor = self.standard_image_transform(img_array)
 
@@ -130,7 +146,7 @@ class ImageDataset(Dataset):
 
 class ImageMaskDataset(ImageDataset):
     def __init__(self, images_dir, masks_dir, n_channels: int, mask_suffix: str = '.tif',
-                 augmentations=None, padding: bool = False, image_names=None):
+                 augmentations=None, padding: bool = False, individual_padding=False, image_names=None):
         """
         :param images_dir: Path of image directory
         :param masks_dir: Path of mask directory
@@ -138,12 +154,13 @@ class ImageMaskDataset(ImageDataset):
         :param mask_suffix: (string) suffix added to mask files
         :param augmentations: getter function for augmentation function
         :param padding: (Bool) Whether to apply padding to images and masks
+        :param individual_padding: (Bool) Whether to apply padding to images and masks individually (for UNet)
         :param image_names: ([String]) List of image names selected
         """
         self.mask_suffix = mask_suffix
         self.mask_names = []
         self.masks_dirs = masks_dir
-        super().__init__(images_dir, n_channels=n_channels, padding=padding,
+        super().__init__(images_dir, n_channels=n_channels, padding=padding, individual_padding=individual_padding,
                          image_names=image_names, augmentations=augmentations)
 
         self.class_weighting = self.data_metrics['Class Weighting']
@@ -236,7 +253,11 @@ class ImageMaskDataset(ImageDataset):
 
         if self.padding:
             vertical, horizontal = self.get_padding(img_array)
-            img_array = np.pad(img_array, pad_width=(vertical, horizontal), mode='constant')
+            img_array = np.pad(img_array, pad_width=(vertical, horizontal), mode='constant')  # Pad with 0 value
+            mask_array = np.pad(mask_array, pad_width=(vertical, horizontal), mode='constant')
+        elif self.individual_padding:
+            vertical, horizontal = self.get_individual_padding(img_array)
+            img_array = np.pad(img_array, pad_width=(vertical, horizontal), mode='constant')  # Pad with 0 value
             mask_array = np.pad(mask_array, pad_width=(vertical, horizontal), mode='constant')
 
         img_tensor = self.standard_image_transform(img_array)

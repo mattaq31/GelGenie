@@ -14,6 +14,7 @@ from rich import print as rprint
 from collections import defaultdict
 
 from gelgenie.segmentation.helper_functions.dice_score import dice_loss
+from gelgenie.segmentation.helper_functions.depth_based_loss import unet_weight_map
 from ..helper_functions.stat_functions import save_statistics, load_statistics
 from ..helper_functions.display_functions import plot_stats, visualise_segmentation
 from ..helper_functions.general_functions import create_dir_if_empty, create_summary_table
@@ -97,16 +98,27 @@ class TrainingHandler:
         self.train_loader, self.val_loader, self.train_image_count, self.val_image_count = prep_train_val_dataloaders(
             **data_parameters)
 
-        self.class_weighting = self.train_loader.dataset.class_weighting  # class imbalance weighting
+        self.loss_definition = training_parameters['loss']  # list of all losses to be used
+        if not isinstance(self.loss_definition, list):
+            self.loss_definition = [self.loss_definition]
 
-        self.loss_definition = training_parameters['loss']
-        self.loss_weighting = training_parameters['loss_weighting']
+        # true if individual classes are weighted according to their frequency
+        self.class_weighting_enabled = training_parameters['class_loss_weighting']
 
-        if self.loss_weighting and 'class_imbalance' in self.loss_weighting:
-            self.main_loss_fn = nn.CrossEntropyLoss(
-                weight=torch.tensor(self.class_weighting.astype(np.float32)).to(device=self.device))
-        else:
-            self.main_loss_fn = nn.CrossEntropyLoss()
+        # reduces effect of class balancing
+        self.class_weighting_damper = torch.tensor(training_parameters['class_loss_weight_damper']).to(device=self.device)
+        self.class_weighting = (torch.tensor(self.train_loader.dataset.class_weighting.astype(np.float32)).
+                                to(device=self.device))  # class imbalance weighting
+        self.class_weighting = self.class_weighting * self.class_weighting_damper
+
+        # individual weighting for each component of loss fn
+        self.loss_function_weighting = training_parameters['loss_component_weighting']
+
+        # crossentropy loss reduction/weighting off when these are controlled separately
+        self.crossentropy_loss_fn = nn.CrossEntropyLoss(
+            reduction='none' if 'weighted' in ' '.join(self.loss_definition) else 'mean',
+            weight=self.class_weighting if ('weighted' not in ' '.join(self.loss_definition) and
+                                            self.class_weighting_enabled) else None)
 
         time_started = strftime("%Y_%m_%d_%H;%M;%S")
         # diagnostic strings
@@ -171,6 +183,42 @@ class TrainingHandler:
         torch.save(full_state_dict, join(self.checkpoints_folder, name))
         rprint(f'[bold orange]Model, optimizer and scheduler weights saved to {name}.[/bold orange]')
 
+    def loss_calculation(self, masks_pred, true_masks, epoch_metrics):
+
+        full_losses = []
+        for lossfn, loss_weight in zip(self.loss_definition, self.loss_function_weighting):
+            if lossfn == 'dice':
+                loss_dice = dice_loss(F.softmax(masks_pred, dim=1).float(),  # TODO: re-inspect here
+                                      F.one_hot(true_masks, self.net.n_classes).permute(0, 3, 1, 2).float(),
+                                      multiclass=True)
+                epoch_metrics['Dice Loss'] += loss_dice.detach().cpu().numpy()
+                full_losses.append(loss_dice*loss_weight)
+            elif lossfn == 'crossentropy':
+                loss_ce = self.crossentropy_loss_fn(masks_pred, true_masks)
+                epoch_metrics['Cross-Entropy Loss'] += loss_ce.detach().cpu().numpy()
+                full_losses.append(loss_ce*loss_weight)
+            elif lossfn == 'unet_weighted_crossentropy':
+                loss_ce = self.crossentropy_loss_fn(masks_pred, true_masks)
+                weighting = np.zeros(true_masks.shape)
+                for i in range(true_masks.shape[0]):
+                    weighting[i, ...] = unet_weight_map(
+                        true_masks[i, ...].numpy(), wc=self.class_weighting.numpy() if self.class_weighting_enabled else None)
+                weighting = torch.from_numpy(weighting).to(device=self.device)
+
+                loss_ce = (loss_ce * weighting).sum()/weighting.sum()
+                full_losses.append(loss_ce*loss_weight)
+                epoch_metrics['Cross-Entropy Loss'] += loss_ce.detach().cpu().numpy()
+            elif lossfn == 'simple_weighted_crossentropy':
+                raise NotImplementedError('Simple weighted crossentropy loss not implemented yet')
+            else:
+                raise RuntimeError('Loss definition not recognised')
+
+        final_loss = sum(full_losses)
+
+        epoch_metrics['Training Loss'] += final_loss.detach().cpu().numpy()
+
+        return final_loss
+
     def train_epoch(self, epoch):
         """
         Oversees a single training epoch.
@@ -190,26 +238,7 @@ class TrainingHandler:
                 # Use autocast if amp is used
                 with torch.cuda.amp.autocast(enabled=self.use_amp_scaler):
                     masks_pred = self.net(images)
-                    if self.loss_definition == 'both':
-                        loss_ce = self.main_loss_fn(masks_pred, true_masks)
-                        loss_dice = dice_loss(F.softmax(masks_pred, dim=1).float(),  # TODO: re-inspect here
-                                              F.one_hot(true_masks, self.net.n_classes).permute(0, 3, 1, 2).float(),
-                                              multiclass=True)
-                        loss = loss_ce + loss_dice
-                        epoch_metrics['Cross-Entropy Loss'] += loss_ce.detach().cpu().numpy()
-                        epoch_metrics['Dice Loss'] += loss_dice.detach().cpu().numpy()
-                    elif self.loss_definition == 'CrossEntropy':
-                        loss = self.main_loss_fn(masks_pred, true_masks)
-                        epoch_metrics['Cross-Entropy Loss'] += loss.detach().cpu().numpy()
-
-                    elif self.loss_definition == 'Dice':
-                        loss = dice_loss(F.softmax(masks_pred, dim=1).float(),
-                                         F.one_hot(true_masks, self.net.n_classes).permute(0, 3, 1, 2).float(),
-                                         multiclass=True)
-                        epoch_metrics['Dice Loss'] += loss.detach().cpu().numpy()
-                    else:
-                        raise RuntimeError('Loss definition not recognised')
-                    epoch_metrics['Training Loss'] += loss.detach().cpu().numpy()
+                    loss = self.loss_calculation(masks_pred, true_masks, epoch_metrics)
 
                 self.optimizer.zero_grad()
                 self.grad_scaler.scale(loss).backward()

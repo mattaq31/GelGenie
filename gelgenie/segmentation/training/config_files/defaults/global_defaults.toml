@@ -18,14 +18,17 @@ dir_val_mask = 'UNDEFINED'
 split_training_dataset = false
 apply_augmentations = false
 padding = true
+individual_padding = false
 
 [model]
 model_name = 'UNDEFINED'   # model architecture name
 classes = 2     # Number of possible segmentation classes
 in_channels = 1 # Number of input channels
 [training]
-loss = 'both'
-loss_weighting = false
+loss = ['dice', 'crossentropy']
+loss_component_weighting = [1, 1]
+class_loss_weighting = false
+class_loss_weight_damper = [1.0, 1.0]
 lr = 1e-5       # learning rate
 epochs = 10     # Number of epochs to run
 grad_scaler = false     # Use mixed precision for faster training

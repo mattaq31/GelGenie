@@ -13,10 +13,8 @@ def segmentation_results_compare(datafolder, datafile):
 
 
 @click.command()
-@click.option('--model_name', '-m', default=None,
-              help='Model name to be analyzed.')
-@click.option('--epoch', '-e', default=None,
-              help='Epoch checkpoint to load.')
+@click.option('--model_and_epoch', '-me', multiple=True,
+              help='Experiments and epochs to evaluate.', type=(str, str))
 @click.option('--model_folder', '-p', default=None,
               help='Path to folder containing model config.')
 @click.option('--input_folder', '-i', default=None,
@@ -25,7 +23,7 @@ def segmentation_results_compare(datafolder, datafile):
               help='Path to folder containing output images.')
 @click.option('--run_ref_analysis', is_flag=True,
               help='Set this flag to run analysis on standard reference images.')
-def segmentation_pipeline(model_name, epoch, model_folder, input_folder, output_folder, run_ref_analysis):
+def segmentation_pipeline(model_and_epoch, model_folder, input_folder, output_folder, run_ref_analysis):
 
     import torch
     from os.path import join
@@ -35,23 +33,27 @@ def segmentation_pipeline(model_name, epoch, model_folder, input_folder, output_
     import toml
     from gelgenie.segmentation.helper_functions.general_functions import create_dir_if_empty
 
-    exp_folder = join(model_folder, model_name)
-    model_config = toml.load(join(exp_folder, 'config.toml'))['model']
+    experiment_names, eval_epochs = zip(*model_and_epoch)
 
-    model, _, _ = model_configure(**model_config)
+    models = []
 
-    checkpoint = torch.load(f=join(exp_folder, 'checkpoints', 'checkpoint_epoch_%s.pth' % epoch),
-                            map_location=torch.device("cpu"))
-
-    model.load_state_dict(checkpoint['network'])
-    model.eval()
+    for experiment, eval_epoch in zip(experiment_names, eval_epochs):
+        exp_folder = join(model_folder, experiment)
+        model_config = toml.load(join(exp_folder, 'config.toml'))['model']
+        model, _, _ = model_configure(**model_config)
+        checkpoint = torch.load(f=join(exp_folder, 'checkpoints', 'checkpoint_epoch_%s.pth' % eval_epoch),
+                                map_location=torch.device("cpu"))
+        model.load_state_dict(checkpoint['network'])
+        model.eval()
+        models.append(model)
 
     create_dir_if_empty(output_folder)
 
-    if run_ref_analysis:
-        standard_ladder_analysis(model, output_folder)
+    if run_ref_analysis:  # TODO: broken, needs a rewrite
+        raise NotImplementedError('This function needs to be rewritten.')
+        # standard_ladder_analysis(model, output_folder)
     else:
-        segment_and_analyze(model, input_folder, output_folder)
+        segment_and_analyze(models, experiment_names, input_folder, output_folder)
 
 
 if __name__ == '__main__':

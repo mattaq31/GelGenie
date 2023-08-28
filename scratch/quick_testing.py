@@ -121,12 +121,12 @@ class TrainingHandler:
                     with torch.cuda.amp.autocast(enabled=self.use_amp_scaler):
                         masks_pred = self.net(images)
                         if self.loss_definition == 'both':
-                            loss = self.main_loss_fn(masks_pred, true_masks) \
+                            loss = self.crossentropy_loss_fn(masks_pred, true_masks) \
                                    + dice_loss(F.softmax(masks_pred, dim=1).float(),
                                                F.one_hot(true_masks, self.net.n_classes).permute(0, 3, 1, 2).float(),
                                                multiclass=True)
                         elif self.loss_definition == 'CrossEntropy':
-                            loss = self.main_loss_fn(masks_pred, true_masks)
+                            loss = self.crossentropy_loss_fn(masks_pred, true_masks)
                         elif self.loss_definition == 'Dice':
                             loss = dice_loss(F.softmax(masks_pred, dim=1).float(),
                                              F.one_hot(true_masks, self.net.n_classes).permute(0, 3, 1, 2).float(),

@@ -7,7 +7,7 @@ from gelgenie.segmentation.helper_functions.general_functions import extract_ima
 
 def prep_train_val_dataloaders(dir_train_img, dir_train_mask, split_training_dataset, dir_val_img, dir_val_mask,
                                n_channels, val_percent, batch_size, num_workers,
-                               apply_augmentations, padding):
+                               apply_augmentations, padding, individual_padding):
     """
     Prepares a matched training and validation dataloader for training a segmentation model.
     :param dir_train_img: Path of directory of training set images
@@ -21,6 +21,7 @@ def prep_train_val_dataloaders(dir_train_img, dir_train_mask, split_training_dat
     :param num_workers: (int) Number of workers for dataloader (parallel dataloader threads speed up data processing)
     :param apply_augmentations: (Bool) Whether to apply augmentations when loading training images
     :param padding: (Bool) Whether to apply padding to images and masks when loading training and validation images
+    :param individual_padding (Bool) Whether to apply padding to images and masks individually (only batch size of 1 possible)
     :return: Training dataloader, Validation dataloader, number of training images, number of validation images
     """
 
@@ -46,10 +47,10 @@ def prep_train_val_dataloaders(dir_train_img, dir_train_mask, split_training_dat
 
     train_set = ImageMaskDataset(dir_train_img, dir_train_mask, n_channels,
                                  augmentations=get_training_augmentation() if apply_augmentations else None,
-                                 padding=padding, image_names=train_image_names)
+                                 padding=padding, individual_padding=individual_padding, image_names=train_image_names)
 
     val_set = ImageMaskDataset(dir_val_img, dir_val_mask, n_channels,
-                               augmentations=None, padding=padding,
+                               augmentations=None, padding=padding, individual_padding=individual_padding,
                                image_names=val_image_names)
 
     # Confirm the length of training/validation sets

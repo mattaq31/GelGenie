@@ -15,25 +15,30 @@ dir_train_img = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyze
 
 #dir_train_mask = ['/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/dummy_set/masks_train',
 #    '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/maximal_set/lsdb_gels/masks',
-#    '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/maximal_set/matthew_gels/masks']
-#
+#    '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/maximal_set/matthew_gels/masks',
+#    '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/maximal_set/matthew_gels_2/masks']
+
 #dir_train_img = ['/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/dummy_set/images_train',
 #    '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/maximal_set/lsdb_gels/images',
-#    '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/maximal_set/matthew_gels/images']
+#    '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/maximal_set/matthew_gels/images',
+#    '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/maximal_set/matthew_gels_2/images']
 
 dir_val_img = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/dummy_set/images_val'
 dir_val_mask = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/dummy_set/masks_val'
 split_training_dataset = false
 apply_augmentations = true
-padding = true # pads all image with zeros to same size to allow for a batch size higher than 1
+padding = false # pads all image with zeros to same size to allow for a batch size higher than 1
+individual_padding = true
 
 [model]
 model_name = 'smp_unet'   # model architecture name
 classes = 2     # Number of possible segmentation classes
 encoder_name = 'resnet18'
 [training]
-loss = 'both'
-loss_weighting = ['class_imbalance']
+loss = ['dice', 'unet_weighted_crossentropy']
+loss_component_weighting = [0.5, 1.0]
+class_loss_weighting = true
+class_loss_weight_damper = [1.0, 0.5]
 lr = 1e-5       # learning rate
 epochs = 2     # Number of epochs to run
 grad_scaler = false     # Use mixed precision for faster training

@@ -1,7 +1,7 @@
 #!/bin/bash
 #$ -N segmentation_training
 #$ -cwd
-#$ -l h_rt=12:00:00
+#$ -l h_rt=24:00:00
 # Request 1 GPU:
 #$ -q gpu
 #$ -pe gpu-a100 1
