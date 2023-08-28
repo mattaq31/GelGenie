@@ -202,7 +202,7 @@ class TrainingHandler:
                 weighting = np.zeros(true_masks.shape)
                 for i in range(true_masks.shape[0]):
                     weighting[i, ...] = unet_weight_map(
-                        true_masks[i, ...].numpy(), wc=self.class_weighting.numpy() if self.class_weighting_enabled else None)
+                        true_masks[i, ...].cpu().numpy(), wc=self.class_weighting.cpu().numpy() if self.class_weighting_enabled else None)
                 weighting = torch.from_numpy(weighting).to(device=self.device)
 
                 loss_ce = (loss_ce * weighting).sum()/weighting.sum()
