@@ -10,6 +10,7 @@ from skimage.color import label2rgb
 from tqdm import tqdm
 import math
 import imageio
+import numpy as np
 
 
 ref_data_folder = os.path.join(os.path.abspath(os.path.join(__file__, os.path.pardir, os.path.pardir, os.path.pardir)),
@@ -36,7 +37,7 @@ def segment_and_analyze(models, model_names, input_folder, output_folder):
 
     for mname in model_names:
         create_dir_if_empty(os.path.join(output_folder, mname))
-    
+
     # preparing model outputs, including separation of different bands and labelling
     for im_index, batch in tqdm(enumerate(dataloader), total=len(dataloader)):
 
@@ -48,7 +49,7 @@ def segment_and_analyze(models, model_names, input_folder, output_folder):
             labels, _ = ndi.label(mask.argmax(axis=0))
             rgb_labels = label2rgb(labels, image=np_image)
             all_model_outputs.append(rgb_labels)
-            imageio.v2.imwrite(os.path.join(output_folder, mname, '%s.png' % batch['image_name'][0]), rgb_labels)
+            imageio.v2.imwrite(os.path.join(output_folder, mname, '%s.png' % batch['image_name'][0]), (rgb_labels*255).astype(np.uint8))
 
         # results preview
         fig, ax = plt.subplots(math.ceil((len(all_model_outputs) + 1)/images_per_row), images_per_row, figsize=(15, 15))
