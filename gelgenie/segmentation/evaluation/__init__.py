@@ -45,7 +45,7 @@ def segmentation_pipeline(model_and_epoch, model_folder, input_folder, output_fo
         if eval_epoch == 'best':
             
             stats = load_statistics(join(exp_folder,'training_logs'), 'training_stats.csv', config='pd')  
-            sel_epoch = stats['Dice Score'].idxmax()
+            sel_epoch = stats['Epoch'][stats['Dice Score'].idxmax()]
 
         else:
             sel_epoch = eval_epoch
