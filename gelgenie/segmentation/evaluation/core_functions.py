@@ -1,5 +1,6 @@
 import os
 from gelgenie.segmentation.data_handling.dataloaders import ImageDataset
+from gelgenie.segmentation.helper_functions.general_functions import create_dir_if_empty
 from torch.utils.data import DataLoader
 import torch
 import torch.nn.functional as F
@@ -8,6 +9,7 @@ from scipy import ndimage as ndi
 from skimage.color import label2rgb
 from tqdm import tqdm
 import math
+import imageio
 
 
 ref_data_folder = os.path.join(os.path.abspath(os.path.join(__file__, os.path.pardir, os.path.pardir, os.path.pardir)),
@@ -32,17 +34,21 @@ def segment_and_analyze(models, model_names, input_folder, output_folder):
     dataloader = DataLoader(dataset, shuffle=False, batch_size=1, num_workers=0, pin_memory=True)
     images_per_row = 2
 
+    for mname in model_names:
+        create_dir_if_empty(os.path.join(output_folder, mname))
+    
     # preparing model outputs, including separation of different bands and labelling
     for im_index, batch in tqdm(enumerate(dataloader), total=len(dataloader)):
 
         np_image = batch['image'].detach().squeeze().cpu().numpy()
         all_model_outputs = []
-        for model in models:
+        for model, mname in zip(models, model_names):
             _, mask = model_predict_and_process(model, batch['image'])
 
             labels, _ = ndi.label(mask.argmax(axis=0))
             rgb_labels = label2rgb(labels, image=np_image)
             all_model_outputs.append(rgb_labels)
+            imageio.v2.imwrite(os.path.join(output_folder, mname, '%s.png' % batch['image_name'][0]), rgb_labels)
 
         # results preview
         fig, ax = plt.subplots(math.ceil((len(all_model_outputs) + 1)/images_per_row), images_per_row, figsize=(15, 15))
