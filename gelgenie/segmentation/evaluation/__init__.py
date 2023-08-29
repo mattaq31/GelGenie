@@ -32,6 +32,7 @@ def segmentation_pipeline(model_and_epoch, model_folder, input_folder, output_fo
     from gelgenie.segmentation.evaluation.reference_image_analysis import standard_ladder_analysis
     import toml
     from gelgenie.segmentation.helper_functions.general_functions import create_dir_if_empty
+    from gelgenie.segmentation.helper_functions.stat_functions import load_statistics
 
     experiment_names, eval_epochs = zip(*model_and_epoch)
 
@@ -41,7 +42,15 @@ def segmentation_pipeline(model_and_epoch, model_folder, input_folder, output_fo
         exp_folder = join(model_folder, experiment)
         model_config = toml.load(join(exp_folder, 'config.toml'))['model']
         model, _, _ = model_configure(**model_config)
-        checkpoint = torch.load(f=join(exp_folder, 'checkpoints', 'checkpoint_epoch_%s.pth' % eval_epoch),
+        if eval_epoch == 'best':
+            
+            stats = load_statistics(join(exp_folder,'training_logs'), 'training_stats.csv', config='pd')  
+            sel_epoch = stats['Dice Score'].idxmax()
+
+        else:
+            sel_epoch = eval_epoch
+
+        checkpoint = torch.load(f=join(exp_folder, 'checkpoints', 'checkpoint_epoch_%s.pth' % sel_epoch),
                                 map_location=torch.device("cpu"))
         model.load_state_dict(checkpoint['network'])
         model.eval()
