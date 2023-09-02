@@ -13,7 +13,7 @@ from matplotlib import pyplot as plt
 import pandas as pd
 import numpy as np
 
-from gel_tools import GelAnalysis
+from gelgenie.gel_tools import GelAnalysis
 
 # Allows one to run server from any base filepath
 os.chdir(os.path.abspath(os.path.join(__file__, os.path.pardir)))

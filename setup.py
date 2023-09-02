@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="GelGenie",
-    author="FB, MA, KD",
+    author="Matthew Aquilina, Kiros Kwan, Filip Busic",
     description="TBD",
     version="1.0.0",
     url="https://github.com/mattaq31/Automatic-Gel-Analysis/",
