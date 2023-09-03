@@ -22,7 +22,7 @@ ext.qupathVersion = gradle.ext.qupathVersion
 
 // TODO: Specify the Java version compatible with the extension
 // Generally 11 for QuPath v0.4.3, but will be 17 for QuPath v0.5.0
-ext.qupathJavaVersion = 11
+ext.qupathJavaVersion = 17
 
 /**
  * Define dependencies.

@@ -11,7 +11,6 @@ import qupath.lib.common.GeneralTools;
 import qupath.lib.common.Version;
 import qupath.lib.gui.QuPathGUI;
 import qupath.lib.gui.charts.Charts;
-import qupath.lib.gui.dialogs.Dialogs;
 import qupath.lib.gui.extensions.QuPathExtension;
 import qupath.lib.gui.prefs.PathPrefs;
 import qupath.lib.gui.viewer.QuPathViewer;
@@ -29,6 +28,7 @@ import qupath.lib.io.GsonTools;
 import java.util.Map;
 
 
+
 import javafx.scene.paint.Color;
 import javafx.scene.layout.GridPane;
 
@@ -38,9 +38,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Random;
+import java.util.ResourceBundle;
 
 import static qupath.lib.gui.scripting.QPEx.getCurrentViewer;
 import static qupath.lib.scripting.QP.*;
+
+import qupath.ext.gelgenie.ui.ActivateUI;
+import qupath.ext.gelgenie.graphics.GelGenieBarChart;
 
 
 /**
@@ -57,23 +61,12 @@ import static qupath.lib.scripting.QP.*;
  */
 public class GelGenie implements QuPathExtension {
 
-    private final static Logger logger = LoggerFactory.getLogger(GelGenie.class);
+    private final static ResourceBundle resources = ResourceBundle.getBundle("qupath.ext.gelgenie.ui.strings");
+    private final static Logger logger = LoggerFactory.getLogger(QuPathExtension.class);
+    private final static String EXTENSION_NAME = resources.getString("extension.title");
+    private final static String EXTENSION_DESCRIPTION = resources.getString("extension.description");
+    private final static Version EXTENSION_QUPATH_VERSION = Version.parse(resources.getString("extension.qupath.version"));
 
-    /**
-     * Display name for your extension
-     */
-    private final static String EXTENSION_NAME = "GelGenie";
-
-    /**
-     * Short description, used under 'Extensions > Installed extensions'
-     */
-    private final static String EXTENSION_DESCRIPTION = "This is just a demo to show how extensions work";
-
-    /**
-     * QuPath version that the extension is designed to work with.
-     * This allows QuPath to inform the user if it seems to be incompatible.
-     */
-    private final static Version EXTENSION_QUPATH_VERSION = Version.parse("v0.4.0");
 
     /**
      * Flag whether the extension is already installed (might not be needed... but we'll do it anyway)
@@ -94,7 +87,7 @@ public class GelGenie implements QuPathExtension {
         }
         isInstalled = true;
         addPreference(qupath);
-        addMenuItem(qupath);
+        addMenuItems(qupath);
     }
 
     /**
@@ -116,13 +109,15 @@ public class GelGenie implements QuPathExtension {
      *
      * @param qupath
      */
-    private void addMenuItem(QuPathGUI qupath) {
+    private void addMenuItems(QuPathGUI qupath) {
         var menu = qupath.getMenu("Extensions>" + EXTENSION_NAME, true);
-        MenuItem menuItem = new MenuItem("My menu item");
+        MenuItem menuItem = new MenuItem("Show GUI");
+
+        ActivateUI command = new ActivateUI(qupath);
         menuItem.setOnAction(e -> {
-            Dialogs.showMessageDialog(EXTENSION_NAME,
-                    "Hello! This is my Java extension.");
+            command.run();
         });
+
         menuItem.disableProperty().bind(enableExtensionProperty.not());
         menu.getItems().add(menuItem);
 
@@ -242,8 +237,10 @@ public class GelGenie implements QuPathExtension {
                 index_array[i-1] = i;
             }
 
+            GelGenieBarChart chart_var = new GelGenieBarChart();
+            chart_var.plot(all_areas);
 
-          Stage builder = Charts.scatterChart().
+            Stage builder = Charts.scatterChart().
                     viewer(viewer).
                     title("My scatterplot").
                     series("Test", index_array, all_areas).

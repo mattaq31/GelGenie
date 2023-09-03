@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressBar?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.text.Font?>
+
+<fx:root minHeight="100" minWidth="100" prefHeight="133.0" prefWidth="399.0" type="AnchorPane" xmlns="http://javafx.com/javafx/20.0.1" xmlns:fx="http://javafx.com/fxml/1">
+   <children>
+      <ProgressBar fx:id="progressBar" layoutX="20.0" layoutY="50.0" prefHeight="30.0" prefWidth="360.0" progress="0.0" />
+      <Label fx:id="progressLabel" layoutX="20.0" layoutY="20.0" prefHeight="30.0" prefWidth="450.0" text="%ui.processing">
+         <font>
+            <Font size="14.0" />
+         </font>
+      </Label>
+      <Button fx:id="btnCancel" alignment="CENTER_RIGHT" layoutX="291.0" layoutY="88.0" mnemonicParsing="false" text="%ui.cancel" />
+   </children>
+</fx:root>

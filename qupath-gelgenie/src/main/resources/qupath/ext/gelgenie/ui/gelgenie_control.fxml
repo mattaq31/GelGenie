@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ChoiceBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.Slider?>
+<?import javafx.scene.control.Spinner?>
+<?import javafx.scene.control.SpinnerValueFactory.IntegerSpinnerValueFactory?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.TitledPane?>
+<?import javafx.scene.control.ToggleButton?>
+<?import javafx.scene.control.Tooltip?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Text?>
+<?import org.controlsfx.control.SegmentedButton?>
+
+<?import javafx.scene.control.SpinnerValueFactory.DoubleSpinnerValueFactory?>
+<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefWidth="330" stylesheets="@wsinferstyles.css" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" xmlns="http://javafx.com/javafx/20.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="qupath.ext.gelgenie.ui.UIController">
+<!--    Processing Pane************************************************************-->
+        <TitledPane fx:id="pane1" animated="false" collapsible="false" text="%ui.processing.pane" VBox.vgrow="NEVER">
+            <VBox alignment="TOP_CENTER" styleClass="standard-spacing ">
+                <children>
+                    <!-- **********************Models**********************-->
+                    <VBox alignment="CENTER">
+                        <children>
+                            <Label styleClass="regular" text="%ui.model" />
+                            <HBox alignment="CENTER" styleClass="standard-spacing standard-padding">
+                                <children>
+                                    <ChoiceBox id="deviceChoices" fx:id="modelChoiceBox" prefHeight="31.0" prefWidth="344.0">
+                                        <tooltip><Tooltip text="%ui.model.tooltip" /></tooltip>
+                                    </ChoiceBox>
+                                    <Button fx:id="downloadButton" mnemonicParsing="false"  prefHeight="31.0" prefWidth="39.0">
+                                        <tooltip><Tooltip text="%ui.model.download.tooltip" /></tooltip>
+                                        <graphic>
+                                            <Text styleClass="download-icon"></Text>
+                                        </graphic>
+                                    </Button>
+                                </children>
+                            </HBox>
+                        </children>
+                    </VBox>
+                    <Separator />
+
+                    <!--**********************Selections**********************-->
+                    <VBox alignment="CENTER" styleClass="standard-spacing standard-padding">
+                        <children>
+                            <VBox alignment="CENTER" styleClass="standard-spacing">
+                                <Label styleClass="regular" text="%ui.selection.label" />
+                                <Label alignment="CENTER" styleClass="wsinfer-sub-title" text="%ui.selection.alt" textAlignment="CENTER" />
+                                <HBox alignment="CENTER" styleClass="standard-spacing">
+                                   <children>
+                                      <Label styleClass="regular" text="%ui.selection.sub-label" />
+                                       <SegmentedButton fx:id="segButton" maxWidth="500">
+                                           <buttons>
+                                               <ToggleButton fx:id="toggleSelectAllAnnotations" text="%ui.selection.all-annotations">
+                                                   <tooltip><Tooltip text="%ui.selection.all-annotations.tooltip" /></tooltip>
+                                               </ToggleButton>
+                                               <ToggleButton fx:id="toggleSelectAllDetections" text="%ui.selection.all-tiles">
+                                                   <tooltip><Tooltip text="%ui.selection.all-tiles.tooltip" /></tooltip>
+                                               </ToggleButton>
+                                           </buttons>
+                                       </SegmentedButton>
+                                   </children>
+                                </HBox>
+                            </VBox>
+                        </children>
+                    </VBox>
+                    <Separator prefWidth="200.0" />
+
+                    <!--**********************Run**********************-->
+                    <VBox alignment="CENTER" styleClass="standard-spacing standard-padding">
+                        <HBox alignment="CENTER" styleClass="standard-spacing">
+                            <children>
+                                <Button fx:id="runButton" disable="true" prefHeight="31.0" prefWidth="252.0" text="%ui.run">
+                                    <tooltip><Tooltip text="%ui.run.tooltip" /></tooltip>
+                                </Button>
+                            </children>
+                        </HBox>
+                        <Label id="labelWarning" fx:id="labelMessage" prefHeight="30.0" styleClass="error-message" text="%ui.error.no-selection" VBox.vgrow="ALWAYS" />
+                    </VBox>
+                </children>
+            </VBox>
+        </TitledPane>
+
+<!--    Results Pane************************************************************-->
+        <TitledPane fx:id="pane2" animated="false" collapsible="false" text="%ui.results.pane" VBox.vgrow="NEVER">
+            <!--**********************Results**********************-->
+            <VBox alignment="TOP_CENTER" styleClass="standard-spacing standard-padding">
+                <children>
+                    <VBox alignment="CENTER" styleClass="standard-spacing">
+                        <children>
+                            <HBox alignment="CENTER" styleClass="standard-spacing">
+                                <children>
+                                    <Button mnemonicParsing="false" text="%ui.results.open-measurement-maps">
+                                        <tooltip><Tooltip text="%ui.results.maps.tooltip" /></tooltip>
+                                    </Button>
+                                    <Button mnemonicParsing="false" text="%ui.results.open-results">
+                                        <tooltip><Tooltip text="%ui.results.results.tooltip" /></tooltip>
+                                    </Button>
+                                </children>
+                            </HBox>
+                            <HBox alignment="CENTER" styleClass="standard-spacing">
+                                <children>
+                                    <ToggleButton fx:id="toggleAnnotations" mnemonicParsing="false" />
+                                    <ToggleButton fx:id="toggleDetections" mnemonicParsing="false" />
+                                    <ToggleButton fx:id="toggleDetectionFill" mnemonicParsing="false" />
+                                </children>
+                            </HBox>
+                            <VBox alignment="CENTER" styleClass="standard-spacing">
+                                <Label styleClass="regular" text="%ui.results.slider" />
+                                <Slider fx:id="sliderOpacity" blockIncrement="0.1" majorTickUnit="0.1" max="1.0" maxWidth="200.0" minorTickCount="0" prefHeight="19.0" prefWidth="200.0">
+                        <tooltip>
+                           <Tooltip text="%ui.results.slider.tooltip" />
+                        </tooltip></Slider>
+                            </VBox>
+                        </children>
+                    </VBox>
+                </children>
+            </VBox>
+        </TitledPane>
+
+        <!--    Hardware Pane************************************************************-->
+        <TitledPane fx:id="pane3" animated="false" expanded="false" maxHeight="Infinity" text="%ui.options.pane" VBox.vgrow="NEVER">
+            <VBox alignment="TOP_CENTER" spacing="7.5" styleClass="standard-padding">
+                <children>
+                    <HBox alignment="CENTER" styleClass="standard-spacing">
+                        <children>
+                            <Label styleClass="regular" text="%ui.options.device" />
+                            <ChoiceBox fx:id="deviceChoices">
+                                <tooltip><Tooltip text="%ui.options.device.tooltip" /></tooltip>
+                                <items>
+                                </items>
+                            </ChoiceBox>
+                        </children>
+                    </HBox>
+                    <VBox alignment="CENTER" styleClass="standard-spacing">
+                        <children>
+                            <Label styleClass="regular" text="%ui.options.directory" />
+                            <TextField fx:id="tfModelDirectory">
+                                <tooltip><Tooltip text="%ui.options.directory.tooltip" /></tooltip>
+                            </TextField>
+                        </children>
+                    </VBox>
+                    <HBox alignment="CENTER" styleClass="standard-spacing">
+                        <children>
+                            <Label styleClass="regular" text="%ui.options.pworkers" />
+                     <Spinner fx:id="spinnerNumWorkers" prefWidth="75.0">
+                         <tooltip><Tooltip text="%ui.options.pworkers.label" /></tooltip>
+                         <valueFactory>
+                             <SpinnerValueFactory.IntegerSpinnerValueFactory initialValue="1" max="8" min="1" />
+                         </valueFactory>
+                     </Spinner>
+                        </children>
+                    </HBox>
+                </children>
+            </VBox>
+        </TitledPane>
+    </VBox>
