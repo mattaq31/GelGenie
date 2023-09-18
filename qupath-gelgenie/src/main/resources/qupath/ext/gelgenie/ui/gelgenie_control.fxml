@@ -16,9 +16,10 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Text?>
 <?import org.controlsfx.control.SegmentedButton?>
+<?import javafx.scene.chart.*?>
 
 <?import javafx.scene.control.SpinnerValueFactory.DoubleSpinnerValueFactory?>
-<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefWidth="330" stylesheets="@wsinferstyles.css" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" xmlns="http://javafx.com/javafx/20.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="qupath.ext.gelgenie.ui.UIController">
+<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefWidth="330" stylesheets="@gelgeniestyles.css" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" xmlns="http://javafx.com/javafx/20.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="qupath.ext.gelgenie.ui.UIController">
 <!--    Processing Pane************************************************************-->
         <TitledPane fx:id="pane1" animated="false" collapsible="false" text="%ui.processing.pane" VBox.vgrow="NEVER">
             <VBox alignment="TOP_CENTER" styleClass="standard-spacing ">
@@ -42,39 +43,11 @@
                             </HBox>
                         </children>
                     </VBox>
-                    <Separator />
-
-                    <!--**********************Selections**********************-->
-                    <VBox alignment="CENTER" styleClass="standard-spacing standard-padding">
-                        <children>
-                            <VBox alignment="CENTER" styleClass="standard-spacing">
-                                <Label styleClass="regular" text="%ui.selection.label" />
-                                <Label alignment="CENTER" styleClass="wsinfer-sub-title" text="%ui.selection.alt" textAlignment="CENTER" />
-                                <HBox alignment="CENTER" styleClass="standard-spacing">
-                                   <children>
-                                      <Label styleClass="regular" text="%ui.selection.sub-label" />
-                                       <SegmentedButton fx:id="segButton" maxWidth="500">
-                                           <buttons>
-                                               <ToggleButton fx:id="toggleSelectAllAnnotations" text="%ui.selection.all-annotations">
-                                                   <tooltip><Tooltip text="%ui.selection.all-annotations.tooltip" /></tooltip>
-                                               </ToggleButton>
-                                               <ToggleButton fx:id="toggleSelectAllDetections" text="%ui.selection.all-tiles">
-                                                   <tooltip><Tooltip text="%ui.selection.all-tiles.tooltip" /></tooltip>
-                                               </ToggleButton>
-                                           </buttons>
-                                       </SegmentedButton>
-                                   </children>
-                                </HBox>
-                            </VBox>
-                        </children>
-                    </VBox>
-                    <Separator prefWidth="200.0" />
-
                     <!--**********************Run**********************-->
                     <VBox alignment="CENTER" styleClass="standard-spacing standard-padding">
                         <HBox alignment="CENTER" styleClass="standard-spacing">
                             <children>
-                                <Button fx:id="runButton" disable="true" prefHeight="31.0" prefWidth="252.0" text="%ui.run">
+                                <Button fx:id="runButton" disable="true" onAction="#runInference" prefHeight="31.0" prefWidth="252.0" text="%ui.run">
                                     <tooltip><Tooltip text="%ui.run.tooltip" /></tooltip>
                                 </Button>
                             </children>
@@ -86,7 +59,7 @@
         </TitledPane>
 
 <!--    Results Pane************************************************************-->
-        <TitledPane fx:id="pane2" animated="false" collapsible="false" text="%ui.results.pane" VBox.vgrow="NEVER">
+        <TitledPane fx:id="pane2" animated="false" collapsible="false" text="%ui.quantitate.pane" VBox.vgrow="NEVER">
             <!--**********************Results**********************-->
             <VBox alignment="TOP_CENTER" styleClass="standard-spacing standard-padding">
                 <children>
@@ -158,4 +131,15 @@
                 </children>
             </VBox>
         </TitledPane>
+       <TitledPane animated="false" text="%ui.histoview.pane">
+           <BarChart fx:id="bandChart">
+               <xAxis>
+                   <CategoryAxis side="BOTTOM" />
+               </xAxis>
+               <yAxis>
+                   <NumberAxis side="LEFT" />
+               </yAxis>
+           </BarChart>
+       </TitledPane>
+
     </VBox>

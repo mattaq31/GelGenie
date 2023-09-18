@@ -14,23 +14,22 @@ import javafx.scene.layout.VBox;
 import java.io.IOException;
 import java.net.URL;
 
-
+/**
+Boilerplate function for generating a UI window and setting things for it to be resizable etc.
+ */
 public class ActivateUI implements Runnable{
 
     private static final Logger logger = LoggerFactory.getLogger(ActivateUI.class);
-
     private final QuPathGUI qupath;
-
     private final ResourceBundle resources = ResourceBundle.getBundle("qupath.ext.gelgenie.ui.strings");
-
     private Stage stage;
 
-    public ActivateUI(QuPathGUI qupath) {
+    public ActivateUI(QuPathGUI qupath) { // Constructor here
         this.qupath = qupath;
-    } // What does this do?
+    }
 
     @Override
-    public void run() {
+    public void run() { // generates UI page
         if (stage == null) {
             try {
                 stage = createStage();
@@ -44,11 +43,11 @@ public class ActivateUI implements Runnable{
     private Stage createStage() throws IOException {
 
         URL url = getClass().getResource("/qupath/ext/gelgenie/ui/gelgenie_control.fxml");
-        if (url == null) {
+        if (url == null) { // this should never happen...
             throw new IOException("Cannot find URL for GelGenie FXML");
         }
 
-        // We need to use the ExtensionClassLoader to load the FXML, since it's in a different module
+        // We need to use the ExtensionClassLoader to load the FXML, since it's in a different module TODO: is this needed?
         var loader = new FXMLLoader(url, resources);
 //        loader.setClassLoader(QuPathGUI.getExtensionClassLoader());
         VBox root = loader.load();
