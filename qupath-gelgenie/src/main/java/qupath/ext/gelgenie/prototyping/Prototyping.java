@@ -10,7 +10,7 @@ import qupath.lib.algorithms.IntensityFeaturesPlugin;
 import qupath.lib.analysis.stats.Histogram;
 import qupath.lib.common.GeneralTools;
 import qupath.lib.gui.charts.Charts;
-import qupath.lib.gui.charts.HistogramPanelFX;
+//import qupath.lib.gui.charts.HistogramPanelFX;
 import qupath.lib.gui.viewer.QuPathViewer;
 import qupath.lib.images.ImageData;
 import qupath.lib.images.servers.ImageServer;
@@ -81,25 +81,25 @@ public class Prototyping {
         GridPane pane = new GridPane();
         int row = 0;
 
-        HistogramPanelFX histogramPanel = new HistogramPanelFX();
-
-
-        var dhist = HistogramPanelFX.createHistogramData(hist1, false, Color.BLUE);
-
-        histogramPanel.setShowTickLabels(false);
-        histogramPanel.getChart().setAnimated(false);
-
-        pane.add(histogramPanel.getChart(), 0, 0);
-
-        histogramPanel.getHistogramData().setAll(dhist);
-
-        try {
-            Files.createDirectories(Path.of(outputDir));
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
-        var name = GeneralTools.getNameWithoutExtension(imageData.getServer().getMetadata().getName());
-        var path = buildFilePath(outputDir, name + " Edited SegMaps.tif");
+//        HistogramPanelFX histogramPanel = new HistogramPanelFX();
+//
+//
+//        var dhist = HistogramPanelFX.createHistogramData(hist1, false, Color.BLUE);
+//
+//        histogramPanel.setShowTickLabels(false);
+//        histogramPanel.getChart().setAnimated(false);
+//
+//        pane.add(histogramPanel.getChart(), 0, 0);
+//
+//        histogramPanel.getHistogramData().setAll(dhist);
+//
+//        try {
+//            Files.createDirectories(Path.of(outputDir));
+//        } catch (IOException ex) {
+//            throw new RuntimeException(ex);
+//        }
+//        var name = GeneralTools.getNameWithoutExtension(imageData.getServer().getMetadata().getName());
+//        var path = buildFilePath(outputDir, name + " Edited SegMaps.tif");
 
     }
 

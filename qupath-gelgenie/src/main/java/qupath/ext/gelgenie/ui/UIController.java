@@ -11,6 +11,7 @@ import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ObservableBooleanValue;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.concurrent.Worker;
 import javafx.event.ActionEvent;
@@ -54,10 +55,7 @@ import qupath.lib.plugins.workflow.DefaultScriptableWorkflowStep;
 import qupath.lib.roi.interfaces.ROI;
 
 import java.awt.image.BufferedImage;
-import java.util.Collection;
-import java.util.Objects;
-import java.util.ResourceBundle;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
@@ -82,6 +80,10 @@ public class UIController {
 //    private ChoiceBox<WSInferModel> modelChoiceBox;
     @FXML
     private Button runButton;
+
+    @FXML
+    private Button tableButton;
+
     @FXML
     private Button downloadButton;
     @FXML
@@ -143,10 +145,9 @@ public class UIController {
 
     private void configureRunInferenceButton() {
         // Disable the run button while a task is pending, or we have no model selected, or download is required
-        runButton.disableProperty().bind(
-                imageDataProperty.isNull()
-                        .or(pendingTask.isNotNull())
-        );
+        runButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
+        tableButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
+
     }
 
     public void runInference() {
@@ -156,10 +157,19 @@ public class UIController {
         double[] all_pixels = ImageTools.extractAnnotationPixels(annot, server); // extracts a list of pixels matching the specific selected annotation
 //        GelGenieBarChart chart_var = new GelGenieBarChart(); - this is an explicit barchart (not needed)
 //        chart_var.plot(all_pixels, 40);
+
+        annot.getMeasurementList().put("IntensitySum", Arrays.stream(all_pixels).sum());
+
         EmbeddedBarChart outbar = new EmbeddedBarChart();
         bandChart.getData().clear(); // removes previous data
         bandChart.getData().addAll(outbar.plot(all_pixels, 40)); // adds new data TODO: x-axis ticks are broken on first run - how to fix?
+        Commands.showAnnotationMeasurementTable(qupath, imageData);
         // TODO: change functionality to happen on selection of a new band.  What happens if multiple bands selected?  Should average them all and show an indicator of how many bands are averaged....
+    }
+
+    public void populateTable() {
+        ActivateUI tableCommand = new ActivateUI(qupath, "gelgenie_table", "Data Table"); // activation class from ui folder
+        tableCommand.run();
     }
 
     @FXML

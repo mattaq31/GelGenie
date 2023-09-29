@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/20.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="qupath.ext.gelgenie.ui.TableController">
+   <children>
+      <TableView prefHeight="400.0" prefWidth="200.0" fx:id="mainTable">
+        <columns>
+          <TableColumn fx:id="bandCol" prefWidth="75.0" text="Band ID" />
+          <TableColumn fx:id="areaCol" prefWidth="400.0" text="Number of Pixels"/>
+        </columns>
+      </TableView>
+   </children>
+</VBox>

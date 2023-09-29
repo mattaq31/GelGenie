@@ -142,4 +142,14 @@
            </BarChart>
        </TitledPane>
 
+    <TitledPane animated="false" text="%ui.histoview.pane">
+        <VBox alignment="CENTER">
+            <children>
+                <Button fx:id="tableButton" disable="true" onAction="#populateTable" prefHeight="31.0" prefWidth="252.0" text="View Data Table">
+                    <tooltip><Tooltip text="%ui.model.download.tooltip" /></tooltip>
+                </Button>
+            </children>
+        </VBox>
+    </TitledPane>
+
     </VBox>

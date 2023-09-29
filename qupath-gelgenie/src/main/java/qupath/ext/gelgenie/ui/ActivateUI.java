@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qupath.lib.gui.QuPathGUI;
 
+import java.util.Objects;
 import java.util.ResourceBundle;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -21,13 +22,22 @@ public class ActivateUI implements Runnable{
 
     private static final Logger logger = LoggerFactory.getLogger(ActivateUI.class);
     private final QuPathGUI qupath;
+    private final String ui_name;
+
+    private String panel_name = "None";
     private final ResourceBundle resources = ResourceBundle.getBundle("qupath.ext.gelgenie.ui.strings");
     private Stage stage;
 
-    public ActivateUI(QuPathGUI qupath) { // Constructor here
+    public ActivateUI(QuPathGUI qupath, String ui_name) { // Constructor here
         this.qupath = qupath;
+        this.ui_name = ui_name;
     }
 
+    public ActivateUI(QuPathGUI qupath, String ui_name, String panel_name) { // Constructor 2
+        this.qupath = qupath;
+        this.ui_name = ui_name;
+        this.panel_name = panel_name;
+    }
     @Override
     public void run() { // generates UI page
         if (stage == null) {
@@ -42,7 +52,7 @@ public class ActivateUI implements Runnable{
     }
     private Stage createStage() throws IOException {
 
-        URL url = getClass().getResource("/qupath/ext/gelgenie/ui/gelgenie_control.fxml");
+        URL url = getClass().getResource("/qupath/ext/gelgenie/ui/" + ui_name + ".fxml");
         if (url == null) { // this should never happen...
             throw new IOException("Cannot find URL for GelGenie FXML");
         }
@@ -59,7 +69,12 @@ public class ActivateUI implements Runnable{
 
         Stage stage = new Stage();
         stage.initOwner(qupath.getStage());
-        stage.setTitle(resources.getString("title"));
+        if (Objects.equals(panel_name, "None")){
+            stage.setTitle(resources.getString("title"));
+        }
+        else {
+            stage.setTitle(resources.getString("title") + " " + panel_name);
+        }
         stage.setScene(scene);
         stage.setResizable(false);
 

@@ -71,7 +71,10 @@ public class GelGenie implements QuPathExtension {
         var menu = qupath.getMenu("Extensions>" + EXTENSION_NAME, true);
         MenuItem menuItem = new MenuItem("Show GUI");
 
-        ActivateUI command = new ActivateUI(qupath); // activation class from ui folder
+        ActivateUI command = new ActivateUI(qupath, "gelgenie_control"); // activation class from ui folder
+
+        ActivateUI tableCommand = new ActivateUI(qupath, "gelgenie_table", "Data Table"); // activation class from ui folder
+
         menuItem.setOnAction(e -> {
             command.run();
         });
@@ -89,10 +92,15 @@ public class GelGenie implements QuPathExtension {
         menuArea.setOnAction(e -> {
             Prototyping.testingGraph();
         });
-
         menuArea.disableProperty().bind(enableExtensionProperty.not());
         menu.getItems().add(menuArea);
 
+        MenuItem menuTable = new MenuItem("Show Band Data"); // shows new table with all data from available bands
+        menuTable.setOnAction(e -> {
+            tableCommand.run();
+        });
+        menuTable.disableProperty().bind(enableExtensionProperty.not());
+        menu.getItems().add(menuTable);
     }
 
 
