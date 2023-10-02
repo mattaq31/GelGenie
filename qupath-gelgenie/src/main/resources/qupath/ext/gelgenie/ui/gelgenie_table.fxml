@@ -3,13 +3,27 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/20.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="qupath.ext.gelgenie.ui.TableController">
-   <children>
-      <TableView prefHeight="400.0" prefWidth="200.0" fx:id="mainTable">
-        <columns>
-          <TableColumn fx:id="bandCol" prefWidth="75.0" text="Band ID" />
-          <TableColumn fx:id="areaCol" prefWidth="400.0" text="Number of Pixels"/>
-        </columns>
-      </TableView>
-   </children>
-</VBox>
+<BorderPane xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="qupath.ext.gelgenie.ui.TableController">
+    <center>
+        <TableView fx:id="mainTable" prefHeight="400.0" prefWidth="980.0">
+            <columns>
+                <TableColumn fx:id="thumbnailCol" prefWidth="125.0" style="-fx-alignment: CENTER;" text="Thumbnail" />
+                <TableColumn fx:id="bandCol" prefWidth="75.0" style="-fx-alignment: CENTER;" text="Band ID" />
+                <TableColumn fx:id="nameCol" prefWidth="75.0" style="-fx-alignment: CENTER;" text="Band Name" />
+                <TableColumn fx:id="pixelCol" prefWidth="75.0" style="-fx-alignment: CENTER;" text="# Pixels" />
+                <TableColumn fx:id="meanCol" prefWidth="100.0" style="-fx-alignment: CENTER;" text="Mean Intensity" />
+                <TableColumn fx:id="rawCol" prefWidth="75.0" style="-fx-alignment: CENTER;" text="Raw Volume" />
+                <TableColumn fx:id="localVolCol" prefWidth="150.0" style="-fx-alignment: CENTER;" text="Local Corrected Volume" />
+                <TableColumn fx:id="globalVolCol" prefWidth="150.0" style="-fx-alignment: CENTER;" text="Global Corrected Volume" />
+                <TableColumn fx:id="normVolCol" prefWidth="150.0" style="-fx-alignment: CENTER;" text="Normalised Volume" />
+            </columns>
+        </TableView>
+    </center>
+    <bottom>
+        <ButtonBar prefHeight="40.0" prefWidth="200.0" BorderPane.alignment="CENTER">
+            <buttons>
+                <Button mnemonicParsing="false" text="Export Data" fx:id="exportButton" onAction="#exportData"/>
+            </buttons>
+        </ButtonBar>
+    </bottom>
+</BorderPane>

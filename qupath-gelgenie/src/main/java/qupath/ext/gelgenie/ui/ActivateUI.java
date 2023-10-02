@@ -1,5 +1,7 @@
 package qupath.ext.gelgenie.ui;
 
+import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +27,7 @@ public class ActivateUI implements Runnable{
     private final String ui_name;
 
     private String panel_name = "None";
+    private Boolean resizable = false;
     private final ResourceBundle resources = ResourceBundle.getBundle("qupath.ext.gelgenie.ui.strings");
     private Stage stage;
 
@@ -37,6 +40,13 @@ public class ActivateUI implements Runnable{
         this.qupath = qupath;
         this.ui_name = ui_name;
         this.panel_name = panel_name;
+    }
+
+    public ActivateUI(QuPathGUI qupath, String ui_name, String panel_name, Boolean resizable) { // Constructor 3
+        this.qupath = qupath;
+        this.ui_name = ui_name;
+        this.panel_name = panel_name;
+        this.resizable = resizable;
     }
     @Override
     public void run() { // generates UI page
@@ -60,7 +70,8 @@ public class ActivateUI implements Runnable{
         // We need to use the ExtensionClassLoader to load the FXML, since it's in a different module TODO: is this needed?
         var loader = new FXMLLoader(url, resources);
 //        loader.setClassLoader(QuPathGUI.getExtensionClassLoader());
-        VBox root = loader.load();
+
+        Pane root = loader.load();
 
         // There's probably a better approach... but wrapping in a border pane
         // helped me get the resizing to behave
@@ -76,7 +87,7 @@ public class ActivateUI implements Runnable{
             stage.setTitle(resources.getString("title") + " " + panel_name);
         }
         stage.setScene(scene);
-        stage.setResizable(false);
+        stage.setResizable(resizable);
 
         root.heightProperty().addListener((v, o, n) -> stage.sizeToScene());
 

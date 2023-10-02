@@ -73,7 +73,7 @@ public class GelGenie implements QuPathExtension {
 
         ActivateUI command = new ActivateUI(qupath, "gelgenie_control"); // activation class from ui folder
 
-        ActivateUI tableCommand = new ActivateUI(qupath, "gelgenie_table", "Data Table"); // activation class from ui folder
+        ActivateUI tableCommand = new ActivateUI(qupath, "gelgenie_table", "Data Table", true); // activation class from ui folder
 
         menuItem.setOnAction(e -> {
             command.run();
