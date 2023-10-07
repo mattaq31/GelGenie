@@ -16,7 +16,7 @@ import qupath.lib.images.ImageData;
 import qupath.lib.images.servers.ImageServer;
 import qupath.lib.io.GsonTools;
 import qupath.lib.objects.PathObject;
-import qupath.lib.plugins.CommandLinePluginRunner;
+//import qupath.lib.plugins.CommandLinePluginRunner;
 import qupath.lib.regions.RegionRequest;
 import qupath.lib.roi.interfaces.ROI;
 import qupath.opencv.tools.OpenCVTools;

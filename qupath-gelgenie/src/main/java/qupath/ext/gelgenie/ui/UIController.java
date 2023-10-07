@@ -1,5 +1,10 @@
 package qupath.ext.gelgenie.ui;
 
+import ij.ImagePlus;
+import ij.gui.Roi;
+import ij.plugin.filter.MaximumFinder;
+import ij.process.ByteProcessor;
+import ij.process.ImageProcessor;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
@@ -28,6 +33,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
 import javafx.stage.Stage;
 import javafx.util.StringConverter;
+import org.bytedeco.opencv.opencv_core.Mat;
 import org.controlsfx.control.action.Action;
 import org.controlsfx.control.action.ActionUtils;
 import org.slf4j.Logger;
@@ -40,6 +46,9 @@ import org.slf4j.LoggerFactory;
 import qupath.ext.gelgenie.graphics.EmbeddedBarChart;
 import qupath.ext.gelgenie.graphics.GelGenieBarChart;
 import qupath.ext.gelgenie.tools.ImageTools;
+import qupath.ext.gelgenie.tools.openCVModelRunner;
+import qupath.imagej.processing.RoiLabeling;
+import qupath.imagej.tools.IJTools;
 import qupath.lib.common.ThreadTools;
 import qupath.lib.gui.QuPathGUI;
 import qupath.lib.gui.commands.Commands;
@@ -48,17 +57,29 @@ import qupath.lib.images.ImageData;
 import qupath.lib.images.servers.ImageServer;
 import qupath.lib.objects.PathAnnotationObject;
 import qupath.lib.objects.PathObject;
+import qupath.lib.objects.PathObjects;
 import qupath.lib.objects.PathTileObject;
 import qupath.lib.objects.hierarchy.PathObjectHierarchy;
 import qupath.lib.objects.hierarchy.events.PathObjectSelectionListener;
 import qupath.lib.plugins.workflow.DefaultScriptableWorkflowStep;
+import qupath.lib.regions.Padding;
+import qupath.lib.regions.RegionRequest;
 import qupath.lib.roi.interfaces.ROI;
+import qupath.opencv.dnn.DnnTools;
+import qupath.opencv.dnn.OpenCVDnn;
+import qupath.opencv.ops.ImageDataOp;
+import qupath.opencv.ops.ImageOps;
+import qupath.opencv.tools.OpenCVTools;
 
+import javax.swing.plaf.synth.Region;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static qupath.lib.scripting.QP.*;
 
@@ -83,6 +104,9 @@ public class UIController {
 
     @FXML
     private Button tableButton;
+
+    @FXML
+    private Button bandButton;
 
     @FXML
     private Button downloadButton;
@@ -147,10 +171,11 @@ public class UIController {
         // Disable the run button while a task is pending, or we have no model selected, or download is required
         runButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
         tableButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
+        bandButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
 
     }
 
-    public void runInference() {
+    public void runBandAnalysis() {
         ImageData<BufferedImage> imageData = getCurrentImageData();
         PathObject annot = getSelectedObject();
         ImageServer<BufferedImage> server = imageData.getServer();
@@ -165,6 +190,13 @@ public class UIController {
         bandChart.getData().addAll(outbar.plot(all_pixels, 40)); // adds new data TODO: x-axis ticks are broken on first run - how to fix?
         Commands.showAnnotationMeasurementTable(qupath, imageData);
         // TODO: change functionality to happen on selection of a new band.  What happens if multiple bands selected?  Should average them all and show an indicator of how many bands are averaged....
+    }
+
+    public void runInference() throws IOException {
+        ImageData<BufferedImage> imageData = getCurrentImageData();
+        openCVModelRunner modelRunner = new openCVModelRunner("u++_306_full-sim.onnx");
+        clearAllObjects();
+        addObjects(modelRunner.runInference(imageData));
     }
 
     public void populateTable() {

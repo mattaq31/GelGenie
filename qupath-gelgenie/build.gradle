@@ -7,6 +7,9 @@ plugins {
   id 'com.github.johnrengelman.shadow' version '7.1.2'
   // Include this plugin to avoid downloading JavaCPP dependencies for all platforms
   id 'org.bytedeco.gradle-javacpp-platform'
+
+  id 'org.openjfx.javafxplugin' version '0.1.0'
+
 }
 
 // TODO: Change the module name

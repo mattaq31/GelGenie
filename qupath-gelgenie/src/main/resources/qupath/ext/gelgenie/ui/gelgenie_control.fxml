@@ -50,9 +50,10 @@
                                 <Button fx:id="runButton" disable="true" onAction="#runInference" prefHeight="31.0" prefWidth="252.0" text="%ui.run">
                                     <tooltip><Tooltip text="%ui.run.tooltip" /></tooltip>
                                 </Button>
+                                <Button fx:id="bandButton" disable="true" onAction="#runBandAnalysis" prefHeight="31.0" prefWidth="252.0" text="%ui.run.selected">
+                                </Button>
                             </children>
                         </HBox>
-                        <Label id="labelWarning" fx:id="labelMessage" prefHeight="30.0" styleClass="error-message" text="%ui.error.no-selection" VBox.vgrow="ALWAYS" />
                     </VBox>
                 </children>
             </VBox>
