@@ -1,156 +1,223 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.chart.BarChart?>
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.chart.NumberAxis?>
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.ChoiceBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.Separator?>
-<?import javafx.scene.control.Slider?>
 <?import javafx.scene.control.Spinner?>
 <?import javafx.scene.control.SpinnerValueFactory.IntegerSpinnerValueFactory?>
-<?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.TitledPane?>
 <?import javafx.scene.control.ToggleButton?>
 <?import javafx.scene.control.Tooltip?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
 <?import javafx.scene.text.Text?>
-<?import org.controlsfx.control.SegmentedButton?>
-<?import javafx.scene.chart.*?>
 
-<?import javafx.scene.control.SpinnerValueFactory.DoubleSpinnerValueFactory?>
-<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefWidth="330" stylesheets="@gelgeniestyles.css" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" xmlns="http://javafx.com/javafx/20.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="qupath.ext.gelgenie.ui.UIController">
-<!--    Processing Pane************************************************************-->
-        <TitledPane fx:id="pane1" animated="false" collapsible="false" text="%ui.processing.pane" VBox.vgrow="NEVER">
-            <VBox alignment="TOP_CENTER" styleClass="standard-spacing ">
-                <children>
-                    <!-- **********************Models**********************-->
-                    <VBox alignment="CENTER">
-                        <children>
-                            <Label styleClass="regular" text="%ui.model" />
-                            <HBox alignment="CENTER" styleClass="standard-spacing standard-padding">
-                                <children>
-                                    <ChoiceBox id="deviceChoices" fx:id="modelChoiceBox" prefHeight="31.0" prefWidth="344.0">
-                                        <tooltip><Tooltip text="%ui.model.tooltip" /></tooltip>
-                                    </ChoiceBox>
-                                    <Button fx:id="downloadButton" mnemonicParsing="false"  prefHeight="31.0" prefWidth="39.0">
-                                        <tooltip><Tooltip text="%ui.model.download.tooltip" /></tooltip>
-                                        <graphic>
-                                            <Text styleClass="download-icon"></Text>
-                                        </graphic>
-                                    </Button>
-                                </children>
-                            </HBox>
-                        </children>
-                    </VBox>
-                    <!--**********************Run**********************-->
-                    <VBox alignment="CENTER" styleClass="standard-spacing standard-padding">
-                        <HBox alignment="CENTER" styleClass="standard-spacing">
+<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefWidth="330"
+      stylesheets="@gelgeniestyles.css" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+      AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" xmlns="http://javafx.com/javafx/20.0.1"
+      xmlns:fx="http://javafx.com/fxml/1" fx:controller="qupath.ext.gelgenie.ui.UIController">
+    <!--    Processing Pane************************************************************-->
+    <TitledPane fx:id="pane1" animated="false" collapsible="false" text="%ui.processing.pane" VBox.vgrow="NEVER">
+        <VBox alignment="TOP_CENTER" styleClass="standard-spacing ">
+            <children>
+                <!-- **********************Models**********************-->
+                <VBox alignment="CENTER">
+                    <children>
+                        <Label styleClass="regular" text="%ui.model"/>
+                        <HBox alignment="CENTER" styleClass="standard-spacing standard-padding">
                             <children>
-                                <Button fx:id="runButton" disable="true" onAction="#runInference" prefHeight="31.0" prefWidth="252.0" text="%ui.run">
-                                    <tooltip><Tooltip text="%ui.run.tooltip" /></tooltip>
-                                </Button>
-                                <Button fx:id="bandButton" disable="true" onAction="#runBandAnalysis" prefHeight="31.0" prefWidth="252.0" text="%ui.run.selected">
+                                <ChoiceBox id="deviceChoices" fx:id="modelChoiceBox" prefHeight="31.0"
+                                           prefWidth="344.0">
+                                    <tooltip>
+                                        <Tooltip text="%ui.model.tooltip"/>
+                                    </tooltip>
+                                </ChoiceBox>
+                                <Button fx:id="downloadButton" mnemonicParsing="false" prefHeight="31.0"
+                                        prefWidth="39.0">
+                                    <tooltip>
+                                        <Tooltip text="%ui.model.download.tooltip"/>
+                                    </tooltip>
+                                    <graphic>
+                                        <Text styleClass="download-icon"></Text>
+                                    </graphic>
                                 </Button>
                             </children>
                         </HBox>
-                    </VBox>
-                </children>
-            </VBox>
-        </TitledPane>
-
-<!--    Results Pane************************************************************-->
-        <TitledPane fx:id="pane2" animated="false" collapsible="false" text="%ui.quantitate.pane" VBox.vgrow="NEVER">
-            <!--**********************Results**********************-->
-            <VBox alignment="TOP_CENTER" styleClass="standard-spacing standard-padding">
-                <children>
-                    <VBox alignment="CENTER" styleClass="standard-spacing">
+                    </children>
+                </VBox>
+                <!--**********************Run Options**********************-->
+                <VBox alignment="CENTER" styleClass="standard-spacing standard-padding">
+                    <HBox alignment="BASELINE_RIGHT" styleClass="standard-spacing">
                         <children>
-                            <HBox alignment="CENTER" styleClass="standard-spacing">
-                                <children>
-                                    <Button mnemonicParsing="false" text="%ui.results.open-measurement-maps">
-                                        <tooltip><Tooltip text="%ui.results.maps.tooltip" /></tooltip>
-                                    </Button>
-                                    <Button mnemonicParsing="false" text="%ui.results.open-results">
-                                        <tooltip><Tooltip text="%ui.results.results.tooltip" /></tooltip>
-                                    </Button>
-                                </children>
-                            </HBox>
-                            <HBox alignment="CENTER" styleClass="standard-spacing">
-                                <children>
-                                    <ToggleButton fx:id="toggleAnnotations" mnemonicParsing="false" />
-                                    <ToggleButton fx:id="toggleDetections" mnemonicParsing="false" />
-                                    <ToggleButton fx:id="toggleDetectionFill" mnemonicParsing="false" />
-                                </children>
-                            </HBox>
-                            <VBox alignment="CENTER" styleClass="standard-spacing">
-                                <Label styleClass="regular" text="%ui.results.slider" />
-                                <Slider fx:id="sliderOpacity" blockIncrement="0.1" majorTickUnit="0.1" max="1.0" maxWidth="200.0" minorTickCount="0" prefHeight="19.0" prefWidth="200.0">
-                        <tooltip>
-                           <Tooltip text="%ui.results.slider.tooltip" />
-                        </tooltip></Slider>
-                            </VBox>
+                            <CheckBox fx:id="runFullImage" mnemonicParsing="false" nodeOrientation="RIGHT_TO_LEFT"
+                                      text="%ui.model.runall"/>
                         </children>
-                    </VBox>
-                </children>
-            </VBox>
-        </TitledPane>
+                        <padding>
+                            <Insets right="80.0"/>
+                        </padding>
+                    </HBox>
 
-        <!--    Hardware Pane************************************************************-->
-        <TitledPane fx:id="pane3" animated="false" expanded="false" maxHeight="Infinity" text="%ui.options.pane" VBox.vgrow="NEVER">
-            <VBox alignment="TOP_CENTER" spacing="7.5" styleClass="standard-padding">
-                <children>
+                    <HBox alignment="BASELINE_RIGHT" styleClass="standard-spacing">
+                        <children>
+                            <CheckBox fx:id="runSelected" alignment="CENTER" contentDisplay="RIGHT"
+                                      mnemonicParsing="false" nodeOrientation="RIGHT_TO_LEFT"
+                                      text="%ui.model.runselected"/>
+                        </children>
+                        <padding>
+                            <Insets right="80.0"/>
+                        </padding>
+                    </HBox>
+
+                    <HBox alignment="BASELINE_RIGHT" styleClass="standard-spacing">
+                        <children>
+                            <CheckBox fx:id="deletePreviousBands" mnemonicParsing="false"
+                                      nodeOrientation="RIGHT_TO_LEFT" text="%ui.model.deleteprevious"/>
+                        </children>
+                        <padding>
+                            <Insets right="80.0"/>
+                        </padding>
+                    </HBox>
+
+                </VBox>
+                <!--**********************Run Button**********************-->
+                <VBox alignment="CENTER" styleClass="standard-spacing standard-padding">
                     <HBox alignment="CENTER" styleClass="standard-spacing">
                         <children>
-                            <Label styleClass="regular" text="%ui.options.device" />
-                            <ChoiceBox fx:id="deviceChoices">
-                                <tooltip><Tooltip text="%ui.options.device.tooltip" /></tooltip>
-                                <items>
-                                </items>
-                            </ChoiceBox>
+                            <Button fx:id="runButton" disable="true" onAction="#runInference" prefHeight="31.0"
+                                    prefWidth="252.0" text="%ui.run">
+                                <tooltip>
+                                    <Tooltip text="%ui.run.tooltip"/>
+                                </tooltip>
+                            </Button>
                         </children>
                     </HBox>
-                    <VBox alignment="CENTER" styleClass="standard-spacing">
-                        <children>
-                            <Label styleClass="regular" text="%ui.options.directory" />
-                            <TextField fx:id="tfModelDirectory">
-                                <tooltip><Tooltip text="%ui.options.directory.tooltip" /></tooltip>
-                            </TextField>
-                        </children>
-                    </VBox>
-                    <HBox alignment="CENTER" styleClass="standard-spacing">
-                        <children>
-                            <Label styleClass="regular" text="%ui.options.pworkers" />
-                     <Spinner fx:id="spinnerNumWorkers" prefWidth="75.0">
-                         <tooltip><Tooltip text="%ui.options.pworkers.label" /></tooltip>
-                         <valueFactory>
-                             <SpinnerValueFactory.IntegerSpinnerValueFactory initialValue="1" max="8" min="1" />
-                         </valueFactory>
-                     </Spinner>
-                        </children>
-                    </HBox>
-                </children>
-            </VBox>
-        </TitledPane>
-       <TitledPane animated="false" text="%ui.histoview.pane">
-           <BarChart fx:id="bandChart">
-               <xAxis>
-                   <CategoryAxis side="BOTTOM" />
-               </xAxis>
-               <yAxis>
-                   <NumberAxis side="LEFT" />
-               </yAxis>
-           </BarChart>
-       </TitledPane>
+                </VBox>
 
-    <TitledPane animated="false" text="%ui.histoview.pane">
+            </children>
+        </VBox>
+    </TitledPane>
+
+    <!--    Processing Pane************************************************************-->
+    <TitledPane fx:id="pane2" animated="false" collapsible="false" text="%ui.quantitate.pane" VBox.vgrow="NEVER">
+        <VBox alignment="TOP_CENTER" styleClass="standard-spacing standard-padding">
+            <children>
+                <VBox alignment="CENTER" styleClass="standard-spacing">
+                    <children>
+
+                        <HBox alignment="CENTER" styleClass="standard-spacing">
+                            <children>
+                                <Label styleClass="regular" text="%ui.processing.bandvis"/>
+
+                                <ToggleButton fx:id="toggleAnnotations" mnemonicParsing="false">
+                                    <tooltip>
+                                        <Tooltip text="%ui.processing.bandvistooltip"/>
+                                    </tooltip>
+                                </ToggleButton>
+                                <ToggleButton fx:id="toggleBandNames" mnemonicParsing="false">
+                                    <tooltip>
+                                        <Tooltip text="%ui.processing.bandnametooltip"/>
+                                    </tooltip>
+                                </ToggleButton>
+                            </children>
+                        </HBox>
+
+                        <Separator prefWidth="200.0"/>
+                        <Label styleClass="regular" text="%ui.processing.globalbackground">
+                            <font>
+                                <Font name="System Bold" size="13.0"/>
+                            </font>
+                        </Label>
+                        <HBox alignment="CENTER_RIGHT" styleClass="standard-spacing">
+                            <children>
+                                <Button fx:id="globalBackgroundSelector" disable="true" prefHeight="31.0"
+                                        prefWidth="170.0" text="%ui.processing.globalselect">
+                                    <tooltip>
+                                        <Tooltip text="%ui.processing.globalselecttooltip"/>
+                                    </tooltip>
+                                </Button>
+                                <CheckBox fx:id="enableGlobalBlackground" mnemonicParsing="false"
+                                          nodeOrientation="RIGHT_TO_LEFT" text="%ui.processing.enableglobal"/>
+                            </children>
+                            <padding>
+                                <Insets right="40.0"/>
+                            </padding>
+                        </HBox>
+
+                        <Separator prefWidth="200.0"/>
+                        <Label text="%ui.processing.localbackground">
+                            <font>
+                                <Font name="System Bold" size="13.0"/>
+                            </font>
+                        </Label>
+                        <HBox alignment="CENTER_RIGHT" styleClass="standard-spacing">
+                            <children>
+                                <Label styleClass="regular" text="%ui.processing.localsensitivity"/>
+                                <Spinner prefWidth="70.0">
+                                    <tooltip>
+                                        <Tooltip text="%ui.processing.localsensitivitytooltip"/>
+                                    </tooltip>
+                                    <valueFactory>
+                                        <SpinnerValueFactory.IntegerSpinnerValueFactory initialValue="5" max="100"
+                                                                                        min="1"/>
+                                    </valueFactory>
+                                </Spinner>
+                                <CheckBox fx:id="enableLocalBlackground" mnemonicParsing="false"
+                                          nodeOrientation="RIGHT_TO_LEFT" text="%ui.processing.enablelocal"/>
+                            </children>
+                            <padding>
+                                <Insets right="40.0"/>
+                            </padding>
+                            <VBox.margin>
+                                <Insets/>
+                            </VBox.margin>
+                        </HBox>
+                        <Separator prefWidth="200.0"/>
+                        <Button fx:id="TEMP" disable="true" prefHeight="31.0" prefWidth="252.0"
+                                text="%ui.processing.viewdata">
+                            <tooltip>
+                                <Tooltip text="%ui.model.download.tooltip"/>
+                            </tooltip>
+                        </Button>
+
+                    </children>
+                </VBox>
+            </children>
+        </VBox>
+    </TitledPane>
+
+    <!--    Export Pane************************************************************-->
+    <TitledPane animated="false" text="%ui.export.pane">
         <VBox alignment="CENTER">
             <children>
-                <Button fx:id="tableButton" disable="true" onAction="#populateTable" prefHeight="31.0" prefWidth="252.0" text="View Data Table">
-                    <tooltip><Tooltip text="%ui.model.download.tooltip" /></tooltip>
+                <Button fx:id="tableButton" disable="true" onAction="#populateTable" prefHeight="31.0" prefWidth="252.0"
+                        text="View Data Table">
+                    <tooltip>
+                        <Tooltip text="%ui.model.download.tooltip"/>
+                    </tooltip>
                 </Button>
             </children>
         </VBox>
     </TitledPane>
 
-    </VBox>
+    <!--    Histogram Pane************************************************************-->
+    <TitledPane animated="false" text="%ui.histoview.pane">
+        <BarChart fx:id="bandChart">
+            <xAxis>
+                <CategoryAxis side="BOTTOM"/>
+            </xAxis>
+            <yAxis>
+                <NumberAxis side="LEFT"/>
+            </yAxis>
+        </BarChart>
+    </TitledPane>
+
+
+</VBox>

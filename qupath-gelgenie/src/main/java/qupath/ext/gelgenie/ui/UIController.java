@@ -1,85 +1,33 @@
 package qupath.ext.gelgenie.ui;
 
-import ij.ImagePlus;
-import ij.gui.Roi;
-import ij.plugin.filter.MaximumFinder;
-import ij.process.ByteProcessor;
-import ij.process.ImageProcessor;
-import javafx.application.Platform;
-import javafx.beans.binding.Bindings;
-import javafx.beans.binding.BooleanBinding;
-import javafx.beans.binding.ObjectBinding;
-import javafx.beans.binding.StringBinding;
-import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.beans.value.ObservableBooleanValue;
-import javafx.beans.value.ObservableValue;
-import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
-import javafx.concurrent.Worker;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.chart.BarChart;
-import javafx.scene.chart.XYChart;
-import javafx.scene.control.Button;
-import javafx.scene.control.ChoiceBox;
-import javafx.scene.control.ContentDisplay;
-import javafx.scene.control.Label;
-import javafx.scene.control.Slider;
-import javafx.scene.control.Spinner;
-import javafx.scene.control.TextField;
-import javafx.scene.control.ToggleButton;
+import javafx.scene.control.*;
 import javafx.stage.Stage;
-import javafx.util.StringConverter;
-import org.bytedeco.opencv.opencv_core.Mat;
 import org.controlsfx.control.action.Action;
 import org.controlsfx.control.action.ActionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-//import qupath.ext.wsinfer.ProgressListener;
-//import qupath.ext.wsinfer.WSInfer;
-//import qupath.ext.wsinfer.models.WSInferModel;
-//import qupath.ext.wsinfer.models.WSInferModelCollection;
-//import qupath.ext.wsinfer.models.WSInferUtils;
 import qupath.ext.gelgenie.graphics.EmbeddedBarChart;
-import qupath.ext.gelgenie.graphics.GelGenieBarChart;
 import qupath.ext.gelgenie.tools.ImageTools;
 import qupath.ext.gelgenie.tools.openCVModelRunner;
-import qupath.imagej.processing.RoiLabeling;
-import qupath.imagej.tools.IJTools;
 import qupath.lib.common.ThreadTools;
 import qupath.lib.gui.QuPathGUI;
 import qupath.lib.gui.commands.Commands;
-//import qupath.lib.gui.dialogs.Dialogs;
 import qupath.lib.images.ImageData;
 import qupath.lib.images.servers.ImageServer;
-import qupath.lib.objects.PathAnnotationObject;
 import qupath.lib.objects.PathObject;
-import qupath.lib.objects.PathObjects;
-import qupath.lib.objects.PathTileObject;
-import qupath.lib.objects.hierarchy.PathObjectHierarchy;
-import qupath.lib.objects.hierarchy.events.PathObjectSelectionListener;
-import qupath.lib.plugins.workflow.DefaultScriptableWorkflowStep;
-import qupath.lib.regions.Padding;
-import qupath.lib.regions.RegionRequest;
-import qupath.lib.roi.interfaces.ROI;
-import qupath.opencv.dnn.DnnTools;
-import qupath.opencv.dnn.OpenCVDnn;
-import qupath.opencv.ops.ImageDataOp;
-import qupath.opencv.ops.ImageOps;
-import qupath.opencv.tools.OpenCVTools;
 
-import javax.swing.plaf.synth.Region;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.ResourceBundle;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ForkJoinPool;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static qupath.lib.scripting.QP.*;
 
@@ -93,12 +41,8 @@ public class UIController {
 
     public QuPathGUI qupath;
     private ObjectProperty<ImageData<BufferedImage>> imageDataProperty = new SimpleObjectProperty<>();
-//    private MessageTextHelper messageTextHelper;
-
     @FXML
     private Label labelMessage;
-    //    @FXML
-//    private ChoiceBox<WSInferModel> modelChoiceBox;
     @FXML
     private Button runButton;
 
@@ -117,17 +61,18 @@ public class UIController {
     @FXML
     private ToggleButton toggleSelectAllDetections;
     @FXML
-    private ToggleButton toggleDetectionFill;
-    @FXML
-    private ToggleButton toggleDetections;
+    private ToggleButton toggleBandNames;
     @FXML
     private ToggleButton toggleAnnotations;
-    @FXML
-    private Slider sliderOpacity;
-    @FXML
-    private Spinner<Integer> spinnerNumWorkers;
+
     @FXML
     private TextField tfModelDirectory;
+    @FXML
+    private CheckBox runFullImage;
+    @FXML
+    private CheckBox runSelected;
+    @FXML
+    private CheckBox deletePreviousBands;
 
     @FXML
     private BarChart<String, Number> bandChart;
@@ -162,8 +107,9 @@ public class UIController {
 
     private void configureDisplayToggleButtons() {
         var actions = qupath.getOverlayActions();
-        configureActionToggleButton(actions.FILL_DETECTIONS, toggleDetectionFill);
-        configureActionToggleButton(actions.SHOW_DETECTIONS, toggleDetections);
+//        configureActionToggleButton(actions.FILL_DETECTIONS, toggleDetectionFill);
+//        configureActionToggleButton(actions.SHOW_DETECTIONS, toggleDetections);
+        configureActionToggleButton(actions.SHOW_NAMES, toggleBandNames);
         configureActionToggleButton(actions.SHOW_ANNOTATIONS, toggleAnnotations);
     }
 
@@ -171,7 +117,7 @@ public class UIController {
         // Disable the run button while a task is pending, or we have no model selected, or download is required
         runButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
         tableButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
-        bandButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
+//        bandButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
 
     }
 
