@@ -1,9 +1,16 @@
 package qupath.ext.gelgenie.ui;
 
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.binding.Bindings;
+import javafx.beans.binding.BooleanBinding;
+import javafx.beans.property.*;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.beans.binding.Bindings;
+import javafx.beans.binding.BooleanBinding;
+import javafx.beans.binding.ObjectBinding;
+import javafx.beans.binding.StringBinding;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -23,7 +30,9 @@ import qupath.lib.gui.commands.Commands;
 import qupath.lib.images.ImageData;
 import qupath.lib.images.servers.ImageServer;
 import qupath.lib.objects.PathObject;
+import qupath.lib.objects.hierarchy.events.PathObjectSelectionListener;
 import qupath.lib.regions.RegionRequest;
+import qupath.lib.objects.hierarchy.PathObjectHierarchy;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -44,6 +53,7 @@ public class UIController {
 
     public QuPathGUI qupath;
     private ObjectProperty<ImageData<BufferedImage>> imageDataProperty = new SimpleObjectProperty<>();
+//    private ObjectProperty<PathObject> selObjectProperty = new SimpleObjectProperty<>();
     @FXML
     private Label labelMessage;
     @FXML
@@ -54,12 +64,6 @@ public class UIController {
     private Button bandButton;
     @FXML
     private Button downloadButton;
-    @FXML
-    private ChoiceBox<String> deviceChoices;
-    @FXML
-    private ToggleButton toggleSelectAllAnnotations;
-    @FXML
-    private ToggleButton toggleSelectAllDetections;
     @FXML
     private ToggleButton toggleBandNames;
     @FXML
@@ -73,6 +77,9 @@ public class UIController {
     private CheckBox deletePreviousBands;
 
     @FXML
+    private Button globalBackgroundSelector;
+
+    @FXML
     private BarChart<String, Number> bandChart;
 
     private final static ResourceBundle resources = ResourceBundle.getBundle("qupath.ext.gelgenie.ui.strings");
@@ -83,12 +90,25 @@ public class UIController {
 
     private final ObjectProperty<Task<?>> pendingTask = new SimpleObjectProperty<>();
 
+    private SelectedObjectCounter selectedObjectCounter;
+
     @FXML
     private void initialize() {
         logger.info("Initializing GelGenie GUI");
 
         this.qupath = QuPathGUI.getInstance(); // linking to QuPath Instance
         this.imageDataProperty.bind(qupath.imageDataProperty());
+        this.selectedObjectCounter = new SelectedObjectCounter(this.imageDataProperty);  // main listener that tracks selected annotations and changes in selection
+
+        ChangeListener<Boolean> changeListener = (observable, oldValue, newValue) -> {
+            if (selectedObjectCounter.numSelectedAnnotations.get() != 0){ // triggers an update of the histogram display whenever a different band is selected
+                BandHistoDisplay();
+            }
+            else{
+                bandChart.getData().clear();
+            }
+        };
+        selectedObjectCounter.annotationSelected.addListener(changeListener);
 
         configureDisplayToggleButtons(); // styles QuPath linked buttons
         configureButtonInteractivity(); // sets rules for visibility of certain buttons
@@ -144,8 +164,7 @@ public class UIController {
         // Disables the run button while a task is pending, or we have no model selected, or download is required
         runButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
         tableButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
-//        bandButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
-
+        globalBackgroundSelector.disableProperty().bind(this.selectedObjectCounter.numSelectedAnnotations.isEqualTo(0));
     }
 
     public void BandHistoDisplay() {
@@ -213,4 +232,66 @@ public class UIController {
     }
 
 
+    /**
+     * Helper class for maintaining a count of selected annotations and detections,
+     * determined from an ImageData property (whose value may change).
+     * This addresses the awkwardness of attaching/detaching listeners.
+     */
+    private static class SelectedObjectCounter {
+
+        private ObjectProperty<ImageData<?>> imageDataProperty = new SimpleObjectProperty<>();
+
+        private PathObjectSelectionListener selectionListener = this::selectedPathObjectChanged;
+
+        private ObservableValue<PathObjectHierarchy> hierarchyProperty;
+
+        private IntegerProperty numSelectedAnnotations = new SimpleIntegerProperty();
+        private IntegerProperty numSelectedDetections = new SimpleIntegerProperty();
+
+        private BooleanProperty annotationSelected = new SimpleBooleanProperty();
+
+        SelectedObjectCounter(ObservableValue<ImageData<BufferedImage>> imageDataProperty) {
+            this.imageDataProperty.bind(imageDataProperty);
+            this.hierarchyProperty = createHierarchyBinding();
+            hierarchyProperty.addListener((observable, oldValue, newValue) -> updateHierarchy(oldValue, newValue));
+            updateHierarchy(null, hierarchyProperty.getValue());
+        }
+
+        private ObjectBinding<PathObjectHierarchy> createHierarchyBinding() {
+            return Bindings.createObjectBinding(() -> {
+                        var imageData = imageDataProperty.get();
+                        return imageData == null ? null : imageData.getHierarchy();
+                    },
+                    imageDataProperty);
+        }
+
+        private void updateHierarchy(PathObjectHierarchy oldValue, PathObjectHierarchy newValue) {
+            if (oldValue == newValue)
+                return;
+            if (oldValue != null)
+                oldValue.getSelectionModel().removePathObjectSelectionListener(selectionListener);
+            if (newValue != null)
+                newValue.getSelectionModel().addPathObjectSelectionListener(selectionListener);
+            updateSelectedObjectCounts();
+        }
+
+        private void selectedPathObjectChanged(PathObject pathObjectSelected, PathObject previousObject, Collection<PathObject> allSelected) {
+            updateSelectedObjectCounts();
+            annotationSelected.set(!annotationSelected.get()); // quick boolean trigger I can listen for to update bar graph
+        }
+
+        private void updateSelectedObjectCounts() {
+            var hierarchy = hierarchyProperty.getValue();
+            if (hierarchy == null) {
+                numSelectedAnnotations.set(0);
+                numSelectedDetections.set(0);
+            } else {
+                var selected = hierarchy.getSelectionModel().getSelectedObjects();
+                numSelectedAnnotations.set((int)selected.stream().filter(p -> p.isAnnotation()).count());
+                numSelectedDetections.set((int)selected.stream().filter(p -> p.isDetection()).count());
+            }
+        }
+
+    }
 }
+
