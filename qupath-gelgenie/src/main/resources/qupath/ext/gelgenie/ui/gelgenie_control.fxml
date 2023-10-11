@@ -25,7 +25,7 @@
       AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" xmlns="http://javafx.com/javafx/20.0.1"
       xmlns:fx="http://javafx.com/fxml/1" fx:controller="qupath.ext.gelgenie.ui.UIController">
     <!--    Processing Pane************************************************************-->
-    <TitledPane fx:id="pane1" animated="false" collapsible="false" text="%ui.processing.pane" VBox.vgrow="NEVER">
+    <TitledPane fx:id="pane1" animated="false" text="%ui.processing.pane" VBox.vgrow="NEVER">
         <VBox alignment="TOP_CENTER" styleClass="standard-spacing ">
             <children>
                 <!-- **********************Models**********************-->
@@ -58,7 +58,7 @@
                     <HBox alignment="BASELINE_RIGHT" styleClass="standard-spacing">
                         <children>
                             <CheckBox fx:id="runFullImage" mnemonicParsing="false" nodeOrientation="RIGHT_TO_LEFT"
-                                      text="%ui.model.runall"/>
+                                      text="%ui.model.runall" selected="true"/>
                         </children>
                         <padding>
                             <Insets right="80.0"/>
@@ -91,7 +91,7 @@
                 <VBox alignment="CENTER" styleClass="standard-spacing standard-padding">
                     <HBox alignment="CENTER" styleClass="standard-spacing">
                         <children>
-                            <Button fx:id="runButton" disable="true" onAction="#runInference" prefHeight="31.0"
+                            <Button fx:id="runButton" disable="true" onAction="#runBandInference" prefHeight="31.0"
                                     prefWidth="252.0" text="%ui.run">
                                 <tooltip>
                                     <Tooltip text="%ui.run.tooltip"/>
@@ -106,7 +106,7 @@
     </TitledPane>
 
     <!--    Processing Pane************************************************************-->
-    <TitledPane fx:id="pane2" animated="false" collapsible="false" text="%ui.quantitate.pane" VBox.vgrow="NEVER">
+    <TitledPane fx:id="pane2" animated="false" text="%ui.quantitate.pane" VBox.vgrow="NEVER">
         <VBox alignment="TOP_CENTER" styleClass="standard-spacing standard-padding">
             <children>
                 <VBox alignment="CENTER" styleClass="standard-spacing">

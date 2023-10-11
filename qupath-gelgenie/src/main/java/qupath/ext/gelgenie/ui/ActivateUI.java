@@ -62,7 +62,12 @@ public class ActivateUI implements Runnable{
     }
     private Stage createStage() throws IOException {
 
-        URL url = getClass().getResource("/qupath/ext/gelgenie/ui/" + ui_name + ".fxml");
+//        URL url = getClass().getResource("/qupath/ext/gelgenie/ui/" + ui_name + ".fxml");  - this used to be
+
+        // It used to be necessary to fill in a full path to the FXML file, but now it seems to work with just the name.
+        // Will remove if this continues to be stable.
+        URL url = getClass().getResource(ui_name + ".fxml");
+
         if (url == null) { // this should never happen...
             throw new IOException("Cannot find URL for GelGenie FXML");
         }

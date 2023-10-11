@@ -2,6 +2,8 @@ package qupath.ext.gelgenie.ui;
 
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -21,10 +23,12 @@ import qupath.lib.gui.commands.Commands;
 import qupath.lib.images.ImageData;
 import qupath.lib.images.servers.ImageServer;
 import qupath.lib.objects.PathObject;
+import qupath.lib.regions.RegionRequest;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.ResourceBundle;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -36,7 +40,6 @@ This is the main class that controls things happening in the UI window.  Most fu
  A few functions were cannibalised from the wsinfer extension.  TODO: These need to be removed/adapted before final release.
  */
 public class UIController {
-
     private static final Logger logger = LoggerFactory.getLogger(UIController.class);
 
     public QuPathGUI qupath;
@@ -45,13 +48,10 @@ public class UIController {
     private Label labelMessage;
     @FXML
     private Button runButton;
-
     @FXML
     private Button tableButton;
-
     @FXML
     private Button bandButton;
-
     @FXML
     private Button downloadButton;
     @FXML
@@ -65,8 +65,6 @@ public class UIController {
     @FXML
     private ToggleButton toggleAnnotations;
 
-    @FXML
-    private TextField tfModelDirectory;
     @FXML
     private CheckBox runFullImage;
     @FXML
@@ -87,62 +85,103 @@ public class UIController {
 
     @FXML
     private void initialize() {
-        logger.info("Initializing...");
+        logger.info("Initializing GelGenie GUI");
 
-        this.qupath = QuPathGUI.getInstance();
+        this.qupath = QuPathGUI.getInstance(); // linking to QuPath Instance
         this.imageDataProperty.bind(qupath.imageDataProperty());
-        configureDisplayToggleButtons();
-        configureRunInferenceButton();
+
+        configureDisplayToggleButtons(); // styles QuPath linked buttons
+        configureButtonInteractivity(); // sets rules for visibility of certain buttons
+        configureCheckBoxes(); // sets rules for checkboxes
+
+        // setting properties for single band update chart
         bandChart.setBarGap(0);
         bandChart.setCategoryGap(0);
         bandChart.setLegendVisible(false);
         bandChart.getXAxis().setLabel("Pixel Intensity");
         bandChart.getYAxis().setLabel("Frequency");
+
+        logger.info("GelGenie GUI loaded without errors");
     }
 
+    /**
+     Links the model checkboxes together so that when one is selected, the other must be off
+     */
+    private void configureCheckBoxes() {
+        runFullImage.selectedProperty().addListener(new ChangeListener<Boolean>() {
+            @Override
+            public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
+                runSelected.setSelected(!newValue);
+            }
+        });
+
+        runSelected.selectedProperty().addListener(new ChangeListener<Boolean>() {
+            @Override
+            public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
+                runFullImage.setSelected(!newValue);
+            }
+        });
+    }
+
+    /**
+    Links buttons with their respective graphics from the general QuPath interface.
+     */
     private void configureActionToggleButton(Action action, ToggleButton button) {
         ActionUtils.configureButton(action, button);
         button.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
     }
 
+    /**
+    Links buttons with their respective graphics from the general QuPath interface.  There are only 2 for GelGenie.
+     */
     private void configureDisplayToggleButtons() {
         var actions = qupath.getOverlayActions();
-//        configureActionToggleButton(actions.FILL_DETECTIONS, toggleDetectionFill);
-//        configureActionToggleButton(actions.SHOW_DETECTIONS, toggleDetections);
         configureActionToggleButton(actions.SHOW_NAMES, toggleBandNames);
         configureActionToggleButton(actions.SHOW_ANNOTATIONS, toggleAnnotations);
     }
 
-    private void configureRunInferenceButton() {
-        // Disable the run button while a task is pending, or we have no model selected, or download is required
+    private void configureButtonInteractivity() {
+        // Disables the run button while a task is pending, or we have no model selected, or download is required
         runButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
         tableButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
 //        bandButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
 
     }
 
-    public void runBandAnalysis() {
+    public void BandHistoDisplay() {
         ImageData<BufferedImage> imageData = getCurrentImageData();
         PathObject annot = getSelectedObject();
         ImageServer<BufferedImage> server = imageData.getServer();
         double[] all_pixels = ImageTools.extractAnnotationPixels(annot, server); // extracts a list of pixels matching the specific selected annotation
-//        GelGenieBarChart chart_var = new GelGenieBarChart(); - this is an explicit barchart (not needed)
-//        chart_var.plot(all_pixels, 40);
 
         annot.getMeasurementList().put("IntensitySum", Arrays.stream(all_pixels).sum());
 
         EmbeddedBarChart outbar = new EmbeddedBarChart();
         bandChart.getData().clear(); // removes previous data
         bandChart.getData().addAll(outbar.plot(all_pixels, 40)); // adds new data TODO: x-axis ticks are broken on first run - how to fix?
-        Commands.showAnnotationMeasurementTable(qupath, imageData);
+//        Commands.showAnnotationMeasurementTable(qupath, imageData);
         // TODO: change functionality to happen on selection of a new band.  What happens if multiple bands selected?  Should average them all and show an indicator of how many bands are averaged....
     }
 
-    public void runInference() throws IOException {
-        ImageData<BufferedImage> imageData = getCurrentImageData();
+    /**
+     * Runs the segmentation model on the provided image or selected annotation, generating annotations for each located band.
+     * @throws IOException
+     */
+    public void runBandInference() throws IOException {
+        ImageData<BufferedImage> imageData = getCurrentImageData();// todo: need to handle situation where no image available and prompt user?
         openCVModelRunner modelRunner = new openCVModelRunner("u++_306_full-sim.onnx");
-        clearAllObjects();
-        addObjects(modelRunner.runInference(imageData));
+        
+        Collection<PathObject> newBands = null;
+        if(runFullImage.isSelected()) { // runs model on entire image
+            newBands = modelRunner.runFullImageInference(imageData);
+        } else if (runSelected.isSelected()) { // runs model on data within selected annotation only
+            newBands = modelRunner.runAnnotationInference(imageData, getSelectedObject());
+        }
+        
+        if(deletePreviousBands.isSelected()) { //removes all annotations before adding new ones
+            clearAllObjects();
+        }
+        addObjects(newBands);
     }
 
     public void populateTable() {
