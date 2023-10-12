@@ -138,12 +138,12 @@
                         <HBox alignment="CENTER_RIGHT" styleClass="standard-spacing">
                             <children>
                                 <Button fx:id="globalBackgroundSelector" disable="true" prefHeight="31.0"
-                                        prefWidth="170.0" text="%ui.processing.globalselect">
+                                        prefWidth="170.0" text="%ui.processing.globalselect" onAction="#setGlobalBackgroundPatch">
                                     <tooltip>
                                         <Tooltip text="%ui.processing.globalselecttooltip"/>
                                     </tooltip>
                                 </Button>
-                                <CheckBox fx:id="enableGlobalBlackground" mnemonicParsing="false"
+                                <CheckBox fx:id="enableGlobalBackground" mnemonicParsing="false"
                                           nodeOrientation="RIGHT_TO_LEFT" text="%ui.processing.enableglobal"/>
                             </children>
                             <padding>
@@ -160,7 +160,7 @@
                         <HBox alignment="CENTER_RIGHT" styleClass="standard-spacing">
                             <children>
                                 <Label styleClass="regular" text="%ui.processing.localsensitivity"/>
-                                <Spinner prefWidth="70.0">
+                                <Spinner prefWidth="70.0" fx:id="localSensitivity">
                                     <tooltip>
                                         <Tooltip text="%ui.processing.localsensitivitytooltip"/>
                                     </tooltip>
@@ -169,7 +169,7 @@
                                                                                         min="1"/>
                                     </valueFactory>
                                 </Spinner>
-                                <CheckBox fx:id="enableLocalBlackground" mnemonicParsing="false"
+                                <CheckBox fx:id="enableLocalBackground" mnemonicParsing="false"
                                           nodeOrientation="RIGHT_TO_LEFT" text="%ui.processing.enablelocal"/>
                             </children>
                             <padding>

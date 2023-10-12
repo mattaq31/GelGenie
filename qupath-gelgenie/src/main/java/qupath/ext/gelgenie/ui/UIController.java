@@ -1,14 +1,10 @@
 package qupath.ext.gelgenie.ui;
 
 import javafx.beans.binding.Bindings;
-import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.*;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
-import javafx.beans.binding.Bindings;
-import javafx.beans.binding.BooleanBinding;
 import javafx.beans.binding.ObjectBinding;
-import javafx.beans.binding.StringBinding;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.concurrent.Task;
@@ -30,14 +26,15 @@ import qupath.lib.gui.commands.Commands;
 import qupath.lib.images.ImageData;
 import qupath.lib.images.servers.ImageServer;
 import qupath.lib.objects.PathObject;
+import qupath.lib.objects.classes.PathClass;
 import qupath.lib.objects.hierarchy.events.PathObjectSelectionListener;
-import qupath.lib.regions.RegionRequest;
 import qupath.lib.objects.hierarchy.PathObjectHierarchy;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -45,15 +42,15 @@ import java.util.concurrent.Executors;
 import static qupath.lib.scripting.QP.*;
 
 /**
-This is the main class that controls things happening in the UI window.  Most functionality starts from a function here.
- A few functions were cannibalised from the wsinfer extension.  TODO: These need to be removed/adapted before final release.
+ * This is the main class that controls things happening in the UI window.  Most functionality starts from a function here.
+ * A few functions were cannibalised from the wsinfer extension.  TODO: These need to be removed/adapted before final release.
  */
 public class UIController {
     private static final Logger logger = LoggerFactory.getLogger(UIController.class);
 
     public QuPathGUI qupath;
     private ObjectProperty<ImageData<BufferedImage>> imageDataProperty = new SimpleObjectProperty<>();
-//    private ObjectProperty<PathObject> selObjectProperty = new SimpleObjectProperty<>();
+    //    private ObjectProperty<PathObject> selObjectProperty = new SimpleObjectProperty<>();
     @FXML
     private Label labelMessage;
     @FXML
@@ -75,6 +72,13 @@ public class UIController {
     private CheckBox runSelected;
     @FXML
     private CheckBox deletePreviousBands;
+
+    @FXML
+    private CheckBox enableGlobalBackground;
+    @FXML
+    private CheckBox enableLocalBackground;
+    @FXML
+    private Spinner<Integer> localSensitivity;
 
     @FXML
     private Button globalBackgroundSelector;
@@ -101,10 +105,15 @@ public class UIController {
         this.selectedObjectCounter = new SelectedObjectCounter(this.imageDataProperty);  // main listener that tracks selected annotations and changes in selection
 
         ChangeListener<Boolean> changeListener = (observable, oldValue, newValue) -> {
-            if (selectedObjectCounter.numSelectedAnnotations.get() != 0){ // triggers an update of the histogram display whenever a different band is selected
-                BandHistoDisplay();
-            }
-            else{
+
+            if (selectedObjectCounter.numSelectedAnnotations.get() != 0) { // triggers an update of the histogram display whenever a different band is selected
+                // this internal testing condition is crucial to prevent crashing when creating new annotations
+                if (getSelectedObject().getPathClass() != null && Objects.equals(getSelectedObject().getPathClass().getName(), "Gel Band")) {
+                    BandHistoDisplay();
+                } else {
+                    bandChart.getData().clear();
+                }
+            } else {
                 bandChart.getData().clear();
             }
         };
@@ -125,7 +134,7 @@ public class UIController {
     }
 
     /**
-     Links the model checkboxes together so that when one is selected, the other must be off
+     * Links the model checkboxes together so that when one is selected, the other must be off
      */
     private void configureCheckBoxes() {
         runFullImage.selectedProperty().addListener(new ChangeListener<Boolean>() {
@@ -144,7 +153,7 @@ public class UIController {
     }
 
     /**
-    Links buttons with their respective graphics from the general QuPath interface.
+     * Links buttons with their respective graphics from the general QuPath interface.
      */
     private void configureActionToggleButton(Action action, ToggleButton button) {
         ActionUtils.configureButton(action, button);
@@ -152,7 +161,7 @@ public class UIController {
     }
 
     /**
-    Links buttons with their respective graphics from the general QuPath interface.  There are only 2 for GelGenie.
+     * Links buttons with their respective graphics from the general QuPath interface.  There are only 2 for GelGenie.
      */
     private void configureDisplayToggleButtons() {
         var actions = qupath.getOverlayActions();
@@ -184,58 +193,55 @@ public class UIController {
 
     /**
      * Runs the segmentation model on the provided image or selected annotation, generating annotations for each located band.
+     *
      * @throws IOException
      */
     public void runBandInference() throws IOException {
         ImageData<BufferedImage> imageData = getCurrentImageData();// todo: need to handle situation where no image available and prompt user?
         openCVModelRunner modelRunner = new openCVModelRunner("u++_306_full-sim.onnx");
-        
+
         Collection<PathObject> newBands = null;
-        if(runFullImage.isSelected()) { // runs model on entire image
+        if (runFullImage.isSelected()) { // runs model on entire image
             newBands = modelRunner.runFullImageInference(imageData);
         } else if (runSelected.isSelected()) { // runs model on data within selected annotation only
             newBands = modelRunner.runAnnotationInference(imageData, getSelectedObject());
         }
-        
-        if(deletePreviousBands.isSelected()) { //removes all annotations before adding new ones
-            clearAllObjects();
+
+        if (deletePreviousBands.isSelected()) { //removes all annotations before adding new ones
+            for (PathObject annot : getAnnotationObjects()){
+                if (annot.getPathClass() != null && Objects.equals(annot.getPathClass().getName(), "Gel Band")){
+                    removeObject(annot, false);
+                }
+            }
         }
+
+        assert newBands != null; // todo: is this enough?
+        for (PathObject annot : newBands){
+            annot.setPathClass(PathClass.fromString("Gel Band", 8000));
+        }
+
         addObjects(newBands);
     }
 
     public void populateTable() {
-        ActivateUI tableCommand = new ActivateUI(qupath, "gelgenie_table", "Data Table", true); // activation class from ui folder
+        TableRootCommand tableCommand = new TableRootCommand(qupath, "gelgenie_table",
+                "Data Table", true, enableGlobalBackground.isSelected(),
+                enableLocalBackground.isSelected(), localSensitivity.getValue()); // activation class from ui folder
         tableCommand.run();
     }
 
     @FXML
-    private void openMeasurementMaps(ActionEvent event) {
-        // Try to use existing action, to avoid creating a new stage
-        // TODO: Replace this if QuPath v0.5.0 provides direct access to the action
-        //       since that should be more robust (and also cope with language changes)
-        var action = qupath.lookupActionByText("Show measurement maps");
-        if (action != null) {
-            action.handle(event);
-            return;
-        }
-        // Fallback in case we couldn't get the action
-        if (measurementMapsStage == null) {
-            logger.warn("Creating a new measurement map stage");
-            measurementMapsStage = Commands.createMeasurementMapDialog(QuPathGUI.getInstance());
-        }
-        measurementMapsStage.show();
-    }
-
-    @FXML
-    private void openDetectionTable() {
-        Commands.showAnnotationMeasurementTable(qupath, imageDataProperty.get());
+    private void setGlobalBackgroundPatch() {
+        PathObject annot = getSelectedObject();
+        PathClass gbClass = PathClass.fromString("Global Background", 80);
+        annot.setPathClass(gbClass);
     }
 
 
     /**
      * Helper class for maintaining a count of selected annotations and detections,
      * determined from an ImageData property (whose value may change).
-     * This addresses the awkwardness of attaching/detaching listeners.
+     * This addresses the awkwardness of attaching/detaching listeners.  Adjusted from the WsInfer QuPath extension.
      */
     private static class SelectedObjectCounter {
 
@@ -287,8 +293,8 @@ public class UIController {
                 numSelectedDetections.set(0);
             } else {
                 var selected = hierarchy.getSelectionModel().getSelectedObjects();
-                numSelectedAnnotations.set((int)selected.stream().filter(p -> p.isAnnotation()).count());
-                numSelectedDetections.set((int)selected.stream().filter(p -> p.isDetection()).count());
+                numSelectedAnnotations.set((int) selected.stream().filter(p -> p.isAnnotation()).count());
+                numSelectedDetections.set((int) selected.stream().filter(p -> p.isDetection()).count());
             }
         }
 

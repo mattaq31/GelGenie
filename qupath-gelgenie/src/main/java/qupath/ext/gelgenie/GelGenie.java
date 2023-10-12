@@ -13,7 +13,7 @@ import qupath.ext.gelgenie.prototyping.Prototyping;
 
 import java.util.*;
 
-import qupath.ext.gelgenie.ui.ActivateUI;
+import qupath.ext.gelgenie.ui.GUIRootCommand;
 
 /**
  This is the main class containing the logic for the GelGenie QuPath extension.
@@ -69,11 +69,9 @@ public class GelGenie implements QuPathExtension {
      */
     private void addMenuItems(QuPathGUI qupath) {
         var menu = qupath.getMenu("Extensions>" + EXTENSION_NAME, true);
-        MenuItem menuItem = new MenuItem("Show GUI");
+        MenuItem menuItem = new MenuItem("Activate GelGenie");
 
-        ActivateUI command = new ActivateUI(qupath, "gelgenie_control"); // activation class from ui folder
-
-        ActivateUI tableCommand = new ActivateUI(qupath, "gelgenie_table", "Data Table", true); // activation class from ui folder
+        GUIRootCommand command = new GUIRootCommand(qupath, "gelgenie_control", "None", false); // activation class from ui folder
 
         menuItem.setOnAction(e -> {
             command.run();
@@ -81,26 +79,6 @@ public class GelGenie implements QuPathExtension {
         menuItem.disableProperty().bind(enableExtensionProperty.not()); // TODO: could consider bunching these commands into a standard function
         menu.getItems().add(menuItem);
 
-        MenuItem menu2 = new MenuItem("Tester Button"); // no real functionality, just testing
-        menu2.setOnAction(e -> {
-            Prototyping.testingPixels();
-        });
-        menu2.disableProperty().bind(enableExtensionProperty.not());
-        menu.getItems().add(menu2);
-
-        MenuItem menuArea = new MenuItem("Plot Band Areas"); // testing producing histograms from pixel data (remove for final package)
-        menuArea.setOnAction(e -> {
-            Prototyping.testingGraph();
-        });
-        menuArea.disableProperty().bind(enableExtensionProperty.not());
-        menu.getItems().add(menuArea);
-
-        MenuItem menuTable = new MenuItem("Show Band Data"); // shows new table with all data from available bands
-        menuTable.setOnAction(e -> {
-            tableCommand.run();
-        });
-        menuTable.disableProperty().bind(enableExtensionProperty.not());
-        menu.getItems().add(menuTable);
     }
 
 
