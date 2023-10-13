@@ -7,10 +7,13 @@ import javafx.beans.value.ObservableValue;
 import javafx.beans.binding.ObjectBinding;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.chart.BarChart;
+import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
 import javafx.stage.Stage;
 import org.controlsfx.control.action.Action;
@@ -32,10 +35,8 @@ import qupath.lib.objects.hierarchy.PathObjectHierarchy;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Objects;
-import java.util.ResourceBundle;
+import java.nio.file.Path;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -111,11 +112,19 @@ public class UIController {
 
             if (selectedObjectCounter.numSelectedAnnotations.get() != 0) { // triggers an update of the histogram display whenever a different band is selected
                 // this internal testing condition is crucial to prevent crashing when creating new annotations
-                if (getSelectedObject().getPathClass() != null && Objects.equals(getSelectedObject().getPathClass().getName(), "Gel Band")) {
-                    BandHistoDisplay();
+                Collection<PathObject> actionableAnnotations = new ArrayList<>();
+                for (PathObject annot : getSelectedObjects()) {
+                    if (annot.getPathClass() != null && Objects.equals(annot.getPathClass().getName(), "Gel Band")) {
+                        actionableAnnotations.add(annot);
+                    }
+                }
+
+                if (!actionableAnnotations.isEmpty()) {
+                    BandHistoDisplay(actionableAnnotations);
                 } else {
                     bandChart.getData().clear();
                 }
+
             } else {
                 bandChart.getData().clear();
             }
@@ -182,19 +191,23 @@ public class UIController {
         globalBackgroundSelector.disableProperty().bind(this.selectedObjectCounter.numSelectedAnnotations.isEqualTo(0));
     }
 
-    public void BandHistoDisplay() {
-        ImageData<BufferedImage> imageData = getCurrentImageData();
-        PathObject annot = getSelectedObject();
-        ImageServer<BufferedImage> server = imageData.getServer();
-        double[] all_pixels = ImageTools.extractAnnotationPixels(annot, server); // extracts a list of pixels matching the specific selected annotation
+    public void BandHistoDisplay(Collection<PathObject> annotations) {
 
-        annot.getMeasurementList().put("IntensitySum", Arrays.stream(all_pixels).sum());
+        ImageData<BufferedImage> imageData = getCurrentImageData();
+        bandChart.getData().clear(); // removes previous data
+
+        Collection<double[]> dataList = new ArrayList<>();
+
+        for (PathObject annot : annotations) {
+            ImageServer<BufferedImage> server = imageData.getServer();
+            double[] all_pixels = ImageTools.extractAnnotationPixels(annot, server); // extracts a list of pixels matching the specific selected annotation
+            dataList.add(all_pixels);
+        }
 
         EmbeddedBarChart outbar = new EmbeddedBarChart();
-        bandChart.getData().clear(); // removes previous data
-        bandChart.getData().addAll(outbar.plot(all_pixels, 40)); // adds new data TODO: x-axis ticks are broken on first run - how to fix?
-//        Commands.showAnnotationMeasurementTable(qupath, imageData);
-        // TODO: change functionality to happen on selection of a new band.  What happens if multiple bands selected?  Should average them all and show an indicator of how many bands are averaged....
+        ObservableList<XYChart.Series<String, Number>> allPlots = outbar.plot(dataList, 40);
+        bandChart.getData().addAll(allPlots); // adds new data TODO: x-axis ticks are broken on first run - how to fix?
+
     }
 
     /**
@@ -214,15 +227,15 @@ public class UIController {
         }
 
         if (deletePreviousBands.isSelected()) { //removes all annotations before adding new ones
-            for (PathObject annot : getAnnotationObjects()){
-                if (annot.getPathClass() != null && Objects.equals(annot.getPathClass().getName(), "Gel Band")){
+            for (PathObject annot : getAnnotationObjects()) {
+                if (annot.getPathClass() != null && Objects.equals(annot.getPathClass().getName(), "Gel Band")) {
                     removeObject(annot, false);
                 }
             }
         }
 
         assert newBands != null; // todo: is this enough?
-        for (PathObject annot : newBands){
+        for (PathObject annot : newBands) {
             annot.setPathClass(PathClass.fromString("Gel Band", 8000));
         }
 
