@@ -27,6 +27,8 @@ import javafx.embed.swing.SwingFXUtils;
 import qupath.lib.regions.ImageRegion;
 import qupath.fx.dialogs.FileChoosers;
 
+import static qupath.ext.gelgenie.tools.ImageTools.createAnnotationImageFrame;
+import static qupath.ext.gelgenie.tools.ImageTools.extractLocalBackgroundPixels;
 import static qupath.lib.scripting.QP.*;
 
 public class TableController {
@@ -61,7 +63,7 @@ public class TableController {
     private boolean localCorrection = false;
     private int localSensitivity = 5;
 
-    double global_mean = 0.0;
+    double globalMean = 0.0;
 
     public TableController() {
         this.qupath = QuPathGUI.getInstance();
@@ -74,11 +76,35 @@ public class TableController {
         pixelCol.setCellValueFactory(new PropertyValueFactory<BandEntry, Double>("pixelCount"));
         meanCol.setCellValueFactory(new PropertyValueFactory<BandEntry, Double>("averageIntensity"));
         rawCol.setCellValueFactory(new PropertyValueFactory<BandEntry, Double>("rawVolume"));
-        localVolCol.setCellValueFactory(new PropertyValueFactory<BandEntry, Double>("globalVolume"));
-        globalVolCol.setCellValueFactory(new PropertyValueFactory<BandEntry, Double>("localVolume"));
+        localVolCol.setCellValueFactory(new PropertyValueFactory<BandEntry, Double>("localVolume"));
+        globalVolCol.setCellValueFactory(new PropertyValueFactory<BandEntry, Double>("globalVolume"));
         normVolCol.setCellValueFactory(new PropertyValueFactory<BandEntry, Double>("normVolume"));
         thumbnailCol.setCellValueFactory(new PropertyValueFactory<BandEntry, ImageView>("thumbnail"));
-        meanCol.setCellFactory(tc -> new TableCell<BandEntry, Double>() { //TODO: extend this to all other cells
+        meanCol.setCellFactory(tc -> new TableCell<BandEntry, Double>() { //TODO: how do I combine these into one function?
+            @Override
+            protected void updateItem(Double value, boolean empty) {
+                super.updateItem(value, empty);
+                if (empty) {
+                    setText(null);
+                } else {
+                    setText(String.format("%.2f", value.floatValue()));
+                }
+            }
+        });
+
+        localVolCol.setCellFactory(tc -> new TableCell<BandEntry, Double>() {
+            @Override
+            protected void updateItem(Double value, boolean empty) {
+                super.updateItem(value, empty);
+                if (empty) {
+                    setText(null);
+                } else {
+                    setText(String.format("%.2f", value.floatValue()));
+                }
+            }
+        });
+
+        globalVolCol.setCellFactory(tc -> new TableCell<BandEntry, Double>() {
             @Override
             protected void updateItem(Double value, boolean empty) {
                 super.updateItem(value, empty);
@@ -97,7 +123,7 @@ public class TableController {
         Platform.runLater(() -> {
             if (globalCorrection) {
                 try {
-                    global_mean = calculateGlobalBackgroundAverage(server);
+                    globalMean = calculateGlobalBackgroundAverage(server);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -108,14 +134,8 @@ public class TableController {
                     double[] all_pixels = ImageTools.extractAnnotationPixels(annot, server); // extracts a list of pixels matching the specific selected annotation
 
                     int padding = 10;  // TODO: make this user adjustable
-                    int x1 = (int) annot.getROI().getBoundsX() - padding;
-                    int y1 = (int) annot.getROI().getBoundsY() - padding;
-                    int x2 = (int) Math.ceil(annot.getROI().getBoundsX() + annot.getROI().getBoundsWidth()) + padding;
-                    int y2 = (int) Math.ceil(annot.getROI().getBoundsY() + annot.getROI().getBoundsHeight()) + padding;
 
-                    ImageRegion thumbnailRegion = ImageRegion.createInstance(x1, y1,
-                            x2 - x1, y2 - y1, annot.getROI().getZ(), annot.getROI().getT());
-
+                    ImageRegion thumbnailRegion = createAnnotationImageFrame(annot, padding);
                     RegionRequest request = RegionRequest.createInstance(server.getPath(), 1.0, thumbnailRegion);
                     BufferedImage img;
                     try {
@@ -123,22 +143,41 @@ public class TableController {
                     } catch (IOException ex) {
                         throw new RuntimeException(ex);
                     }
+
                     ImageView imviewer = new ImageView();
                     imviewer.setImage(SwingFXUtils.toFXImage(img, null));
 
                     double pixel_average = Arrays.stream(all_pixels).average().getAsDouble();
                     double raw_volume = Arrays.stream(all_pixels).sum();
 
+                    // todo: does it make sense to mask all bands rather than just the selected one?
+                    double[] localBackgroundPixels = extractLocalBackgroundPixels(annot, server, localSensitivity);
+                    double localMean = Arrays.stream(localBackgroundPixels).average().getAsDouble();
+
+                    double globalVolume = 0;
+                    double localVolume = 0;
+
+                    if (globalCorrection){
+                        globalVolume = raw_volume - (globalMean * all_pixels.length);
+                    }
+                    if (localCorrection){
+                        localVolume = raw_volume - (localMean * all_pixels.length);
+                    }
+
                     BandEntry curr_band = new BandEntry(8, annot.getPathClass().toString(), all_pixels.length,
-                            pixel_average, raw_volume,
-                            raw_volume - (global_mean*all_pixels.length),
-                            5.0, 5.0, imviewer);  //TODO: remove global mean column completely when not enabled
+                            pixel_average, raw_volume, globalVolume, localVolume, 5.0, imviewer);  //TODO: remove global/local mean column completely when not enabled
 
                     ObservableList<BandEntry> all_bands = mainTable.getItems();
                     all_bands.add(curr_band);
 
                     bandData = all_bands;
                     mainTable.setItems(all_bands);
+                    if (!localCorrection){
+                        localVolCol.setVisible(false);
+                    }
+                    if (!globalCorrection){
+                        globalVolCol.setVisible(false);
+                    }
                 }
             }
 
