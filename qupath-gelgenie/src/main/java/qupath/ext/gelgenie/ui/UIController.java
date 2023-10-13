@@ -86,6 +86,9 @@ public class UIController {
     @FXML
     private BarChart<String, Number> bandChart;
 
+    @FXML
+    private ChoiceBox<String> modelChoiceBox;
+
     private final static ResourceBundle resources = ResourceBundle.getBundle("qupath.ext.gelgenie.ui.strings");
 
     private Stage measurementMapsStage;
@@ -122,6 +125,9 @@ public class UIController {
         configureDisplayToggleButtons(); // styles QuPath linked buttons
         configureButtonInteractivity(); // sets rules for visibility of certain buttons
         configureCheckBoxes(); // sets rules for checkboxes
+
+        modelChoiceBox.getItems().add("Prototype-UNet-July-29-2023");
+        modelChoiceBox.setValue("Prototype-UNet-July-29-2023");
 
         // setting properties for single band update chart
         bandChart.setBarGap(0);
@@ -198,7 +204,7 @@ public class UIController {
      */
     public void runBandInference() throws IOException {
         ImageData<BufferedImage> imageData = getCurrentImageData();// todo: need to handle situation where no image available and prompt user?
-        openCVModelRunner modelRunner = new openCVModelRunner("u++_306_full-sim.onnx");
+        openCVModelRunner modelRunner = new openCVModelRunner("Prototype-UNet-July-29-2023");
 
         Collection<PathObject> newBands = null;
         if (runFullImage.isSelected()) { // runs model on entire image
