@@ -8,6 +8,8 @@ import javafx.stage.Stage;
 
 import java.util.Arrays;
 
+
+// TODO: remove this file if unnecessary.
 public class GelGenieBarChart{
 
     public void plot(double[] y_data, int bins) {

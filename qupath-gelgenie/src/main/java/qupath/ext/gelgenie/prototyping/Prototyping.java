@@ -35,7 +35,8 @@ import static qupath.lib.scripting.QP.*;
 
 
 /**
-Collecting of functions used while building main extension.  Should be deleted before public exporting.
+Collection of functions used while building main extension.  Should be deleted before public exporting.
+ TODO: review and delete when done.
  */
 public class Prototyping {
 

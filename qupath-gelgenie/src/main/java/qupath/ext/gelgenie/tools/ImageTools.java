@@ -25,10 +25,12 @@ public class ImageTools {
      */
     public static double[] extractAnnotationPixels(PathObject annotation, ImageServer<BufferedImage> server) {
 
+        // creates a mask of the correct shape within the rectangular region bordering an annotation
         BufferedImage im_mask = BufferedImageTools.createROIMask((int) Math.ceil(annotation.getROI().getBoundsWidth()),
                 (int) Math.ceil(annotation.getROI().getBoundsHeight()), annotation.getROI(),
                 annotation.getROI().getBoundsX(), annotation.getROI().getBoundsY(), 1.0);
 
+        // creates a request for the full rectangular region
         RegionRequest request = RegionRequest.createInstance(server.getPath(), 1.0, annotation.getROI());
         BufferedImage img;
         try {
@@ -37,23 +39,32 @@ public class ImageTools {
             throw new RuntimeException(ex);
         }
 
+        // selects pixels which are in the mask and not the outer edges of the rectangular region
         return extractPixelsfromMask(img, im_mask, false);
     }
 
+    /**
+     * Extracts the pixels bordering a specified annotation.
+     * @param annotation: Annotation around which to extract pixels
+     * @param server: Server corresponding to open image
+     * @param pixelBorder: Width of border around annotation
+     * @return Array of pixels from border surrounding annotation
+     */
     public static double[] extractLocalBackgroundPixels(PathObject annotation, ImageServer<BufferedImage> server, int pixelBorder) {
 
+        // creates rectangular region bordering annotation
         ImageRegion extendedLocalRegion = createAnnotationImageFrame(annotation, pixelBorder);
         RegionRequest request = RegionRequest.createInstance(server.getPath(), 1.0, extendedLocalRegion);
-
-        BufferedImage im_mask = BufferedImageTools.createROIMask(request.getWidth(),
-                request.getHeight(), annotation.getROI(), request.getX(), request.getY(), 1.0);
-
         BufferedImage img;
         try {
             img = server.readRegion(request);
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
+
+        // gets actual annotation shape mask
+        BufferedImage im_mask = BufferedImageTools.createROIMask(request.getWidth(),
+                request.getHeight(), annotation.getROI(), request.getX(), request.getY(), 1.0);
 
         return extractPixelsfromMask(img, im_mask, true);
     }
@@ -63,10 +74,12 @@ public class ImageTools {
      * (or not present) within the mask.
      * @param image: Rectangular frame of image
      * @param mask: Mask containing irregular shape within rectangular frame
-     * @param ExtractNotMaskedPixels: Set to true to extract pixels outside of mask rather than within.
+     * @param ExtractNotMaskedPixels: Set to true to extract pixels outside of mask rather than within
      * @return Array of pixels that are present within the mask
      */
     public static double[] extractPixelsfromMask(BufferedImage image, BufferedImage mask, Boolean ExtractNotMaskedPixels) {
+
+        // converts everything to openCV format to allow pixel operations
         Mat rectangular_mat = OpenCVTools.imageToMat(image);
         Mat mat_mask = OpenCVTools.imageToMat(mask);
         double[] mask_pixels = OpenCVTools.extractDoubles(mat_mask);
@@ -78,14 +91,22 @@ public class ImageTools {
             targetValue = 0.0;
         }
 
+        // extracts pixels matching the mask
         for (int j = 0; j < main_pixels.length; j++) {
             if (mask_pixels[j] == targetValue) {
                 final_pixels.add(main_pixels[j]);
             }
         }
+
         return final_pixels.stream().mapToDouble(d -> d).toArray();
     }
 
+    /**
+     * Creates a region bordering an annotation, with the specified pixel width.
+     * @param annotation: Annotation to extract border around
+     * @param pixelBorder: Width of pixel border (on each side)
+     * @return
+     */
     public static ImageRegion createAnnotationImageFrame(PathObject annotation, int pixelBorder){
 
         int x1 = (int) annotation.getROI().getBoundsX() - pixelBorder;

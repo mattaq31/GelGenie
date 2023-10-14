@@ -8,6 +8,7 @@ import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 
+// TODO: still rudimentary, need to develop.  Most functionality copied from WSInfer extension.
 public class ModelInterfacing {
 
     static void downloadURLToFile(URL url, File file) throws IOException {

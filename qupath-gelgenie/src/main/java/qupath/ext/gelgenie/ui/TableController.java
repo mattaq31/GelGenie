@@ -33,7 +33,7 @@ import static qupath.lib.scripting.QP.*;
 
 public class TableController {
 
-    //Table
+    //Table elements
     @FXML
     private TableView<BandEntry> mainTable;
     @FXML
@@ -59,6 +59,7 @@ public class TableController {
 
     public QuPathGUI qupath;
 
+    // user-defined settings
     private boolean globalCorrection = false;
     private boolean localCorrection = false;
     private int localSensitivity = 5;
@@ -120,78 +121,42 @@ public class TableController {
         ImageServer<BufferedImage> server = imageData.getServer();
         Collection<PathObject> annots = getAnnotationObjects();
 
+        // This code block depends on user settings, which are not provided until this runLater() command.
         Platform.runLater(() -> {
-            if (globalCorrection) {
-                try {
-                    globalMean = calculateGlobalBackgroundAverage(server);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }
-
-            for (PathObject annot : annots) {
-                if (annot.getPathClass() != null && Objects.equals(annot.getPathClass().getName(), "Gel Band")) {
-                    double[] all_pixels = ImageTools.extractAnnotationPixels(annot, server); // extracts a list of pixels matching the specific selected annotation
-
-                    int padding = 10;  // TODO: make this user adjustable
-
-                    ImageRegion thumbnailRegion = createAnnotationImageFrame(annot, padding);
-                    RegionRequest request = RegionRequest.createInstance(server.getPath(), 1.0, thumbnailRegion);
-                    BufferedImage img;
-                    try {
-                        img = server.readRegion(request);
-                    } catch (IOException ex) {
-                        throw new RuntimeException(ex);
-                    }
-
-                    ImageView imviewer = new ImageView();
-                    imviewer.setImage(SwingFXUtils.toFXImage(img, null));
-
-                    double pixel_average = Arrays.stream(all_pixels).average().getAsDouble();
-                    double raw_volume = Arrays.stream(all_pixels).sum();
-
-                    // todo: does it make sense to mask all bands rather than just the selected one?
-                    double[] localBackgroundPixels = extractLocalBackgroundPixels(annot, server, localSensitivity);
-                    double localMean = Arrays.stream(localBackgroundPixels).average().getAsDouble();
-
-                    double globalVolume = 0;
-                    double localVolume = 0;
-
-                    if (globalCorrection){
-                        globalVolume = raw_volume - (globalMean * all_pixels.length);
-                    }
-                    if (localCorrection){
-                        localVolume = raw_volume - (localMean * all_pixels.length);
-                    }
-
-                    BandEntry curr_band = new BandEntry(8, annot.getPathClass().toString(), all_pixels.length,
-                            pixel_average, raw_volume, globalVolume, localVolume, 5.0, imviewer);  //TODO: remove global/local mean column completely when not enabled
-
-                    ObservableList<BandEntry> all_bands = mainTable.getItems();
-                    all_bands.add(curr_band);
-
-                    bandData = all_bands;
-                    mainTable.setItems(all_bands);
-                    if (!localCorrection){
-                        localVolCol.setVisible(false);
-                    }
-                    if (!globalCorrection){
-                        globalVolCol.setVisible(false);
-                    }
-                }
-            }
-
+            calculateGlobalBackground(server);
+            computeTableColumns(annots, server);
         });
-        // settings setup
+
+        // permanent table settings
         mainTable.setPlaceholder(new Label("No gel band data to display"));
         TableView.TableViewSelectionModel<BandEntry> selectionModel = mainTable.getSelectionModel();
         selectionModel.setSelectionMode(SelectionMode.MULTIPLE);
     }
 
+    /**
+     * Pre-computes global background value on user-selected patch.
+     * @param server: Server corresponding to open image.
+     */
+    private void calculateGlobalBackground(ImageServer<BufferedImage> server){
+        if (globalCorrection) {
+            try {
+                globalMean = calculateGlobalBackgroundAverage(server);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    /**
+     * Computes the average pixel value of global background patches.
+     * @param server: Server corresponding to current image
+     * @return Computed global mean.
+     * @throws Exception
+     */
     private double calculateGlobalBackgroundAverage(ImageServer<BufferedImage> server) throws Exception {
         double global_mean = 0.0;
         Collection<PathObject> annots = getAnnotationObjects();
-        for (PathObject annot : annots) {
+        for (PathObject annot : annots) { //TODO: what happens if multiple annotations match the correct class?
             if (annot.getPathClass() != null && Objects.equals(annot.getPathClass().getName(), "Global Background")) {
                 double[] all_pixels = ImageTools.extractAnnotationPixels(annot, server);
                 global_mean = Arrays.stream(all_pixels).average().getAsDouble();
@@ -203,8 +168,72 @@ public class TableController {
         return global_mean;
     }
 
+    /**
+     * Computes all measurements for each band in current image.
+     * @param annots: List of annotations in image.
+     * @param server: Server corresponding to open image.
+     */
+    private void computeTableColumns(Collection<PathObject> annots, ImageServer<BufferedImage> server){
+        for (PathObject annot : annots) {
+            //  only act on annotations marked as bands
+            if (annot.getPathClass() != null && Objects.equals(annot.getPathClass().getName(), "Gel Band")) {
+                double[] all_pixels = ImageTools.extractAnnotationPixels(annot, server); // extracts a list of pixels matching the specific selected annotation
 
-    public void exportData() throws IOException {
+                int padding = 10;  // TODO: make this user adjustable
+
+                // Generates thumbnails for each band
+                ImageRegion thumbnailRegion = createAnnotationImageFrame(annot, padding);
+                RegionRequest request = RegionRequest.createInstance(server.getPath(), 1.0, thumbnailRegion);
+                BufferedImage img;
+                try {
+                    img = server.readRegion(request);
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
+                ImageView imviewer = new ImageView();
+                imviewer.setImage(SwingFXUtils.toFXImage(img, null));
+
+                // computes intensity volumes
+                double pixel_average = Arrays.stream(all_pixels).average().getAsDouble();
+                double raw_volume = Arrays.stream(all_pixels).sum();
+
+                // todo: does it make sense to mask all bands rather than just the selected one?
+                double[] localBackgroundPixels = extractLocalBackgroundPixels(annot, server, localSensitivity);
+                double localMean = Arrays.stream(localBackgroundPixels).average().getAsDouble();
+
+                double globalVolume = 0;
+                double localVolume = 0;
+
+                if (globalCorrection){
+                    globalVolume = raw_volume - (globalMean * all_pixels.length);
+                }
+                if (localCorrection){
+                    localVolume = raw_volume - (localMean * all_pixels.length);
+                }
+
+                BandEntry curr_band = new BandEntry(8, annot.getPathClass().toString(), all_pixels.length,
+                        pixel_average, raw_volume, globalVolume, localVolume, 5.0, imviewer);
+
+                ObservableList<BandEntry> all_bands = mainTable.getItems();
+                all_bands.add(curr_band);
+
+                bandData = all_bands;
+                mainTable.setItems(all_bands);
+                if (!localCorrection){ //TODO: table looks empty without these columns.  How to adjust?
+                    localVolCol.setVisible(false);
+                }
+                if (!globalCorrection){
+                    globalVolCol.setVisible(false);
+                }
+            }
+        }
+    }
+
+    /**
+     * Exports table data to CSV.
+     * @throws IOException
+     */
+    public void exportData() throws IOException { //TODO: still rudimentary, needs updating
         File fileOutput = FileChoosers.promptToSaveFile("Export image region", null,
                 FileChoosers.createExtensionFilter("Set CSV output filename", ".csv"));
         if (fileOutput == null)
@@ -221,6 +250,12 @@ public class TableController {
         br.close();
     }
 
+    /**
+     * Sets user preferences.
+     * @param globalCorrection: Enable global background calculation
+     * @param localCorrection: Enable local background calculation
+     * @param localSensitivity: Pixel sensitivity for local background calculation
+     */
     public void setPreferences(boolean globalCorrection, boolean localCorrection, int localSensitivity) {
         this.localCorrection = localCorrection;
         this.globalCorrection = globalCorrection;

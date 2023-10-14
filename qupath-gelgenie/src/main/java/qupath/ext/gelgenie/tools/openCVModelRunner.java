@@ -18,7 +18,6 @@ import qupath.lib.objects.PathObject;
 import qupath.lib.objects.PathObjects;
 import qupath.lib.regions.Padding;
 import qupath.lib.regions.RegionRequest;
-import qupath.lib.roi.GeometryROI;
 import qupath.lib.roi.interfaces.ROI;
 import qupath.opencv.dnn.DnnTools;
 import qupath.opencv.dnn.OpenCVDnn;
@@ -37,10 +36,11 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import static qupath.lib.scripting.QP.*;
-
+/**
+ * Main class taking care of running segmentation models using OpenCV and onnx files.
+ */
 public class openCVModelRunner {
-
+    // TODO: many of these settings could be adjustable or user-adjustable
     private final double downsample = 1.0;
     private String modelPath;
     private Padding paddingMode = Padding.empty();
@@ -52,6 +52,10 @@ public class openCVModelRunner {
     private boolean conn8 = true;
     private MaximumFinder maxFinder = new MaximumFinder();
 
+    /**
+     * Main constructor takes care of finding model and downloading if necessary.
+     * @param modelName: Specified model to load and run with.
+     */
     public openCVModelRunner(String modelName) {
         if (Objects.equals(modelName, "Prototype-UNet-July-29-2023")) {
 
@@ -85,6 +89,12 @@ public class openCVModelRunner {
         }
     }
 
+    /**
+     * Runs segmentation on a full image.
+     * @param imageData: Image containing gel bands to be segmented
+     * @return Collection of individual gel bands found in image
+     * @throws IOException
+     */
     public Collection<PathObject> runFullImageInference(ImageData<BufferedImage> imageData) throws IOException {
 
         ImageServer<BufferedImage> server = imageData.getServer();
@@ -99,6 +109,13 @@ public class openCVModelRunner {
         return runModel(inputWidth, inputHeight, imageData, request);
     }
 
+    /**
+     * Runs model specifically within a selected annotation only.
+     * @param imageData: Image containing selected annotation
+     * @param annotation: Annotation within which to find bands
+     * @return Collection of individual gel bands found in annotation area
+     * @throws IOException
+     */
     public Collection<PathObject> runAnnotationInference(ImageData<BufferedImage> imageData, PathObject annotation) throws IOException {
 
         ImageServer<BufferedImage> server = imageData.getServer();
@@ -114,10 +131,21 @@ public class openCVModelRunner {
         return runModel(inputWidth, inputHeight, imageData, request);
     }
 
+    /**
+     * Main function that runs model and formats output.
+     * @param inputWidth: Image width
+     * @param inputHeight: Image height
+     * @param imageData: Actual full image
+     * @param request: Region from which pixels to be extracted
+     * @return Collection of annotations containing segmented gel bands
+     * @throws IOException
+     * TODO: investigate all parameters here and see if anything can be optimised
+     */
     private Collection<PathObject> runModel(int inputWidth, int inputHeight, ImageData<BufferedImage> imageData, RegionRequest request) throws IOException {
 
         OpenCVDnn dnnModel = DnnTools.builder(modelPath).size(inputWidth, inputHeight).build();
 
+        // Inference pipeline, which reduces images to a single channel and normalises
         ImageDataOp dataOp = ImageOps.buildImageDataOp().appendOps(
                 ImageOps.Normalize.percentile(0.1, 99.9),
                 ImageOps.Channels.mean(),

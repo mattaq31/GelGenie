@@ -4,6 +4,9 @@ import qupath.lib.objects.PathObject;
 
 import javafx.scene.image.ImageView;
 
+/**
+ * Main class that holds all data  displayed in gel data table.  Mainly consists of getters/setters.
+ */
 public class BandEntry {
     private int bandID;
     private String bandName;

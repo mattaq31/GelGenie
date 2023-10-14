@@ -17,7 +17,7 @@ import java.io.IOException;
 import java.net.URL;
 
 /**
- * Boilerplate function for generating a UI window and setting things for it to be resizable etc.
+ * Sets up main GUI window, which is fixed in size.
  */
 public class GUIRootCommand implements Runnable {
 
@@ -38,7 +38,7 @@ public class GUIRootCommand implements Runnable {
     }
 
     @Override
-    public void run() { // generates UI page
+    public void run() {
         if (stage == null) {
             try {
                 stage = createStage();
@@ -53,16 +53,12 @@ public class GUIRootCommand implements Runnable {
 
         URL url = getClass().getResource(ui_name + ".fxml");
 
-        if (url == null) { // this should never happen...
-            throw new IOException("Cannot find URL for GelGenie FXML");
-        }
-
         var loader = new FXMLLoader(url, resources);
 
         Pane root = loader.load();
 
         // There's probably a better approach... but wrapping in a border pane
-        // helped me get the resizing to behave
+        // helped me get the resizing to behave - TODO: is this needed?
         BorderPane pane = new BorderPane(root);
         Scene scene = new Scene(pane);
 

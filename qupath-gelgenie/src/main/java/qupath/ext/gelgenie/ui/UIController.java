@@ -7,15 +7,12 @@ import javafx.beans.value.ObservableValue;
 import javafx.beans.binding.ObjectBinding;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.chart.BarChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
-import javafx.stage.Stage;
 import org.controlsfx.control.action.Action;
 import org.controlsfx.control.action.ActionUtils;
 import org.slf4j.Logger;
@@ -25,7 +22,6 @@ import qupath.ext.gelgenie.tools.ImageTools;
 import qupath.ext.gelgenie.tools.openCVModelRunner;
 import qupath.lib.common.ThreadTools;
 import qupath.lib.gui.QuPathGUI;
-import qupath.lib.gui.commands.Commands;
 import qupath.lib.images.ImageData;
 import qupath.lib.images.servers.ImageServer;
 import qupath.lib.objects.PathObject;
@@ -35,7 +31,6 @@ import qupath.lib.objects.hierarchy.PathObjectHierarchy;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -43,15 +38,14 @@ import java.util.concurrent.Executors;
 import static qupath.lib.scripting.QP.*;
 
 /**
- * This is the main class that controls things happening in the UI window.  Most functionality starts from a function here.
- * A few functions were cannibalised from the wsinfer extension.  TODO: These need to be removed/adapted before final release.
+ * This is the main class that controls things happening in the GUI window.  Most actions starts from a function here.
  */
 public class UIController {
     private static final Logger logger = LoggerFactory.getLogger(UIController.class);
 
     public QuPathGUI qupath;
-    private ObjectProperty<ImageData<BufferedImage>> imageDataProperty = new SimpleObjectProperty<>();
-    //    private ObjectProperty<PathObject> selObjectProperty = new SimpleObjectProperty<>();
+
+    // These attributes are all linked to FXML elements in the GUI.
     @FXML
     private Label labelMessage;
     @FXML
@@ -66,6 +60,8 @@ public class UIController {
     private ToggleButton toggleBandNames;
     @FXML
     private ToggleButton toggleAnnotations;
+    @FXML
+    private Button globalBackgroundSelector;
 
     @FXML
     private CheckBox runFullImage;
@@ -73,26 +69,20 @@ public class UIController {
     private CheckBox runSelected;
     @FXML
     private CheckBox deletePreviousBands;
-
     @FXML
     private CheckBox enableGlobalBackground;
     @FXML
     private CheckBox enableLocalBackground;
+
     @FXML
     private Spinner<Integer> localSensitivity;
-
-    @FXML
-    private Button globalBackgroundSelector;
-
     @FXML
     private BarChart<String, Number> bandChart;
-
     @FXML
     private ChoiceBox<String> modelChoiceBox;
 
+    private final ObjectProperty<ImageData<BufferedImage>> imageDataProperty = new SimpleObjectProperty<>();
     private final static ResourceBundle resources = ResourceBundle.getBundle("qupath.ext.gelgenie.ui.strings");
-
-    private Stage measurementMapsStage;
 
     private final ExecutorService pool = Executors.newSingleThreadExecutor(ThreadTools.createThreadFactory("gelgenie", true));
 
@@ -100,6 +90,9 @@ public class UIController {
 
     private SelectedObjectCounter selectedObjectCounter;
 
+    /*
+    This function is the first to run when the GUI window is created.
+     */
     @FXML
     private void initialize() {
         logger.info("Initializing GelGenie GUI");
@@ -108,17 +101,30 @@ public class UIController {
         this.imageDataProperty.bind(qupath.imageDataProperty());
         this.selectedObjectCounter = new SelectedObjectCounter(this.imageDataProperty);  // main listener that tracks selected annotations and changes in selection
 
-        ChangeListener<Boolean> changeListener = (observable, oldValue, newValue) -> {
+        configureDisplayToggleButtons(); // styles QuPath linked buttons
+        configureButtonInteractivity(); // sets rules for visibility of certain buttons
+        configureCheckBoxes(); // sets rules for checkboxes
+        configureBarChart(); // sets up embedded bar chart
+        configureAnnotationListener(); // sets up listener that triggers the appropriate functions when an annotation is selected/deselected
 
-            if (selectedObjectCounter.numSelectedAnnotations.get() != 0) { // triggers an update of the histogram display whenever a different band is selected
-                // this internal testing condition is crucial to prevent crashing when creating new annotations
+        modelChoiceBox.getItems().add("Prototype-UNet-July-29-2023"); // current list of models hardcoded, will update in future.
+        modelChoiceBox.setValue("Prototype-UNet-July-29-2023");
+
+        logger.info("GelGenie GUI loaded without errors");
+    }
+
+    /*
+     * This sets up a listener to update the GUI histogram whenever a user selects/deselects an annotation.
+     */
+    private void configureAnnotationListener() {
+        ChangeListener<Boolean> changeListener = (observable, oldValue, newValue) -> {
+            if (selectedObjectCounter.numSelectedAnnotations.get() != 0) { // only trigger when annotations are selected
                 Collection<PathObject> actionableAnnotations = new ArrayList<>();
                 for (PathObject annot : getSelectedObjects()) {
                     if (annot.getPathClass() != null && Objects.equals(annot.getPathClass().getName(), "Gel Band")) {
-                        actionableAnnotations.add(annot);
+                        actionableAnnotations.add(annot); // histogram should only activate on bands not other objects
                     }
                 }
-
                 if (!actionableAnnotations.isEmpty()) {
                     BandHistoDisplay(actionableAnnotations);
                 } else {
@@ -130,22 +136,17 @@ public class UIController {
             }
         };
         selectedObjectCounter.annotationSelected.addListener(changeListener);
+    }
 
-        configureDisplayToggleButtons(); // styles QuPath linked buttons
-        configureButtonInteractivity(); // sets rules for visibility of certain buttons
-        configureCheckBoxes(); // sets rules for checkboxes
-
-        modelChoiceBox.getItems().add("Prototype-UNet-July-29-2023");
-        modelChoiceBox.setValue("Prototype-UNet-July-29-2023");
-
-        // setting properties for single band update chart
+    /*
+     * Sets permanent properties for embedded barchart
+     */
+    private void configureBarChart() {
         bandChart.setBarGap(0);
         bandChart.setCategoryGap(0);
         bandChart.setLegendVisible(false);
         bandChart.getXAxis().setLabel("Pixel Intensity");
         bandChart.getYAxis().setLabel("Frequency");
-
-        logger.info("GelGenie GUI loaded without errors");
     }
 
     /**
@@ -169,14 +170,7 @@ public class UIController {
 
     /**
      * Links buttons with their respective graphics from the general QuPath interface.
-     */
-    private void configureActionToggleButton(Action action, ToggleButton button) {
-        ActionUtils.configureButton(action, button);
-        button.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
-    }
-
-    /**
-     * Links buttons with their respective graphics from the general QuPath interface.  There are only 2 for GelGenie.
+     * There are currently only 2 for GelGenie.
      */
     private void configureDisplayToggleButtons() {
         var actions = qupath.getOverlayActions();
@@ -184,13 +178,31 @@ public class UIController {
         configureActionToggleButton(actions.SHOW_ANNOTATIONS, toggleAnnotations);
     }
 
+    /**
+     * Links buttons with their respective graphics from the general QuPath interface.
+     */
+    private void configureActionToggleButton(Action action, ToggleButton button) {
+        ActionUtils.configureButton(action, button);
+        button.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+    }
+
+    /**
+     * Links button availability according to availability of images, annotations, etc.
+     */
     private void configureButtonInteractivity() {
-        // Disables the run button while a task is pending, or we have no model selected, or download is required
+        // TODO: pending task property currently unused.
         runButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
         tableButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
+
+        // global background selector button needs to be disabled if no annotation is selected
         globalBackgroundSelector.disableProperty().bind(this.selectedObjectCounter.numSelectedAnnotations.isEqualTo(0));
     }
 
+    /**
+     * Updates the live histogram with the distributions of the selected gel bands.
+     *
+     * @param annotations: Collection of annotations to be processed and displayed.
+     */
     public void BandHistoDisplay(Collection<PathObject> annotations) {
 
         ImageData<BufferedImage> imageData = getCurrentImageData();
@@ -211,13 +223,14 @@ public class UIController {
     }
 
     /**
-     * Runs the segmentation model on the provided image or selected annotation, generating annotations for each located band.
+     * Runs the segmentation model on the provided image or within the selected annotation,
+     * generating annotations for each located band.
      *
      * @throws IOException
      */
     public void runBandInference() throws IOException {
-        ImageData<BufferedImage> imageData = getCurrentImageData();// todo: need to handle situation where no image available and prompt user?
-        openCVModelRunner modelRunner = new openCVModelRunner("Prototype-UNet-July-29-2023");
+        ImageData<BufferedImage> imageData = getCurrentImageData();
+        openCVModelRunner modelRunner = new openCVModelRunner("Prototype-UNet-July-29-2023"); //todo: remove hardcoding
 
         Collection<PathObject> newBands = null;
         if (runFullImage.isSelected()) { // runs model on entire image
@@ -234,7 +247,7 @@ public class UIController {
             }
         }
 
-        assert newBands != null; // todo: is this enough?
+        assert newBands != null; // todo: is this enough - what to show user if nothing found?
         for (PathObject annot : newBands) {
             annot.setPathClass(PathClass.fromString("Gel Band", 8000));
         }
@@ -242,13 +255,19 @@ public class UIController {
         addObjects(newBands);
     }
 
+    /**
+     * Generates a band data table when requested.  User preferences are also passed on to the table creator class.
+     */
     public void populateTable() {
         TableRootCommand tableCommand = new TableRootCommand(qupath, "gelgenie_table",
                 "Data Table", true, enableGlobalBackground.isSelected(),
-                enableLocalBackground.isSelected(), localSensitivity.getValue()); // activation class from ui folder
+                enableLocalBackground.isSelected(), localSensitivity.getValue());
         tableCommand.run();
     }
 
+    /**
+     * Sets selected annotation to be used as the global background for band analysis.
+     */
     @FXML
     private void setGlobalBackgroundPatch() {
         PathObject annot = getSelectedObject();

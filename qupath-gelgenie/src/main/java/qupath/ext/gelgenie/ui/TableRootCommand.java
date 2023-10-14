@@ -15,7 +15,7 @@ import java.io.IOException;
 import java.net.URL;
 
 /**
- * Boilerplate function for generating a UI window and setting things for it to be resizable etc.
+ * Creates the table window and properly sets things up for it to be resizable.
  */
 public class TableRootCommand implements Runnable {
 
@@ -38,29 +38,34 @@ public class TableRootCommand implements Runnable {
         this.resizable = resizable;
         URL url = getClass().getResource(ui_name + ".fxml");
         this.rootFXML = new FXMLLoader(url, resources);
+
+        // user defined settings
         this.globalCorrection = globalCorrection;
         this.localCorrection = localCorrection;
         this.localSensitivity = localSensitivity;
     }
 
+    /**
+     * Generates table window and feeds in user settings.
+     */
     @Override
-    public void run() { // generates table and feeds in user settings
+    public void run() {
 
         // There's probably a better approach... but wrapping in a border pane
-        // helped me get the resizing to behave
-        BorderPane pane = null;
+        // helped me get the resizing to behave TODO: is this necessary anymore?
+        BorderPane pane;
         try {
             pane = new BorderPane(rootFXML.load());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+
         stage = new Stage();
         TableController controller = rootFXML.getController();
         controller.setPreferences(globalCorrection, localCorrection, localSensitivity);
+
         Scene scene = new Scene(pane);
-
         stage.initOwner(qupath.getStage());
-
         stage.setTitle(resources.getString("title") + " " + panel_name);
 
         stage.setScene(scene);

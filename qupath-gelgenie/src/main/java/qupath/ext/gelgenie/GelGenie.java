@@ -16,7 +16,7 @@ import java.util.*;
 import qupath.ext.gelgenie.ui.GUIRootCommand;
 
 /**
- This is the main class containing the logic for the GelGenie QuPath extension.
+ This is the main access point for all the GelGenie functionality.
  */
 public class GelGenie implements QuPathExtension {
 
@@ -26,14 +26,8 @@ public class GelGenie implements QuPathExtension {
     private final static String EXTENSION_DESCRIPTION = resources.getString("extension.description");
     private final static Version EXTENSION_QUPATH_VERSION = Version.parse(resources.getString("extension.qupath.version"));
 
-    /**
-     * Flag whether the extension is already installed (might not be needed... but we'll do it anyway)
-     */
     private boolean isInstalled = false;
 
-    /**
-     * A 'persistent preference' - showing how to create a property that is stored whenever QuPath is closed
-     */
     private BooleanProperty enableExtensionProperty = PathPrefs.createPersistentPreference(
             "enableExtension", true);
 
@@ -49,9 +43,7 @@ public class GelGenie implements QuPathExtension {
     }
 
     /**
-     * Demo showing how to add a persistent preference to the QuPath preferences pane.
-     *
-     * @param qupath
+     Users can disable the extension from the preferences pane rather than deleting the whole thing.
      */
     private void addPreference(QuPathGUI qupath) {
         qupath.getPreferencePane().addPropertyPreference(
@@ -63,9 +55,7 @@ public class GelGenie implements QuPathExtension {
     }
 
     /**
-     * Main access point to extension GUI is from a menu item - this is taken care of here.
-     *
-     * @param qupath
+     * Main access point to extension GUI is from a menu item.  This function sets everything up.
      */
     private void addMenuItems(QuPathGUI qupath) {
         var menu = qupath.getMenu("Extensions>" + EXTENSION_NAME, true);
@@ -76,11 +66,10 @@ public class GelGenie implements QuPathExtension {
         menuItem.setOnAction(e -> {
             command.run();
         });
-        menuItem.disableProperty().bind(enableExtensionProperty.not()); // TODO: could consider bunching these commands into a standard function
+        menuItem.disableProperty().bind(enableExtensionProperty.not());
         menu.getItems().add(menuItem);
 
     }
-
 
     @Override
     public String getName() {
