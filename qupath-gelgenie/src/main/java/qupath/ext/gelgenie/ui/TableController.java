@@ -7,6 +7,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.ImageView;
+import javafx.util.Callback;
 import qupath.ext.gelgenie.tools.ImageTools;
 import qupath.lib.gui.QuPathGUI;
 import qupath.lib.images.ImageData;
@@ -55,6 +56,19 @@ public class TableController {
     @FXML
     private TableColumn<BandEntry, Double> normVolCol;
 
+    // Cell value formatter for most numeric columns
+    private final Callback<TableColumn<BandEntry, Double>, TableCell<BandEntry, Double>> cellFactory = tc -> new TableCell<>() {
+        @Override
+        protected void updateItem(Double value, boolean empty) {
+            super.updateItem(value, empty);
+            if (empty) {
+                setText(null);
+            } else {
+                setText(String.format("%.2f", value.floatValue()));
+            }
+        }
+    };
+
     private ObservableList<BandEntry> bandData;
 
     public QuPathGUI qupath;
@@ -81,41 +95,10 @@ public class TableController {
         globalVolCol.setCellValueFactory(new PropertyValueFactory<BandEntry, Double>("globalVolume"));
         normVolCol.setCellValueFactory(new PropertyValueFactory<BandEntry, Double>("normVolume"));
         thumbnailCol.setCellValueFactory(new PropertyValueFactory<BandEntry, ImageView>("thumbnail"));
-        meanCol.setCellFactory(tc -> new TableCell<BandEntry, Double>() { //TODO: how do I combine these into one function?
-            @Override
-            protected void updateItem(Double value, boolean empty) {
-                super.updateItem(value, empty);
-                if (empty) {
-                    setText(null);
-                } else {
-                    setText(String.format("%.2f", value.floatValue()));
-                }
-            }
-        });
 
-        localVolCol.setCellFactory(tc -> new TableCell<BandEntry, Double>() {
-            @Override
-            protected void updateItem(Double value, boolean empty) {
-                super.updateItem(value, empty);
-                if (empty) {
-                    setText(null);
-                } else {
-                    setText(String.format("%.2f", value.floatValue()));
-                }
-            }
-        });
-
-        globalVolCol.setCellFactory(tc -> new TableCell<BandEntry, Double>() {
-            @Override
-            protected void updateItem(Double value, boolean empty) {
-                super.updateItem(value, empty);
-                if (empty) {
-                    setText(null);
-                } else {
-                    setText(String.format("%.2f", value.floatValue()));
-                }
-            }
-        });
+        meanCol.setCellFactory(cellFactory);
+        localVolCol.setCellFactory(cellFactory);
+        globalVolCol.setCellFactory(cellFactory);
 
         ImageData<BufferedImage> imageData = getCurrentImageData();
         ImageServer<BufferedImage> server = imageData.getServer();
