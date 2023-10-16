@@ -55,19 +55,7 @@ public class TableController {
     private TableColumn<BandEntry, Double> globalVolCol;
     @FXML
     private TableColumn<BandEntry, Double> normVolCol;
-
-    // Cell value formatter for most numeric columns
-    private final Callback<TableColumn<BandEntry, Double>, TableCell<BandEntry, Double>> cellFactory = tc -> new TableCell<>() {
-        @Override
-        protected void updateItem(Double value, boolean empty) {
-            super.updateItem(value, empty);
-            if (empty) {
-                setText(null);
-            } else {
-                setText(String.format("%.2f", value.floatValue()));
-            }
-        }
-    };
+;
 
     private ObservableList<BandEntry> bandData;
 
@@ -85,20 +73,20 @@ public class TableController {
     }
 
     @FXML
-    private void initialize() throws Exception {
-        bandCol.setCellValueFactory(new PropertyValueFactory<BandEntry, Integer>("bandID"));
-        nameCol.setCellValueFactory(new PropertyValueFactory<BandEntry, String>("bandName"));
-        pixelCol.setCellValueFactory(new PropertyValueFactory<BandEntry, Double>("pixelCount"));
-        meanCol.setCellValueFactory(new PropertyValueFactory<BandEntry, Double>("averageIntensity"));
-        rawCol.setCellValueFactory(new PropertyValueFactory<BandEntry, Double>("rawVolume"));
-        localVolCol.setCellValueFactory(new PropertyValueFactory<BandEntry, Double>("localVolume"));
-        globalVolCol.setCellValueFactory(new PropertyValueFactory<BandEntry, Double>("globalVolume"));
-        normVolCol.setCellValueFactory(new PropertyValueFactory<BandEntry, Double>("normVolume"));
-        thumbnailCol.setCellValueFactory(new PropertyValueFactory<BandEntry, ImageView>("thumbnail"));
+    private void initialize() {
+        bandCol.setCellValueFactory(new PropertyValueFactory<>("bandID"));
+        nameCol.setCellValueFactory(new PropertyValueFactory<>("bandName"));
+        pixelCol.setCellValueFactory(new PropertyValueFactory<>("pixelCount"));
+        meanCol.setCellValueFactory(new PropertyValueFactory<>("averageIntensity"));
+        rawCol.setCellValueFactory(new PropertyValueFactory<>("rawVolume"));
+        localVolCol.setCellValueFactory(new PropertyValueFactory<>("localVolume"));
+        globalVolCol.setCellValueFactory(new PropertyValueFactory<>("globalVolume"));
+        normVolCol.setCellValueFactory(new PropertyValueFactory<>("normVolume"));
+        thumbnailCol.setCellValueFactory(new PropertyValueFactory<>("thumbnail"));
 
-        meanCol.setCellFactory(cellFactory);
-        localVolCol.setCellFactory(cellFactory);
-        globalVolCol.setCellFactory(cellFactory);
+        meanCol.setCellFactory(TableController::getTableColumnTableCell);
+        localVolCol.setCellFactory(TableController::getTableColumnTableCell);
+        globalVolCol.setCellFactory(TableController::getTableColumnTableCell);
 
         ImageData<BufferedImage> imageData = getCurrentImageData();
         ImageServer<BufferedImage> server = imageData.getServer();
@@ -114,6 +102,20 @@ public class TableController {
         mainTable.setPlaceholder(new Label("No gel band data to display"));
         TableView.TableViewSelectionModel<BandEntry> selectionModel = mainTable.getSelectionModel();
         selectionModel.setSelectionMode(SelectionMode.MULTIPLE);
+    }
+
+    private static TableCell<BandEntry, Double> getTableColumnTableCell(TableColumn<BandEntry, Double> bandEntryDoubleTableColumn) {
+        return new TableCell<>() {
+            @Override
+            protected void updateItem(Double value, boolean empty) {
+                super.updateItem(value, empty);
+                if (empty) {
+                    setText(null);
+                } else {
+                    setText(String.format("%.2f", value.floatValue()));
+                }
+            }
+        };
     }
 
     /**
