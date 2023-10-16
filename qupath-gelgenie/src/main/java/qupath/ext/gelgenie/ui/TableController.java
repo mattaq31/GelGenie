@@ -7,7 +7,6 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.ImageView;
-import javafx.util.Callback;
 import qupath.ext.gelgenie.tools.ImageTools;
 import qupath.lib.gui.QuPathGUI;
 import qupath.lib.images.ImageData;

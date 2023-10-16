@@ -268,7 +268,7 @@ public class UIController {
     /**
      * Sets selected annotation to be used as the global background for band analysis.
      */
-    @FXML
+    @FXML   
     private void setGlobalBackgroundPatch() {
         PathObject annot = getSelectedObject();
         PathClass gbClass = PathClass.fromString("Global Background", 80);
