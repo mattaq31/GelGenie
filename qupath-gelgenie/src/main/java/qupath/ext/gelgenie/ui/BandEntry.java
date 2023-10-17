@@ -1,8 +1,8 @@
 package qupath.ext.gelgenie.ui;
 
-import qupath.lib.objects.PathObject;
-
 import javafx.scene.image.ImageView;
+
+import java.util.Objects;
 
 /**
  * Main class that holds all data  displayed in gel data table.  Mainly consists of getters/setters.
@@ -29,10 +29,11 @@ public class BandEntry {
         this.localVolume = localVolume;
         this.normVolume = normVolume;
     }
+
     public BandEntry(int bandID, String bandName, double pixelCount, double averageIntensity, double rawVolume,
                      double globalVolume, double localVolume, double normVolume, ImageView thumbnail) {
         this.bandID = bandID;
-        this.bandName = bandName;
+        this.bandName = Objects.requireNonNullElse(bandName, "N/A");
         this.pixelCount = pixelCount;
         this.averageIntensity = averageIntensity;
         this.rawVolume = rawVolume;

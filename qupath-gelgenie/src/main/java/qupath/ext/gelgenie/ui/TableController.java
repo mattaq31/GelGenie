@@ -19,6 +19,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
@@ -64,6 +65,7 @@ public class TableController {
     private boolean globalCorrection = false;
     private boolean localCorrection = false;
     private int localSensitivity = 5;
+    private final Collection<PathObject> selectedBands = new ArrayList<>();
 
     double globalMean = 0.0;
 
@@ -94,7 +96,12 @@ public class TableController {
         // This code block depends on user settings, which are not provided until this runLater() command.
         Platform.runLater(() -> {
             calculateGlobalBackground(server);
-            computeTableColumns(annots, server);
+            if (!selectedBands.isEmpty()){
+                computeTableColumns(selectedBands, server);
+            }
+            else{
+                computeTableColumns(annots, server);
+            }
         });
 
         // permanent table settings
@@ -195,7 +202,7 @@ public class TableController {
                     localVolume = raw_volume - (localMean * all_pixels.length);
                 }
 
-                BandEntry curr_band = new BandEntry(8, annot.getPathClass().toString(), all_pixels.length,
+                BandEntry curr_band = new BandEntry(8, annot.getName(), all_pixels.length,
                         pixel_average, raw_volume, globalVolume, localVolume, 5.0, imviewer);
 
                 ObservableList<BandEntry> all_bands = mainTable.getItems();
@@ -225,10 +232,10 @@ public class TableController {
 
         BufferedWriter br = new BufferedWriter(new FileWriter(fileOutput));
 
-        br.write("Band Name, ID\n");
+        br.write("Band Name, Pixel Count, Average Intensity, Raw Volume, Local Corrected Volume, Global Corrected Volume \n");
 
         for (BandEntry band : bandData) {
-            String sb = band.getBandName() + "," + band.getBandID() + "\n";
+            String sb = band.getBandName() + "," + band.getPixelCount() + "," + band.getAverageIntensity() + "," + band.getRawVolume() + "," + band.getLocalVolume() + "," + band.getGlobalVolume() + "\n";
             br.write(sb);
         }
         br.close();
@@ -240,10 +247,13 @@ public class TableController {
      * @param localCorrection: Enable local background calculation
      * @param localSensitivity: Pixel sensitivity for local background calculation
      */
-    public void setPreferences(boolean globalCorrection, boolean localCorrection, int localSensitivity) {
+    public void setPreferences(boolean globalCorrection, boolean localCorrection, int localSensitivity, Collection<PathObject> selectedBands) {
         this.localCorrection = localCorrection;
         this.globalCorrection = globalCorrection;
         this.localSensitivity = localSensitivity;
+        if (!selectedBands.isEmpty()){
+            this.selectedBands.addAll(selectedBands);
+        }
     }
 
 }

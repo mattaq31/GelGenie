@@ -180,10 +180,12 @@
                             </VBox.margin>
                         </HBox>
                         <Separator prefWidth="200.0"/>
-                        <Button fx:id="TEMP" disable="true" prefHeight="31.0" prefWidth="252.0"
+                        <CheckBox fx:id="genTableOnSelectedBands" mnemonicParsing="false"
+                                  text="%ui.processing.tableonselectedbands"/>
+                        <Button fx:id="tableButton" disable="true" onAction="#populateTable" prefHeight="31.0" prefWidth="252.0"
                                 text="%ui.processing.viewdata">
                             <tooltip>
-                                <Tooltip text="%ui.model.download.tooltip"/>
+                                <Tooltip text="%ui.processing.viewdatatooltip"/>
                             </tooltip>
                         </Button>
 
@@ -197,7 +199,7 @@
     <TitledPane animated="false" text="%ui.export.pane">
         <VBox alignment="CENTER">
             <children>
-                <Button fx:id="tableButton" disable="true" onAction="#populateTable" prefHeight="31.0" prefWidth="252.0"
+                <Button fx:id="TEMP" disable="true" onAction="#populateTable" prefHeight="31.0" prefWidth="252.0"
                         text="View Data Table">
                     <tooltip>
                         <Tooltip text="%ui.model.download.tooltip"/>

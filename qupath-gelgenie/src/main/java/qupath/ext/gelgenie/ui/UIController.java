@@ -28,12 +28,17 @@ import qupath.lib.objects.PathObject;
 import qupath.lib.objects.classes.PathClass;
 import qupath.lib.objects.hierarchy.events.PathObjectSelectionListener;
 import qupath.lib.objects.hierarchy.PathObjectHierarchy;
+import qupath.lib.objects.DefaultPathObjectComparator;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.lang.reflect.Array;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 import static qupath.lib.scripting.QP.*;
 
@@ -73,6 +78,8 @@ public class UIController {
     private CheckBox enableGlobalBackground;
     @FXML
     private CheckBox enableLocalBackground;
+    @FXML
+    private CheckBox genTableOnSelectedBands;
 
     @FXML
     private Spinner<Integer> localSensitivity;
@@ -89,6 +96,7 @@ public class UIController {
     private final ObjectProperty<Task<?>> pendingTask = new SimpleObjectProperty<>();
 
     private SelectedObjectCounter selectedObjectCounter;
+    private int bandIdCounter = 0;
 
     /*
     This function is the first to run when the GUI window is created.
@@ -125,7 +133,7 @@ public class UIController {
                         actionableAnnotations.add(annot); // histogram should only activate on bands not other objects
                     }
                 }
-                if (!actionableAnnotations.isEmpty()) {
+                if (!actionableAnnotations.isEmpty() && actionableAnnotations.size() < 20) { // TODO: make this user-definable
                     BandHistoDisplay(actionableAnnotations);
                 } else {
                     bandChart.getData().clear();
@@ -145,6 +153,7 @@ public class UIController {
         bandChart.setBarGap(0);
         bandChart.setCategoryGap(0);
         bandChart.setLegendVisible(false);
+        bandChart.setAnimated(false); // todo: could consider making this less annoying...
         bandChart.getXAxis().setLabel("Pixel Intensity");
         bandChart.getYAxis().setLabel("Frequency");
     }
@@ -245,23 +254,41 @@ public class UIController {
                     removeObject(annot, false);
                 }
             }
+            bandIdCounter = 0; // resets naming scheme
         }
 
         assert newBands != null; // todo: is this enough - what to show user if nothing found?
-        for (PathObject annot : newBands) {
+
+        ArrayList<PathObject> castBands = (ArrayList<PathObject>) newBands; // todo: how to remove this?
+
+        // todo: this sorting isn't great, but will do for now.  Ideally the numbering would be sorted per lane, but have no way to detect lanes for now.
+        castBands.sort(Comparator.comparing((PathObject p) -> p.getROI().getCentroidY()).thenComparing(p -> p.getROI().getCentroidX()));
+
+        for (PathObject annot : castBands) {
+            bandIdCounter++;
             annot.setPathClass(PathClass.fromString("Gel Band", 8000));
+            annot.setName(String.valueOf(bandIdCounter));
         }
 
-        addObjects(newBands);
+        addObjects(castBands);
     }
 
     /**
      * Generates a band data table when requested.  User preferences are also passed on to the table creator class.
      */
     public void populateTable() {
+
+        Collection<PathObject> selectedBands = new ArrayList<>();
+        if(genTableOnSelectedBands.isSelected()) {
+            for (PathObject annot : getSelectedObjects()) {
+                if (annot.getPathClass() != null && Objects.equals(annot.getPathClass().getName(), "Gel Band")) {
+                    selectedBands.add(annot);
+                }
+            }
+        }
         TableRootCommand tableCommand = new TableRootCommand(qupath, "gelgenie_table",
                 "Data Table", true, enableGlobalBackground.isSelected(),
-                enableLocalBackground.isSelected(), localSensitivity.getValue());
+                enableLocalBackground.isSelected(), localSensitivity.getValue(), selectedBands);
         tableCommand.run();
     }
 

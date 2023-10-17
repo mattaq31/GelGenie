@@ -6,11 +6,14 @@ import org.slf4j.LoggerFactory;
 import qupath.lib.gui.ExtensionClassLoader;
 import qupath.lib.gui.QuPathGUI;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.ResourceBundle;
 
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.layout.BorderPane;
+import qupath.lib.objects.PathObject;
 
 import java.io.IOException;
 import java.net.URL;
@@ -31,9 +34,11 @@ public class TableRootCommand implements Runnable {
     private final boolean globalCorrection;
     private final boolean localCorrection;
     private final int localSensitivity;
+    private final Collection<PathObject> selectedBands = new ArrayList<>();
 
     public TableRootCommand(QuPathGUI qupath, String ui_name, String panel_name, Boolean resizable,
-                            boolean globalCorrection, boolean localCorrection, int localSensitivity) { // Constructor
+                            boolean globalCorrection, boolean localCorrection, int localSensitivity,
+                            Collection<PathObject> selectedBands) { // Constructor
         this.qupath = qupath;
         this.panel_name = panel_name;
         this.resizable = resizable;
@@ -45,6 +50,9 @@ public class TableRootCommand implements Runnable {
         this.globalCorrection = globalCorrection;
         this.localCorrection = localCorrection;
         this.localSensitivity = localSensitivity;
+        if (!selectedBands.isEmpty()){
+            this.selectedBands.addAll(selectedBands);
+        }
     }
 
     /**
@@ -64,7 +72,7 @@ public class TableRootCommand implements Runnable {
 
         stage = new Stage();
         TableController controller = rootFXML.getController();
-        controller.setPreferences(globalCorrection, localCorrection, localSensitivity);
+        controller.setPreferences(globalCorrection, localCorrection, localSensitivity, selectedBands);
 
         Scene scene = new Scene(pane);
         stage.initOwner(qupath.getStage());
