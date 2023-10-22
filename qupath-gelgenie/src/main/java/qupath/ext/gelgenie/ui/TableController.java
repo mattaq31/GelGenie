@@ -4,6 +4,9 @@ import javafx.application.Platform;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 
+import javafx.scene.chart.BarChart;
+import javafx.scene.chart.CategoryAxis;
+import javafx.scene.chart.NumberAxis;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.ImageView;
@@ -55,9 +58,13 @@ public class TableController {
     private TableColumn<BandEntry, Double> globalVolCol;
     @FXML
     private TableColumn<BandEntry, Double> normVolCol;
-;
+
+    @FXML
+    private SplitPane dataTableSplitPane;
 
     private ObservableList<BandEntry> bandData;
+    private Boolean histoAvailable = false;
+    private BarChart<String, Number> histoChart;
 
     public QuPathGUI qupath;
 
@@ -105,6 +112,14 @@ public class TableController {
         });
 
         // permanent table settings
+
+        final CategoryAxis xAxis = new CategoryAxis();
+        final NumberAxis yAxis = new NumberAxis();
+        histoChart = new BarChart<>(xAxis, yAxis);
+        histoChart.setTitle("Raw Volume Histogram");
+        xAxis.setLabel("Volume ranges");
+        yAxis.setLabel("Frequency");
+
         mainTable.setPlaceholder(new Label("No gel band data to display"));
         TableView.TableViewSelectionModel<BandEntry> selectionModel = mainTable.getSelectionModel();
         selectionModel.setSelectionMode(SelectionMode.MULTIPLE);
@@ -239,6 +254,17 @@ public class TableController {
             br.write(sb);
         }
         br.close();
+    }
+
+    public void toggleHistogram(){
+        if (histoAvailable){
+            dataTableSplitPane.getItems().remove(1);
+            histoAvailable = false;
+        }
+        else {
+            dataTableSplitPane.getItems().add(histoChart);
+            histoAvailable = true;
+        }
     }
 
     /**

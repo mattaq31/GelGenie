@@ -1,28 +1,40 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
+<?import javafx.scene.chart.BarChart?>
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.chart.NumberAxis?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ButtonBar?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.BorderPane?>
 
-<BorderPane xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="qupath.ext.gelgenie.ui.TableController">
+<BorderPane xmlns="http://javafx.com/javafx/20.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="qupath.ext.gelgenie.ui.TableController">
     <center>
-        <TableView fx:id="mainTable" prefHeight="400.0" prefWidth="1010.0">
-            <columns>
-                <TableColumn fx:id="thumbnailCol" prefWidth="125.0" style="-fx-alignment: CENTER;" text="Thumbnail" />
-                <TableColumn fx:id="bandCol" prefWidth="75.0" style="-fx-alignment: CENTER;" text="Band ID" />
-                <TableColumn fx:id="nameCol" prefWidth="75.0" style="-fx-alignment: CENTER;" text="Band Name" />
-                <TableColumn fx:id="pixelCol" prefWidth="75.0" style="-fx-alignment: CENTER;" text="# Pixels" />
-                <TableColumn fx:id="meanCol" prefWidth="100.0" style="-fx-alignment: CENTER;" text="Mean Intensity" />
-                <TableColumn fx:id="rawCol" prefWidth="90.0" style="-fx-alignment: CENTER;" text="Raw Volume" />
-                <TableColumn fx:id="localVolCol" prefWidth="170.0" style="-fx-alignment: CENTER;" text="Local Corrected Volume" />
-                <TableColumn fx:id="globalVolCol" prefWidth="170.0" style="-fx-alignment: CENTER;" text="Global Corrected Volume" />
-                <TableColumn fx:id="normVolCol" prefWidth="150.0" style="-fx-alignment: CENTER;" text="Normalised Volume" />
-            </columns>
-        </TableView>
+      <SplitPane dividerPositions="0.5" fx:id="dataTableSplitPane">
+         <items>
+              <TableView fx:id="mainTable" prefHeight="400.0" prefWidth="1010.0">
+                  <columns>
+                      <TableColumn fx:id="thumbnailCol" prefWidth="125.0" style="-fx-alignment: CENTER;" text="Thumbnail" />
+                      <TableColumn fx:id="bandCol" prefWidth="75.0" style="-fx-alignment: CENTER;" text="Band ID" />
+                      <TableColumn fx:id="nameCol" prefWidth="75.0" style="-fx-alignment: CENTER;" text="Band Name" />
+                      <TableColumn fx:id="pixelCol" prefWidth="75.0" style="-fx-alignment: CENTER;" text="# Pixels" />
+                      <TableColumn fx:id="meanCol" prefWidth="100.0" style="-fx-alignment: CENTER;" text="Mean Intensity" />
+                      <TableColumn fx:id="rawCol" prefWidth="90.0" style="-fx-alignment: CENTER;" text="Raw Volume" />
+                      <TableColumn fx:id="localVolCol" prefWidth="170.0" style="-fx-alignment: CENTER;" text="Local Corrected Volume" />
+                      <TableColumn fx:id="globalVolCol" prefWidth="170.0" style="-fx-alignment: CENTER;" text="Global Corrected Volume" />
+                      <TableColumn fx:id="normVolCol" prefWidth="150.0" style="-fx-alignment: CENTER;" text="Normalised Volume" />
+                  </columns>
+              </TableView>
+         </items>
+      </SplitPane>
     </center>
     <bottom>
         <ButtonBar prefHeight="40.0" prefWidth="200.0" BorderPane.alignment="CENTER">
             <buttons>
-                <Button mnemonicParsing="false" text="Export Data" fx:id="exportButton" onAction="#exportData"/>
+            <Button fx:id="histoButton" mnemonicParsing="false" onAction="#toggleHistogram" text="View Data Histogram" />
+            <Button fx:id="exportButton" mnemonicParsing="false" onAction="#exportData" text="Export Data" />
             </buttons>
         </ButtonBar>
     </bottom>

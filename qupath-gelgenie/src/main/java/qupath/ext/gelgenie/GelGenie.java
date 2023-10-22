@@ -9,7 +9,6 @@ import qupath.lib.common.Version;
 import qupath.lib.gui.QuPathGUI;
 import qupath.lib.gui.extensions.QuPathExtension;
 import qupath.lib.gui.prefs.PathPrefs;
-import qupath.ext.gelgenie.prototyping.Prototyping;
 
 import java.util.*;
 
