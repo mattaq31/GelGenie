@@ -7,9 +7,11 @@ import javafx.fxml.FXML;
 import javafx.scene.chart.BarChart;
 import javafx.scene.chart.CategoryAxis;
 import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.ImageView;
+import qupath.ext.gelgenie.graphics.EmbeddedBarChart;
 import qupath.ext.gelgenie.tools.ImageTools;
 import qupath.lib.gui.QuPathGUI;
 import qupath.lib.images.ImageData;
@@ -63,8 +65,8 @@ public class TableController {
     private SplitPane dataTableSplitPane;
 
     private ObservableList<BandEntry> bandData;
-    private Boolean histoAvailable = false;
-    private BarChart<String, Number> histoChart;
+    private Boolean barChartActive = false;
+    private BarChart<String, Number> displayChart;
 
     public QuPathGUI qupath;
 
@@ -109,16 +111,17 @@ public class TableController {
             else{
                 computeTableColumns(annots, server);
             }
+            toggleHistogram();
         });
 
         // permanent table settings
 
         final CategoryAxis xAxis = new CategoryAxis();
         final NumberAxis yAxis = new NumberAxis();
-        histoChart = new BarChart<>(xAxis, yAxis);
-        histoChart.setTitle("Raw Volume Histogram");
-        xAxis.setLabel("Volume ranges");
-        yAxis.setLabel("Frequency");
+        displayChart = new BarChart<>(xAxis, yAxis);
+        displayChart.setTitle("Visual Data Depiction");
+        xAxis.setLabel("Band");
+        yAxis.setLabel("Quantity");
 
         mainTable.setPlaceholder(new Label("No gel band data to display"));
         TableView.TableViewSelectionModel<BandEntry> selectionModel = mainTable.getSelectionModel();
@@ -257,14 +260,48 @@ public class TableController {
     }
 
     public void toggleHistogram(){
-        if (histoAvailable){
+        if (barChartActive){
             dataTableSplitPane.getItems().remove(1);
-            histoAvailable = false;
+            barChartActive = false;
         }
         else {
-            dataTableSplitPane.getItems().add(histoChart);
-            histoAvailable = true;
+            updateHistogramData();
+            dataTableSplitPane.getItems().add(displayChart);
+            barChartActive = true;
         }
+    }
+
+    private void updateHistogramData(){
+
+        Collection<double[]> dataList = new ArrayList<>();
+        Collection<String> legendList = new ArrayList<>();
+
+        ObservableList<BandEntry> all_bands = mainTable.getItems();
+        double[] rawPixels = new double[all_bands.size()];
+        double[] globalCorrVol = new double[all_bands.size()];
+
+        String[] labels = new String[all_bands.size()];
+        int counter = 0;
+
+        for (BandEntry band : all_bands) {
+            rawPixels[counter] = band.getRawVolume();
+            labels[counter] = band.getBandName();
+            if (this.globalCorrection){
+                globalCorrVol[counter] = band.getGlobalVolume();
+            }
+            counter++;
+        }
+        dataList.add(rawPixels);
+        legendList.add("Raw Volume");
+
+        if (this.globalCorrection){
+            dataList.add(globalCorrVol);
+            legendList.add("Global Corrected Volume");
+        }
+        ObservableList<XYChart.Series<String, Number>> allPlots = EmbeddedBarChart.plotBars(dataList, legendList, labels);
+
+        displayChart.getData().clear(); // removes previous data
+        displayChart.getData().addAll(allPlots);
     }
 
     /**

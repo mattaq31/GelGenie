@@ -6,19 +6,48 @@ import javafx.scene.chart.*;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Iterator;
 
 /**
  * Main class in charge of embedded bar chart.
  */
 public class EmbeddedBarChart {
 
+
+    public static ObservableList<XYChart.Series<String, Number>> plotBars(Collection<double[]> y_data,
+                                                                          Collection<String> legendData,
+                                                                          String[] labels) {
+        // TODO: add normalisation option
+        ObservableList<XYChart.Series<String, Number>> allPlots = FXCollections.observableArrayList();
+
+        Iterator<double[]> itY = y_data.iterator();
+
+        Iterator<String> itLegend = legendData.iterator();
+
+        while (itY.hasNext()) {
+            ObservableList<XYChart.Data<String, Number>> list = FXCollections.observableArrayList();
+            double[] y = itY.next();
+            String legend = itLegend.next();
+            for (int i = 0; i < y.length; i++) {
+                list.add(new XYChart.Data(labels[i], y[i]));
+            }
+            // create a series from the list
+            XYChart.Series<String, Number> barSeries = new XYChart.Series<>(list);
+            barSeries.setName(legend);
+            allPlots.add(barSeries);
+        }
+
+        return allPlots;
+    }
+
     /**
      * Given a set of pixel data, computes intensity histograms and returns them for display.
+     *
      * @param y_data: Collection of arrays containing pixel data for individual annotations.
-     * @param bins: Number of bins to include in histogram.
+     * @param bins:   Number of bins to include in histogram.
      * @return Histogram series ready for plotting.
      */
-    public ObservableList<XYChart.Series<String, Number>> plot(Collection<double[]> y_data, int bins) {
+    public static ObservableList<XYChart.Series<String, Number>> plotHistogram(Collection<double[]> y_data, int bins) {
 
         double max_val = 0.0;
         double min_val = 1000000;

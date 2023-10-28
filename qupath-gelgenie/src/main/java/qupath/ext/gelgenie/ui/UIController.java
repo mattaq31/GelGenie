@@ -28,17 +28,12 @@ import qupath.lib.objects.PathObject;
 import qupath.lib.objects.classes.PathClass;
 import qupath.lib.objects.hierarchy.events.PathObjectSelectionListener;
 import qupath.lib.objects.hierarchy.PathObjectHierarchy;
-import qupath.lib.objects.DefaultPathObjectComparator;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.lang.reflect.Array;
-import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
 
 import static qupath.lib.scripting.QP.*;
 
@@ -225,9 +220,8 @@ public class UIController {
             dataList.add(all_pixels);
         }
 
-        EmbeddedBarChart outbar = new EmbeddedBarChart();
-        ObservableList<XYChart.Series<String, Number>> allPlots = outbar.plot(dataList, 40);
-        bandChart.getData().addAll(allPlots); // adds new data TODO: x-axis ticks are broken on first run - how to fix?
+        ObservableList<XYChart.Series<String, Number>> allPlots = EmbeddedBarChart.plotHistogram(dataList, 40);
+        bandChart.getData().addAll(allPlots); // adds new data
 
     }
 
