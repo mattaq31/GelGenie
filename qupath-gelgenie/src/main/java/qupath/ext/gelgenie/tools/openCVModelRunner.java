@@ -1,5 +1,6 @@
 package qupath.ext.gelgenie.tools;
 
+import ai.djl.modality.cv.output.CategoryMask;
 import ij.ImagePlus;
 import ij.gui.Roi;
 import ij.plugin.filter.MaximumFinder;
@@ -8,7 +9,10 @@ import ij.process.ImageProcessor;
 
 import java.io.File;
 
+import org.bytedeco.javacpp.indexer.FloatIndexer;
+import org.bytedeco.javacpp.indexer.Indexer;
 import org.bytedeco.opencv.opencv_core.Mat;
+import org.opencv.core.CvType;
 import qupath.imagej.processing.RoiLabeling;
 import qupath.imagej.tools.IJTools;
 import qupath.lib.gui.prefs.PathPrefs;
@@ -31,10 +35,17 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
+
+import ai.djl.*;
+import ai.djl.inference.*;
+import ai.djl.modality.cv.*;
+import ai.djl.modality.cv.transform.*;
+import ai.djl.repository.zoo.*;
+import ai.djl.translate.*;
+import ai.djl.training.util.*;
+import ai.djl.modality.cv.ImageFactory;
 
 /**
  * Main class taking care of running segmentation models using OpenCV and onnx files.
@@ -52,8 +63,11 @@ public class openCVModelRunner {
     private boolean conn8 = true;
     private MaximumFinder maxFinder = new MaximumFinder();
 
+    private final boolean useDJL = true;
+
     /**
      * Main constructor takes care of finding model and downloading if necessary.
+     *
      * @param modelName: Specified model to load and run with.
      */
     public openCVModelRunner(String modelName) {
@@ -91,57 +105,61 @@ public class openCVModelRunner {
 
     /**
      * Runs segmentation on a full image.
+     *
      * @param imageData: Image containing gel bands to be segmented
      * @return Collection of individual gel bands found in image
      * @throws IOException
      */
-    public Collection<PathObject> runFullImageInference(ImageData<BufferedImage> imageData) throws IOException {
+    public Collection<PathObject> runFullImageInference(ImageData<BufferedImage> imageData) throws IOException, TranslateException, ModelNotFoundException, MalformedModelException {
 
         ImageServer<BufferedImage> server = imageData.getServer();
         // Use the entire image at full resolution
         RegionRequest request = RegionRequest.createInstance(server, downsample);
-
-        // Avoid tiling by using the image dimensions
-        // Here, specify tiles to help ensure that our troubles don't come from weird dimensions
-        int inputWidth = (int) (Math.ceil(server.getWidth() / 32) * 32);
-        int inputHeight = (int) (Math.ceil(server.getHeight() / 32) * 32);
-
-        return runModel(inputWidth, inputHeight, imageData, request);
+        if(useDJL){
+            return runDJLModel(imageData, request);
+        }
+        else{
+            int inputWidth = (int) (Math.ceil(server.getWidth() / 32) * 32);
+            int inputHeight = (int) (Math.ceil(server.getHeight() / 32) * 32);
+            return runOpenCVModel(inputWidth, inputHeight, imageData, request);
+        }
     }
 
     /**
      * Runs model specifically within a selected annotation only.
-     * @param imageData: Image containing selected annotation
+     *
+     * @param imageData:  Image containing selected annotation
      * @param annotation: Annotation within which to find bands
      * @return Collection of individual gel bands found in annotation area
      * @throws IOException
      */
-    public Collection<PathObject> runAnnotationInference(ImageData<BufferedImage> imageData, PathObject annotation) throws IOException {
+    public Collection<PathObject> runAnnotationInference(ImageData<BufferedImage> imageData, PathObject annotation) throws IOException, TranslateException, ModelNotFoundException, MalformedModelException {
 
         ImageServer<BufferedImage> server = imageData.getServer();
 
         // Slice out the selected annotation at full resolution
         RegionRequest request = RegionRequest.createInstance(server.getPath(), 1.0, annotation.getROI());
-
-        // Avoid tiling by using the image dimensions
-        // Here, specify tiles to help ensure that our troubles don't come from weird dimensions
-        int inputWidth = (int) (Math.ceil(request.getWidth() / 32) * 32);
-        int inputHeight = (int) (Math.ceil(request.getHeight() / 32) * 32);
-
-        return runModel(inputWidth, inputHeight, imageData, request);
+        if(useDJL){
+            return runDJLModel(imageData, request);
+        }
+        else{
+            int inputWidth = (int) (Math.ceil(server.getWidth() / 32) * 32);
+            int inputHeight = (int) (Math.ceil(server.getHeight() / 32) * 32);
+            return runOpenCVModel(inputWidth, inputHeight, imageData, request);
+        }
     }
 
     /**
      * Main function that runs model and formats output.
-     * @param inputWidth: Image width
+     *
+     * @param inputWidth:  Image width
      * @param inputHeight: Image height
-     * @param imageData: Actual full image
-     * @param request: Region from which pixels to be extracted
+     * @param imageData:   Actual full image
+     * @param request:     Region from which pixels to be extracted
      * @return Collection of annotations containing segmented gel bands
-     * @throws IOException
-     * TODO: investigate all parameters here and see if anything can be optimised
+     * @throws IOException TODO: investigate all parameters here and see if anything can be optimised
      */
-    private Collection<PathObject> runModel(int inputWidth, int inputHeight, ImageData<BufferedImage> imageData, RegionRequest request) throws IOException {
+    private Collection<PathObject> runOpenCVModel(int inputWidth, int inputHeight, ImageData<BufferedImage> imageData, RegionRequest request) throws IOException {
 
         OpenCVDnn dnnModel = DnnTools.builder(modelPath).size(inputWidth, inputHeight).build();
 
@@ -154,16 +172,61 @@ public class openCVModelRunner {
         );
 
         Mat result = dataOp.apply(imageData, request);
+
+        return findSplitROIs(result, request);
+    }
+
+    private Collection<PathObject>  runDJLModel(ImageData<BufferedImage> imageData, RegionRequest request) throws IOException, ModelNotFoundException, MalformedModelException, TranslateException {
+        // TODO: ToTensor() assumes data is between 0 and 255, what to do about 16-bit images?
+        // TODO: Need to add prompt for user to download pytorch library
+        // TODO: go through parameters and see if anything needs to be updated
+        // TODO: full documentation
+        Translator<Image, CategoryMask> translator = gelSegmentationTranslator.builder()
+                .addTransform(new ToTensor())
+                .addTransform(new divisibleSizePad(32))
+                .addTransform(new channelSquisher())
+                .build(request.getWidth(), request.getHeight());
+
+        ImageFactory factory = ImageFactory.getInstance();
+
+        BufferedImage img = imageData.getServer().readRegion(request);
+
+        Image image = factory.fromImage(img);
+        Criteria<Image, CategoryMask> criteria = Criteria.builder()
+                .setTypes(Image.class, CategoryMask.class)
+                .optModelPath(Paths.get("/Users/matt/Desktop/torchscript_model.pt"))// todo: remove harcoding
+                .optOption("mapLocation", "true") // this model requires mapLocation for GPU
+                .optEngine("PyTorch")
+                .optTranslator(translator)
+                .optProgress(new ProgressBar()).build();
+
+        ZooModel model = criteria.loadModel();
+
+        Predictor<Image, CategoryMask> predictor = model.newPredictor();
+
+        CategoryMask mask = predictor.predict(image);
+        int[][] maskOrig = mask.getMask();
+
+        Mat imMat = new Mat(request.getHeight(), request.getWidth(), CvType.CV_32F);
+
+        Indexer indexer = imMat.createIndexer();
+
+        for (int i=0; i<request.getHeight(); i++){
+            for (int j=0; j<request.getWidth(); j++) {
+                ((FloatIndexer) indexer).put(i, j, maskOrig[i][j]);
+            }
+        }
+        return findSplitROIs(imMat, request);
+    }
+
+    private Collection<PathObject> findSplitROIs(Mat maskMat, RegionRequest request){
+
         // Convert to an ImageJ-friendly form for now
-        ImagePlus imp = OpenCVTools.matToImagePlus("Result", result);
-
+        ImagePlus imp = OpenCVTools.matToImagePlus("Result", maskMat);
         // Apply the maximum finder to the second channel
-        ImageProcessor ip = imp.getStack().getProcessor(2);
-
+        ImageProcessor ip = imp.getStack().getProcessor(1);
         ByteProcessor bpDetected = maxFinder.findMaxima(ip, tolerance, threshold, ij.plugin.filter.MaximumFinder.SEGMENTED, excludeOnEdges, isEDM);
-
         ImageProcessor ipLabels = RoiLabeling.labelImage(bpDetected, 0.5F, conn8);
-
         Roi[] roisIJ = RoiLabeling.labelsToConnectedROIs(ipLabels, (int) Math.ceil(ipLabels.getStatistics().max));
 
         Collection<PathObject> convertedROIs = Arrays.stream(roisIJ).map(roiIJ -> {
@@ -171,8 +234,6 @@ public class openCVModelRunner {
             ROI roi = IJTools.convertToROI(roiIJ, -request.getMinX(), -request.getMinY(), downsample, request.getImagePlane());
             return PathObjects.createAnnotationObject(roi);
         }).collect(Collectors.toList());
-
         return convertedROIs;
     }
-
 }

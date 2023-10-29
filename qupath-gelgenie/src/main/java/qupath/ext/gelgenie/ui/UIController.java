@@ -1,5 +1,8 @@
 package qupath.ext.gelgenie.ui;
 
+import ai.djl.MalformedModelException;
+import ai.djl.repository.zoo.ModelNotFoundException;
+import ai.djl.translate.TranslateException;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.*;
 import javafx.beans.value.ChangeListener;
@@ -231,7 +234,7 @@ public class UIController {
      *
      * @throws IOException
      */
-    public void runBandInference() throws IOException {
+    public void runBandInference() throws IOException, TranslateException, ModelNotFoundException, MalformedModelException {
         ImageData<BufferedImage> imageData = getCurrentImageData();
         openCVModelRunner modelRunner = new openCVModelRunner("Prototype-UNet-July-29-2023"); //todo: remove hardcoding
 

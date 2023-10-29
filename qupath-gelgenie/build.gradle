@@ -1,15 +1,12 @@
 plugins {
   // Main gradle plugin for building a Java library
   id 'java-library'
-  // Support writing the extension in Groovy (remove this if you don't want to)
-  id 'groovy'
   // To create a shadow/fat jar that bundle up all dependencies
   id 'com.github.johnrengelman.shadow' version '7.1.2'
   // Include this plugin to avoid downloading JavaCPP dependencies for all platforms
   id 'org.bytedeco.gradle-javacpp-platform'
 
   id 'org.openjfx.javafxplugin' version '0.1.0'
-
 }
 
 // TODO: Change the module name
@@ -26,6 +23,8 @@ ext.qupathVersion = gradle.ext.qupathVersion
 // TODO: Specify the Java version compatible with the extension
 // Generally 11 for QuPath v0.4.3, but will be 17 for QuPath v0.5.0
 ext.qupathJavaVersion = 17
+
+def djlVersion = libs.versions.deepJavaLibrary.get() // gets deep java version from main QuPath
 
 /**
  * Define dependencies.
@@ -49,13 +48,11 @@ dependencies {
     // See https://docs.gradle.org/current/userguide/platforms.html
     shadow libs.slf4j
 
-    // If you aren't using Groovy, this can be removed
-    shadow libs.bundles.groovy
-
     testImplementation "io.github.qupath:qupath-gui-fx:${qupathVersion}"
     testImplementation libs.junit
 
-    shadow libs.qupath.fxtras
+    shadow libs.qupath.fxtras // required for native filechoosers
+    implementation "ai.djl:api:$djlVersion" // required for Deep Java Library (PyTorch)
 }
 
 
