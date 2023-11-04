@@ -48,7 +48,7 @@ classes = 2     # Number of possible segmentation classes
 encoder_name = 'resnet18'
 
 [training]
-loss = 'both'
+loss = ['dice', 'crossentropy']
 lr = 1e-4       # learning rate
 epochs = 600     # Number of epochs to run
 grad_scaler = true     # Use mixed precision for faster training
