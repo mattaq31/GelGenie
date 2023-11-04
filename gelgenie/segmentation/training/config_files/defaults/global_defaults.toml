@@ -19,6 +19,7 @@ split_training_dataset = false
 apply_augmentations = false
 padding = true
 individual_padding = false
+weak_augmentations = false
 
 [model]
 model_name = 'UNDEFINED'   # model architecture name

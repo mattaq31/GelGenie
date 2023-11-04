@@ -7,10 +7,15 @@ import shutil
 # originals_paths = ['/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/originals/matthew_gels_2']
 # output_image_path = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/maximal_set/matthew_gels_2/images'
 
-mask_path = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/maximal_set/lsdb_gels/masks'
-originals_paths = ['/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/originals/LSDB_data/caps',
-                   '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/originals/LSDB_data/est-pcr']
-output_image_path = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/maximal_set/lsdb_gels/images'
+# mask_path = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/maximal_set/lsdb_gels/masks'
+# originals_paths = ['/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/originals/LSDB_data/caps',
+#                    '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/originals/LSDB_data/est-pcr']
+# output_image_path = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/maximal_set/lsdb_gels/images'
+
+mask_path = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/maximal_set/matthew_gels/masks'
+originals_paths = ['/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/originals/matthew_gels']
+output_image_path = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/maximal_set/matthew_gels/images'
+
 
 original_images = []
 for path in originals_paths:

@@ -22,7 +22,7 @@ class ImageDataset(Dataset):
         :param n_channels: (int) Number of colour channels for model input
         :param augmentations: getter function for augmentation function
         :param padding: (Bool) Whether to apply padding to images and masks to a constant value for the entire dataset
-        :pararm individual_padding: (Bool) Whether to apply padding to images and masks individually (for UNet)
+        :param individual_padding: (Bool) Whether to apply padding to images and masks individually (for UNet)
         :param image_names: ([String]) List of image names selected
         """
 

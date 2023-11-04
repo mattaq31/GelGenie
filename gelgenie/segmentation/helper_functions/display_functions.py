@@ -51,7 +51,8 @@ def plot_stats(stats_dict, keynames, experiment_log_dir, filename):
     plt.close(f)
 
 
-def visualise_segmentation(image, mask_pred, mask_true, epoch_number, dice_score, segmentation_path):
+def visualise_segmentation(image, mask_pred, mask_true, epoch_number, dice_score, segmentation_path,
+                           optional_name=None):
     """
     Prepares a matplotlib plot comparing a segmentation prediction with the true mask.
     :param image: image tensor
@@ -60,6 +61,7 @@ def visualise_segmentation(image, mask_pred, mask_true, epoch_number, dice_score
     :param epoch_number: current epoch number
     :param dice_score: dice score for current epoch
     :param segmentation_path: directory path for output of segmentation images
+    :param optional_name: Optional name to append to output file
     :return: Numpy arrays of image, mask prediction, super-imposed mask and true mask
     """
     n_channels = 1 if len(image.shape) == 2 else 3
@@ -110,7 +112,7 @@ def visualise_segmentation(image, mask_pred, mask_true, epoch_number, dice_score
     fig.suptitle('Example Validation Image from Epoch %s (Dice Score %.3f)' % (epoch_number, dice_score), fontsize=16)
     plt.tight_layout()
 
-    plt.savefig(os.path.join(segmentation_path, f'sample_epoch_{epoch_number}.pdf'), dpi=300)
+    plt.savefig(os.path.join(segmentation_path, f'sample_epoch_{epoch_number}_{optional_name}.pdf'), dpi=300)
     plt.close(fig)
 
     # For saving un-thresholded mask predictions

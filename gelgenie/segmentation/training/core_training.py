@@ -296,14 +296,16 @@ class TrainingHandler:
                 pbar.update(1)
                 pbar.set_postfix(**{'Dice score (batch)': current_score})
                 epoch_metrics['Dice Score'] += current_score
-                if b_index == 0:  # prepares a sample output
+                if b_index < 3:  # prepares sample outputs
                     image_array, threshold_mask_array, combi_mask_array, mask_true_array = \
                         visualise_segmentation(image.squeeze(), mask_pred.squeeze(),
                                                mask_true.squeeze(),
                                                epoch, dice_score=current_score,
+                                               optional_name=batch['image_name'][0],
                                                segmentation_path=self.example_output_folder)
-                    seg_sample_package = {'image': image_array, 'threshold_mask': threshold_mask_array,
-                                          'combi_mask': combi_mask_array, 'mask_true': mask_true_array}
+                    if b_index == 0:  # only one sample sent to wandb
+                        seg_sample_package = {'image': image_array, 'threshold_mask': threshold_mask_array,
+                                              'combi_mask': combi_mask_array, 'mask_true': mask_true_array}
 
         for key, val in epoch_metrics.items():  # averaging results across the full epoch
             epoch_metrics[key] = val / len(self.val_loader)

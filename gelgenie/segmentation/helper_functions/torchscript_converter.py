@@ -1,14 +1,8 @@
-from matplotlib import pyplot as plt
-
 from torch.utils.data import DataLoader
-import torch.nn.functional as F
 
 from gelgenie.segmentation.networks.UNets.model_gateway import smp_UNet, smp_UNetPlusPlus
 from gelgenie.segmentation.data_handling.dataloaders import ImageDataset
-
-import numpy as np
 import torch
-from skimage.color import label2rgb
 
 
 def load_model(checkpoint):

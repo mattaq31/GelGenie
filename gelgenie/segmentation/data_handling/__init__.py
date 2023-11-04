@@ -1,13 +1,13 @@
 from torch.utils.data import DataLoader
 import numpy as np
 from gelgenie.segmentation.data_handling.dataloaders import ImageMaskDataset
-from .augmentations import get_training_augmentation
+from .augmentations import get_training_augmentation, get_nondestructive_training_augmentation
 from gelgenie.segmentation.helper_functions.general_functions import extract_image_names_from_folder
 
 
 def prep_train_val_dataloaders(dir_train_img, dir_train_mask, split_training_dataset, dir_val_img, dir_val_mask,
                                n_channels, val_percent, batch_size, num_workers,
-                               apply_augmentations, padding, individual_padding):
+                               apply_augmentations, weak_augmentations, padding, individual_padding):
     """
     Prepares a matched training and validation dataloader for training a segmentation model.
     :param dir_train_img: Path of directory of training set images
@@ -20,6 +20,7 @@ def prep_train_val_dataloaders(dir_train_img, dir_train_mask, split_training_dat
     :param batch_size: (int) Number of images loaded per batch
     :param num_workers: (int) Number of workers for dataloader (parallel dataloader threads speed up data processing)
     :param apply_augmentations: (Bool) Whether to apply augmentations when loading training images
+    :param weak_augmentations: (Bool) Set to true to only allow non-destructive augmentations
     :param padding: (Bool) Whether to apply padding to images and masks when loading training and validation images
     :param individual_padding (Bool) Whether to apply padding to images and masks individually (only batch size of 1 possible)
     :return: Training dataloader, Validation dataloader, number of training images, number of validation images
@@ -45,8 +46,13 @@ def prep_train_val_dataloaders(dir_train_img, dir_train_mask, split_training_dat
         train_image_names = None
         val_image_names = None
 
+    if weak_augmentations:
+        augmentations = get_nondestructive_training_augmentation()
+    else:
+        augmentations = get_training_augmentation()
+
     train_set = ImageMaskDataset(dir_train_img, dir_train_mask, n_channels,
-                                 augmentations=get_training_augmentation() if apply_augmentations else None,
+                                 augmentations=augmentations if apply_augmentations else None,
                                  padding=padding, individual_padding=individual_padding, image_names=train_image_names)
 
     val_set = ImageMaskDataset(dir_val_img, dir_val_mask, n_channels,

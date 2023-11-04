@@ -1,19 +1,20 @@
 import albumentations as albu
 
-# TODO: re-evaluate these
+
 def get_training_augmentation():
+    """
+    Returns a set of augmentations to be applied to training images which feature everything from semi-destructive
+    operations like compression and weaker augmentations like flips/rotations.
+    :return: Albumentations transform pipeline.
+    """
     transform = [
 
         # Spatial-level transforms (Both images and masks augmented)
-
         albu.Flip(p=0.5),  # Flip (horizontally, vertically or both)
-
         albu.RandomRotate90(p=0.5),  # Randomly rotate by 90 degrees
-
         albu.SafeRotate(limit=30, border_mode=0, value=0, p=0.5),  # Rotate randomly within 30 degrees without cropping
 
         # Pixel-level transforms (Only image is augmented)
-
         albu.OneOf(  # Brightness augmentations
             [
                 albu.RandomBrightness(limit=0.1, p=1),
@@ -27,20 +28,35 @@ def get_training_augmentation():
         albu.OneOf(  # Blur
             [
                 albu.AdvancedBlur(p=1),
-                albu.GlassBlur(p=1),
                 albu.MotionBlur(p=1),
             ],
             p=0.5,
         ),
 
-        albu.GaussNoise(var_limit=0.2, p=0.5),  # Noise
+        albu.GaussNoise(var_limit=0.001, p=0.5),  # Noise
 
         albu.OneOf(  # Image Quality
             [
-                albu.Downscale(p=1),
-                albu.ImageCompression(quality_lower=50, p=1),
+                albu.Downscale(scale_min=0.6, scale_max=0.9, p=1),
+                albu.ImageCompression(quality_lower=70, p=1),
             ],
             p=0.5
         ),
+    ]
+    return albu.Compose(transform)
+
+
+def get_nondestructive_training_augmentation():
+    """
+    Returns a set of augmentations to be applied to training images which only feature non-destructive operations like
+    flips and rotations.
+    :return: Albumentations transform pipeline.
+    """
+    transform = [
+        # Spatial-level transforms (Both images and masks augmented)
+        albu.Flip(p=0.5),  # Flip (horizontally, vertically or both)
+        albu.RandomRotate90(p=0.5),  # Randomly rotate by 90 degrees
+        albu.SafeRotate(limit=30, border_mode=0, value=0, p=0.5),  # Rotate randomly within 30 degrees without cropping
+
     ]
     return albu.Compose(transform)
