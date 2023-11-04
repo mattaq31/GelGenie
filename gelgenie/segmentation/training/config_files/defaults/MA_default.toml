@@ -36,9 +36,9 @@ classes = 2     # Number of possible segmentation classes
 encoder_name = 'resnet18'
 [training]
 loss = ['dice', 'unet_weighted_crossentropy']
-loss_component_weighting = [0.5, 1.0]
-class_loss_weighting = true
-class_loss_weight_damper = [1.0, 0.5]
+#loss_component_weighting = [0.5, 1.0]
+#class_loss_weighting = true
+#class_loss_weight_damper = [1.0, 0.5]
 lr = 1e-5       # learning rate
 epochs = 2     # Number of epochs to run
 grad_scaler = false     # Use mixed precision for faster training

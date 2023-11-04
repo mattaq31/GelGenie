@@ -18,7 +18,6 @@ from gelgenie.segmentation.helper_functions.stat_functions import load_statistic
 @click.option('--pull_last_epoch_results', '-pl', is_flag=True)
 @click.option('--pull_best_epoch_results', '-pb', is_flag=True)
 def pull_server_data(loc, name, server, out, verbose, pull_last_epoch_results, pull_best_epoch_results):
-
     data_contents = ['training_logs/metric_plots.pdf', 'training_logs/training_stats.csv', 'time_log.txt',
                      'config.toml', 'model_summary.txt', 'model_structure.txt']
 
@@ -53,10 +52,9 @@ def pull_server_data(loc, name, server, out, verbose, pull_last_epoch_results, p
     if pull_last_epoch_results:
         summary_file = load_statistics(results_folder, 'training_stats.csv', config='pd')  # loads model training stats
         load_epoch = len(summary_file['Training Loss'])
-        epoch_file = os.path.join(loc, name, 'segmentation_samples', 'sample_epoch_%s.pdf' % load_epoch)
+        epoch_file = os.path.join(loc, name, 'segmentation_samples', 'sample_epoch_%s\*.pdf' % load_epoch)
 
         command = 'scp %s:%s %s' % (server, epoch_file, samples_folder)
-        print(command)
         process = subprocess.Popen(command,
                                    shell=True,
                                    stdout=subprocess.PIPE,
@@ -66,7 +64,7 @@ def pull_server_data(loc, name, server, out, verbose, pull_last_epoch_results, p
     if pull_best_epoch_results:
         summary_file = load_statistics(results_folder, 'training_stats.csv', config='pd')  # loads model training stats
         load_epoch = summary_file['Dice Score'].idxmax() + 1
-        epoch_file = os.path.join(loc, name, 'segmentation_samples', 'sample_epoch_%s.pdf' % load_epoch)
+        epoch_file = os.path.join(loc, name, 'segmentation_samples', 'sample_epoch_%s\*.pdf' % load_epoch)
 
         command = 'scp %s:%s %s' % (server, epoch_file, samples_folder)
         process = subprocess.Popen(command,
