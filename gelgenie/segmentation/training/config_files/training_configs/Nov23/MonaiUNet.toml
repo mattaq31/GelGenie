@@ -45,7 +45,6 @@ individual_padding = true
 [model]
 model_name = 'monai_attunet'   # model architecture name
 classes = 2     # Number of possible segmentation classes
-encoder_name = 'resnet18'
 
 [training]
 loss = ['dice', 'crossentropy']
