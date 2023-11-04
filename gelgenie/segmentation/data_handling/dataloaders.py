@@ -210,7 +210,9 @@ class ImageMaskDataset(ImageDataset):
 
         class_weighting = np.sum(class_counts) / (2 * class_counts)  # calculates class weighting
 
-        rprint(f'[bold blue]Padding images to {max_dimension}x{max_dimension}[/bold blue]')
+        if self.padding:
+            rprint(f'[bold blue]Padding images to {max_dimension}x{max_dimension}[/bold blue]')
+
         rprint(f'[bold blue]Class weighting is {class_weighting[:, 0]} for background, '
                f'{class_weighting[:, 1]} for bands[/bold blue]')
 
