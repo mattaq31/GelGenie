@@ -55,8 +55,8 @@ def prep_train_val_dataloaders(dir_train_img, dir_train_mask, split_training_dat
                                  augmentations=augmentations if apply_augmentations else None,
                                  padding=padding, individual_padding=individual_padding, image_names=train_image_names)
 
-    val_set = ImageMaskDataset(dir_val_img, dir_val_mask, n_channels,
-                               augmentations=None, padding=padding, individual_padding=individual_padding,
+    val_set = ImageMaskDataset(dir_val_img, dir_val_mask, n_channels,  # validation set enforced to not have extra padding (as will be the case at test time)
+                               augmentations=None, padding=False, individual_padding=True,
                                image_names=val_image_names)
 
     # Confirm the length of training/validation sets
