@@ -21,10 +21,13 @@ import org.controlsfx.control.action.ActionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qupath.ext.gelgenie.graphics.EmbeddedBarChart;
+import qupath.ext.gelgenie.models.GelGenieModel;
+import qupath.ext.gelgenie.models.ModelInterfacing;
 import qupath.ext.gelgenie.tools.ImageTools;
-import qupath.ext.gelgenie.tools.openCVModelRunner;
+import qupath.ext.gelgenie.models.ModelRunner;
 import qupath.lib.common.ThreadTools;
 import qupath.lib.gui.QuPathGUI;
+import qupath.fx.dialogs.Dialogs;
 import qupath.lib.images.ImageData;
 import qupath.lib.images.servers.ImageServer;
 import qupath.lib.objects.PathObject;
@@ -37,6 +40,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 
 import static qupath.lib.scripting.QP.*;
 
@@ -78,13 +82,15 @@ public class UIController {
     private CheckBox enableLocalBackground;
     @FXML
     private CheckBox genTableOnSelectedBands;
+    @FXML
+    private CheckBox engineSelect;
 
     @FXML
     private Spinner<Integer> localSensitivity;
     @FXML
     private BarChart<String, Number> bandChart;
     @FXML
-    private ChoiceBox<String> modelChoiceBox;
+    private ChoiceBox<GelGenieModel> modelChoiceBox;
 
     private final ObjectProperty<ImageData<BufferedImage>> imageDataProperty = new SimpleObjectProperty<>();
     private final static ResourceBundle resources = ResourceBundle.getBundle("qupath.ext.gelgenie.ui.strings");
@@ -112,9 +118,7 @@ public class UIController {
         configureCheckBoxes(); // sets rules for checkboxes
         configureBarChart(); // sets up embedded bar chart
         configureAnnotationListener(); // sets up listener that triggers the appropriate functions when an annotation is selected/deselected
-
-        modelChoiceBox.getItems().add("Prototype-UNet-July-29-2023"); // current list of models hardcoded, will update in future.
-        modelChoiceBox.setValue("Prototype-UNet-July-29-2023");
+        getModelsPopulateList(); // sets up model dropdown menu
 
         logger.info("GelGenie GUI loaded without errors");
     }
@@ -206,6 +210,18 @@ public class UIController {
     }
 
     /**
+     * Populate the available models & configure the UI elements to select and download models.
+     */
+    private void getModelsPopulateList() {
+        ModelInterfacing.GelGenieModelCollection models = ModelInterfacing.getModelCollection();
+        modelChoiceBox.getItems().setAll(models.getModels().values());
+        modelChoiceBox.setConverter(new ModelInterfacing.ModelStringConverter(models));
+        modelChoiceBox.getSelectionModel().selectedItemProperty().addListener(
+                (v, o, n) -> downloadButton.setDisable((n == null) || n.isValid()));
+        modelChoiceBox.getSelectionModel().selectFirst();
+    }
+
+    /**
      * Updates the live histogram with the distributions of the selected gel bands.
      *
      * @param annotations: Collection of annotations to be processed and displayed.
@@ -229,6 +245,56 @@ public class UIController {
     }
 
     /**
+     * Downloads the selected model from HuggingFace.
+     */
+    public void downloadModel() {
+        var model = modelChoiceBox.getSelectionModel().getSelectedItem();
+        if (model == null) {
+            return;
+        }
+        if (model.isValid()) {
+            showModelAvailableNotification(model.getName());
+            return;
+        }
+
+        // TODO: do I need these?
+        ForkJoinPool.commonPool().execute(() -> {
+            model.removeCache();
+            showDownloadingModelNotification(model.getName());
+            try {
+                model.downloadModel();
+            } catch (IOException e) {
+                Dialogs.showErrorMessage(resources.getString("title"), resources.getString("error.downloading"));
+                return;
+            }
+            showModelAvailableNotification(model.getName());
+            downloadButton.setDisable(true);
+        });
+    }
+
+    /**
+     * Runs when user attempts to download a model that is already available.
+     *
+     * @param modelName: Model keyname
+     */
+    private void showModelAvailableNotification(String modelName) {
+        Dialogs.showPlainNotification(
+                resources.getString("title"),
+                String.format(resources.getString("ui.popup.model-available"), modelName));
+    }
+
+    /**
+     * Runs when model is being downloaded.
+     *
+     * @param modelName: Model keyname
+     */
+    private void showDownloadingModelNotification(String modelName) {
+        Dialogs.showPlainNotification(
+                resources.getString("title"),
+                String.format(resources.getString("ui.popup.model-downloading"), modelName));
+    }
+
+    /**
      * Runs the segmentation model on the provided image or within the selected annotation,
      * generating annotations for each located band.
      *
@@ -236,7 +302,8 @@ public class UIController {
      */
     public void runBandInference() throws IOException, TranslateException, ModelNotFoundException, MalformedModelException {
         ImageData<BufferedImage> imageData = getCurrentImageData();
-        openCVModelRunner modelRunner = new openCVModelRunner("Prototype-UNet-July-29-2023"); //todo: remove hardcoding
+        ModelRunner modelRunner = new ModelRunner(modelChoiceBox.getSelectionModel().getSelectedItem(),
+                                                  engineSelect.isSelected());
 
         Collection<PathObject> newBands = null;
         if (runFullImage.isSelected()) { // runs model on entire image
@@ -276,7 +343,7 @@ public class UIController {
     public void populateTable() {
 
         Collection<PathObject> selectedBands = new ArrayList<>();
-        if(genTableOnSelectedBands.isSelected()) {
+        if (genTableOnSelectedBands.isSelected()) {
             for (PathObject annot : getSelectedObjects()) {
                 if (annot.getPathClass() != null && Objects.equals(annot.getPathClass().getName(), "Gel Band")) {
                     selectedBands.add(annot);
@@ -292,7 +359,7 @@ public class UIController {
     /**
      * Sets selected annotation to be used as the global background for band analysis.
      */
-    @FXML   
+    @FXML
     private void setGlobalBackgroundPatch() {
         PathObject annot = getSelectedObject();
         PathClass gbClass = PathClass.fromString("Global Background", 80);

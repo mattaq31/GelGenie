@@ -40,7 +40,7 @@
                                         <Tooltip text="%ui.model.tooltip"/>
                                     </tooltip>
                                 </ChoiceBox>
-                                <Button fx:id="downloadButton" mnemonicParsing="false" prefHeight="31.0"
+                                <Button fx:id="downloadButton" onAction="#downloadModel" mnemonicParsing="false" prefHeight="31.0"
                                         prefWidth="39.0">
                                     <tooltip>
                                         <Tooltip text="%ui.model.download.tooltip"/>
@@ -208,7 +208,14 @@
             </children>
         </VBox>
     </TitledPane>
-
+    <!--    Advanced Pane************************************************************-->
+    <TitledPane animated="false" text="%ui.advanced.pane" expanded="false">
+        <VBox alignment="CENTER">
+            <children>
+                <CheckBox fx:id="engineSelect" mnemonicParsing="false" text="%ui.advanced.djlswitch"/>
+            </children>
+        </VBox>
+    </TitledPane>
     <!--    Histogram Pane************************************************************-->
     <TitledPane animated="false" text="%ui.histoview.pane">
         <BarChart fx:id="bandChart">

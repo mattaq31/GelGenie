@@ -8,7 +8,7 @@ import ai.djl.translate.Transform;
 public class divisibleSizePad implements Transform {
 
     int multiplier;
-    divisibleSizePad(int multiplier){
+    public divisibleSizePad(int multiplier){
         this.multiplier = multiplier;
     }
     @Override
