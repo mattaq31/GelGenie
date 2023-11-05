@@ -2,6 +2,29 @@ import rich_click as click
 import sys
 
 
+def model_eval_load(exp_folder, eval_epoch):
+    import toml
+    import torch
+    from os.path import join
+    from gelgenie.segmentation.networks import model_configure
+    from gelgenie.segmentation.helper_functions.stat_functions import load_statistics
+
+    model_config = toml.load(join(exp_folder, 'config.toml'))['model']
+    model, _, _ = model_configure(**model_config)
+    if eval_epoch == 'best':
+        stats = load_statistics(join(exp_folder, 'training_logs'), 'training_stats.csv', config='pd')
+        sel_epoch = stats['Epoch'][stats['Dice Score'].idxmax()]
+    else:
+        sel_epoch = eval_epoch
+
+    checkpoint = torch.load(f=join(exp_folder, 'checkpoints', 'checkpoint_epoch_%s.pth' % sel_epoch),
+                            map_location=torch.device("cpu"))
+    model.load_state_dict(checkpoint['network'])
+    model.eval()
+
+    return model
+
+
 @click.command()
 @click.option('--datafolder', '-d', default=None,
               help='Folder to import/export data.')
@@ -25,14 +48,10 @@ def segmentation_results_compare(datafolder, datafile):
               help='Set this flag to run analysis on standard reference images.')
 def segmentation_pipeline(model_and_epoch, model_folder, input_folder, output_folder, run_ref_analysis):
 
-    import torch
     from os.path import join
-    from gelgenie.segmentation.networks import model_configure
     from gelgenie.segmentation.evaluation.core_functions import segment_and_analyze
     from gelgenie.segmentation.evaluation.reference_image_analysis import standard_ladder_analysis
-    import toml
     from gelgenie.segmentation.helper_functions.general_functions import create_dir_if_empty
-    from gelgenie.segmentation.helper_functions.stat_functions import load_statistics
 
     experiment_names, eval_epochs = zip(*model_and_epoch)
 
@@ -40,20 +59,7 @@ def segmentation_pipeline(model_and_epoch, model_folder, input_folder, output_fo
 
     for experiment, eval_epoch in zip(experiment_names, eval_epochs):
         exp_folder = join(model_folder, experiment)
-        model_config = toml.load(join(exp_folder, 'config.toml'))['model']
-        model, _, _ = model_configure(**model_config)
-        if eval_epoch == 'best':
-            
-            stats = load_statistics(join(exp_folder,'training_logs'), 'training_stats.csv', config='pd')  
-            sel_epoch = stats['Epoch'][stats['Dice Score'].idxmax()]
-
-        else:
-            sel_epoch = eval_epoch
-
-        checkpoint = torch.load(f=join(exp_folder, 'checkpoints', 'checkpoint_epoch_%s.pth' % sel_epoch),
-                                map_location=torch.device("cpu"))
-        model.load_state_dict(checkpoint['network'])
-        model.eval()
+        model = model_eval_load(exp_folder, eval_epoch)
         models.append(model)
 
     create_dir_if_empty(output_folder)
