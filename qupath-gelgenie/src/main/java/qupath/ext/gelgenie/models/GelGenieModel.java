@@ -39,9 +39,14 @@ public class GelGenieModel {
     @SerializedName("torchscript_file")
     private String torchscriptModel;
 
+    @SerializedName("abbrvName")
+    private String abbrvName;
+
     public String getName() {
         return hfRepoId;
     }
+
+    public String getAbbrvName() {return abbrvName;}
 
     /**
      * Remove the cached model files.

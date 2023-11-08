@@ -13,6 +13,7 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.geometry.Side;
 import javafx.scene.chart.BarChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
@@ -88,6 +89,9 @@ public class UIController {
     @FXML
     private Spinner<Integer> localSensitivity;
     @FXML
+    private Spinner<Integer> maxHistoDisplay;
+
+    @FXML
     private BarChart<String, Number> bandChart;
     @FXML
     private ChoiceBox<GelGenieModel> modelChoiceBox;
@@ -135,7 +139,7 @@ public class UIController {
                         actionableAnnotations.add(annot); // histogram should only activate on bands not other objects
                     }
                 }
-                if (!actionableAnnotations.isEmpty() && actionableAnnotations.size() < 20) { // TODO: make this user-definable
+                if (!actionableAnnotations.isEmpty()) {
                     BandHistoDisplay(actionableAnnotations);
                 } else {
                     bandChart.getData().clear();
@@ -154,8 +158,8 @@ public class UIController {
     private void configureBarChart() {
         bandChart.setBarGap(0);
         bandChart.setCategoryGap(0);
-        bandChart.setLegendVisible(false);
-        bandChart.setAnimated(false); // todo: could consider making this less annoying...
+        bandChart.setLegendSide(Side.TOP);
+        bandChart.setAnimated(false); // animation looks nice but it gets old quickly
         bandChart.getXAxis().setLabel("Pixel Intensity");
         bandChart.getYAxis().setLabel("Frequency");
     }
@@ -233,13 +237,21 @@ public class UIController {
 
         Collection<double[]> dataList = new ArrayList<>();
 
+        int index = 0;
+        Collection<String> annotNames = new ArrayList<>();
         for (PathObject annot : annotations) {
             ImageServer<BufferedImage> server = imageData.getServer();
             double[] all_pixels = ImageTools.extractAnnotationPixels(annot, server); // extracts a list of pixels matching the specific selected annotation
             dataList.add(all_pixels);
+            annotNames.add(annot.getName());
+            index++;
+            if (index >= maxHistoDisplay.getValue()) {
+                break;
+            }
         }
 
-        ObservableList<XYChart.Series<String, Number>> allPlots = EmbeddedBarChart.plotHistogram(dataList, 40);
+        ObservableList<XYChart.Series<String, Number>> allPlots = EmbeddedBarChart.plotHistogram(dataList,
+                                                                                            40, annotNames);
         bandChart.getData().addAll(allPlots); // adds new data
 
     }

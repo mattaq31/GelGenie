@@ -141,7 +141,7 @@ public class ModelInterfacing {
         public String toString(GelGenieModel object) {
             for (var entry : models.getModels().entrySet()) {
                 if (entry.getValue() == object)
-                    return entry.getKey();
+                    return entry.getValue().getAbbrvName();
             }
             return "";
         }
