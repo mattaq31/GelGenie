@@ -60,7 +60,6 @@ public class GUIRootCommand implements Runnable {
 
         Pane root = loader.load();
 
-
         // There's probably a better approach... but wrapping in a border pane
         // helped me get the resizing to behave - TODO: is this needed?
         BorderPane pane = new BorderPane(root);

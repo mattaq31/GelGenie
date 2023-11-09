@@ -33,6 +33,7 @@ import javafx.embed.swing.SwingFXUtils;
 import qupath.lib.regions.ImageRegion;
 import qupath.fx.dialogs.FileChoosers;
 
+import static qupath.ext.gelgenie.graphics.EmbeddedBarChart.saveChart;
 import static qupath.ext.gelgenie.tools.ImageTools.createAnnotationImageFrame;
 import static qupath.ext.gelgenie.tools.ImageTools.extractLocalBackgroundPixels;
 import static qupath.lib.scripting.QP.*;
@@ -114,15 +115,17 @@ public class TableController {
             toggleHistogram();
         });
 
-        // permanent table settings
-
+        // permanent chart settings
         final CategoryAxis xAxis = new CategoryAxis();
         final NumberAxis yAxis = new NumberAxis();
         displayChart = new BarChart<>(xAxis, yAxis);
         displayChart.setTitle("Visual Data Depiction");
+        displayChart.lookup(".chart-plot-background").setStyle("-fx-background-color: transparent;");
+        displayChart.lookup(".chart-legend").setStyle("-fx-background-color: transparent;");
         xAxis.setLabel("Band");
         yAxis.setLabel("Quantity");
 
+        // permanent table settings
         mainTable.setPlaceholder(new Label("No gel band data to display"));
         TableView.TableViewSelectionModel<BandEntry> selectionModel = mainTable.getSelectionModel();
         selectionModel.setSelectionMode(SelectionMode.MULTIPLE);
@@ -302,6 +305,10 @@ public class TableController {
 
         displayChart.getData().clear(); // removes previous data
         displayChart.getData().addAll(allPlots);
+    }
+
+    public void saveHistogram(){
+        saveChart(displayChart);
     }
 
     /**

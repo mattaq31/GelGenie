@@ -2,8 +2,16 @@ package qupath.ext.gelgenie.graphics;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.embed.swing.SwingFXUtils;
+import javafx.scene.Node;
+import javafx.scene.SnapshotParameters;
 import javafx.scene.chart.*;
+import javafx.scene.image.WritableImage;
+import qupath.fx.dialogs.FileChoosers;
 
+import javax.imageio.ImageIO;
+import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
@@ -97,4 +105,43 @@ public class EmbeddedBarChart {
         return allPlots;
     }
 
+    public static void saveChart(BarChart Chart){
+
+        File fileOutput = FileChoosers.promptToSaveFile("Export Chart", new File("bandChart.png"),
+                FileChoosers.createExtensionFilter("Save as PNG", ".png"));
+        if (fileOutput == null)
+            return;
+
+        SnapshotParameters snapshotParameters = new SnapshotParameters();
+        snapshotParameters.setTransform(javafx.scene.transform.Scale.scale(4.0, 4.0)); // Increases the scale in an effort to obtain nicer images
+
+        // to get the chart to look good with a white background, all text needs to be changed to black
+        Chart.getXAxis().lookup(".axis-label").setStyle("-fx-text-fill: black;");
+        Chart.getYAxis().lookup(".axis-label").setStyle("-fx-text-fill: black; -fx-tick-label-fill: black;");
+        Chart.lookup(".chart-title").setStyle("-fx-text-fill: black;");
+        Chart.getYAxis().setStyle("-fx-tick-label-fill: black;");
+        Chart.getXAxis().setStyle("-fx-tick-label-fill: black;");
+        for (Node node : Chart.lookupAll(".chart-legend-item")) {
+            node.setStyle("-fx-text-fill: black;");
+        }
+
+        WritableImage image = Chart.snapshot(snapshotParameters, null);
+
+        // all changed text needs to be reset to the defaults (to match system style) after writing out the snapshot
+        Chart.getXAxis().lookup(".axis-label").setStyle(null);
+        Chart.getYAxis().lookup(".axis-label").setStyle(null);
+        Chart.lookup(".chart-title").setStyle(null);
+        Chart.getYAxis().setStyle(null);
+        Chart.getXAxis().setStyle(null);
+        for (Node node : Chart.lookupAll(".chart-legend-item")) {
+            node.setStyle(null);
+        }
+
+        try {
+            ImageIO.write(SwingFXUtils.fromFXImage(image, null), "png", fileOutput);
+        } catch (IOException e) { //TODO: add a proper error message
+            e.printStackTrace();
+        }
+
+    }
 }

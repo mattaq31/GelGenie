@@ -268,8 +268,6 @@ public class UIController {
             showModelAvailableNotification(model.getName());
             return;
         }
-
-        // TODO: do I need these?
         ForkJoinPool.commonPool().execute(() -> {
             model.removeCache();
             showDownloadingModelNotification(model.getName());
@@ -306,47 +304,69 @@ public class UIController {
                 String.format(resources.getString("ui.popup.model-downloading"), modelName));
     }
 
+    private void showRunningModelNotification() {
+        Dialogs.showInfoNotification(
+                resources.getString("title"),
+                resources.getString("ui.popup.model-running"));
+    }
+
+    private void showCompleteModelNotification() {
+        Dialogs.showInfoNotification(
+                resources.getString("title"),
+                resources.getString("ui.popup.model-complete"));
+    }
     /**
      * Runs the segmentation model on the provided image or within the selected annotation,
      * generating annotations for each located band.
-     *
-     * @throws IOException
      */
-    public void runBandInference() throws IOException, TranslateException, ModelNotFoundException, MalformedModelException {
+    public void runBandInference(){
+        showRunningModelNotification();
         ImageData<BufferedImage> imageData = getCurrentImageData();
+
         ModelRunner modelRunner = new ModelRunner(modelChoiceBox.getSelectionModel().getSelectedItem(),
                                                   engineSelect.isSelected());
 
-        Collection<PathObject> newBands = null;
-        if (runFullImage.isSelected()) { // runs model on entire image
-            newBands = modelRunner.runFullImageInference(imageData);
-        } else if (runSelected.isSelected()) { // runs model on data within selected annotation only
-            newBands = modelRunner.runAnnotationInference(imageData, getSelectedObject());
-        }
-
-        if (deletePreviousBands.isSelected()) { //removes all annotations before adding new ones
-            for (PathObject annot : getAnnotationObjects()) {
-                if (annot.getPathClass() != null && Objects.equals(annot.getPathClass().getName(), "Gel Band")) {
-                    removeObject(annot, false);
+        ForkJoinPool.commonPool().execute(() -> {
+            Collection<PathObject> newBands = null;
+            if (runFullImage.isSelected()) { // runs model on entire image
+                try {
+                    newBands = modelRunner.runFullImageInference(imageData);
+                } catch (IOException | MalformedModelException | ModelNotFoundException | TranslateException e) {
+                    throw new RuntimeException(e);
+                }
+            } else if (runSelected.isSelected()) { // runs model on data within selected annotation only
+                try {
+                    newBands = modelRunner.runAnnotationInference(imageData, getSelectedObject());
+                } catch (IOException | MalformedModelException | TranslateException | ModelNotFoundException e) {
+                    throw new RuntimeException(e);
                 }
             }
-            bandIdCounter = 0; // resets naming scheme
-        }
 
-        assert newBands != null; // todo: is this enough - what to show user if nothing found?
+            if (deletePreviousBands.isSelected()) { //removes all annotations before adding new ones
+                for (PathObject annot : getAnnotationObjects()) {
+                    if (annot.getPathClass() != null && Objects.equals(annot.getPathClass().getName(), "Gel Band")) {
+                        removeObject(annot, false);
+                    }
+                }
+                bandIdCounter = 0; // resets naming scheme
+            }
 
-        ArrayList<PathObject> castBands = (ArrayList<PathObject>) newBands; // todo: how to remove this?
+            assert newBands != null; // todo: is this enough - what to show user if nothing found?
 
-        // todo: this sorting isn't great, but will do for now.  Ideally the numbering would be sorted per lane, but have no way to detect lanes for now.
-        castBands.sort(Comparator.comparing((PathObject p) -> p.getROI().getCentroidY()).thenComparing(p -> p.getROI().getCentroidX()));
+            ArrayList<PathObject> castBands = (ArrayList<PathObject>) newBands; // todo: how to remove this?
 
-        for (PathObject annot : castBands) {
-            bandIdCounter++;
-            annot.setPathClass(PathClass.fromString("Gel Band", 8000));
-            annot.setName(String.valueOf(bandIdCounter));
-        }
+            // todo: this sorting isn't great, but will do for now.  Ideally the numbering would be sorted per lane, but have no way to detect lanes for now.
+            castBands.sort(Comparator.comparing((PathObject p) -> p.getROI().getCentroidY()).thenComparing(p -> p.getROI().getCentroidX()));
 
-        addObjects(castBands);
+            for (PathObject annot : castBands) {
+                bandIdCounter++;
+                annot.setPathClass(PathClass.fromString("Gel Band", 8000));
+                annot.setName(String.valueOf(bandIdCounter));
+            }
+
+            addObjects(castBands);
+            showCompleteModelNotification();
+        });
     }
 
     /**
