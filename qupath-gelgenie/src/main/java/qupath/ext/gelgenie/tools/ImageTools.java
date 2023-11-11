@@ -92,7 +92,7 @@ public class ImageTools {
         }
 
         // extracts pixels matching the mask
-        for (int j = 0; j < main_pixels.length; j++) {
+        for (int j = 0; j < mask_pixels.length; j++) {
             if (mask_pixels[j] == targetValue) {
                 final_pixels.add(main_pixels[j]);
             }

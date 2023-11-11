@@ -9,6 +9,7 @@ import java.util.Objects;
  */
 public class BandEntry {
     private int bandID;
+    private int laneID;
     private String bandName;
     private double pixelCount;
     private double averageIntensity;
@@ -18,9 +19,10 @@ public class BandEntry {
     private double normVolume;
     private ImageView thumbnail;
 
-    public BandEntry(int bandID, String bandName, double pixelCount, double averageIntensity, double rawVolume,
+    public BandEntry(int bandID, int laneID, String bandName, double pixelCount, double averageIntensity, double rawVolume,
                      double globalVolume, double localVolume, double normVolume) {
         this.bandID = bandID;
+        this.laneID = laneID;
         this.bandName = bandName;
         this.pixelCount = pixelCount;
         this.averageIntensity = averageIntensity;
@@ -30,9 +32,10 @@ public class BandEntry {
         this.normVolume = normVolume;
     }
 
-    public BandEntry(int bandID, String bandName, double pixelCount, double averageIntensity, double rawVolume,
+    public BandEntry(int bandID, int laneID, String bandName, double pixelCount, double averageIntensity, double rawVolume,
                      double globalVolume, double localVolume, double normVolume, ImageView thumbnail) {
         this.bandID = bandID;
+        this.laneID = laneID;
         this.bandName = Objects.requireNonNullElse(bandName, "N/A");
         this.pixelCount = pixelCount;
         this.averageIntensity = averageIntensity;
@@ -50,6 +53,9 @@ public class BandEntry {
     public void setBandID(int bandID) {
         this.bandID = bandID;
     }
+
+    public int getLaneID() { return laneID; }
+    public void setLaneID(int laneID) {this.laneID = laneID;}
 
     public String getBandName() {
         return bandName;

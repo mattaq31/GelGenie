@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import qupath.ext.gelgenie.graphics.EmbeddedBarChart;
 import qupath.ext.gelgenie.models.GelGenieModel;
 import qupath.ext.gelgenie.models.ModelInterfacing;
+import qupath.ext.gelgenie.tools.BandSorter;
 import qupath.ext.gelgenie.tools.ImageTools;
 import qupath.ext.gelgenie.models.ModelRunner;
 import qupath.lib.common.ThreadTools;
@@ -60,8 +61,7 @@ public class UIController {
     private Button runButton;
     @FXML
     private Button tableButton;
-    @FXML
-    private Button bandButton;
+
     @FXML
     private Button downloadButton;
     @FXML
@@ -70,6 +70,8 @@ public class UIController {
     private ToggleButton toggleAnnotations;
     @FXML
     private Button globalBackgroundSelector;
+    @FXML
+    private Button labelButton;
 
     @FXML
     private CheckBox runFullImage;
@@ -205,9 +207,10 @@ public class UIController {
      * Links button availability according to availability of images, annotations, etc.
      */
     private void configureButtonInteractivity() {
-        // TODO: pending task property currently unused.
+        // TODO: pending task property currently unused, remove if not needed.
         runButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
         tableButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
+        labelButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
 
         // global background selector button needs to be disabled if no annotation is selected
         globalBackgroundSelector.disableProperty().bind(this.selectedObjectCounter.numSelectedAnnotations.isEqualTo(0));
@@ -350,23 +353,25 @@ public class UIController {
                 }
                 bandIdCounter = 0; // resets naming scheme
             }
-
             assert newBands != null; // todo: is this enough - what to show user if nothing found?
 
-            ArrayList<PathObject> castBands = (ArrayList<PathObject>) newBands; // todo: how to remove this?
-
-            // todo: this sorting isn't great, but will do for now.  Ideally the numbering would be sorted per lane, but have no way to detect lanes for now.
-            castBands.sort(Comparator.comparing((PathObject p) -> p.getROI().getCentroidY()).thenComparing(p -> p.getROI().getCentroidX()));
-
-            for (PathObject annot : castBands) {
-                bandIdCounter++;
+            for (PathObject annot : newBands) {
                 annot.setPathClass(PathClass.fromString("Gel Band", 8000));
-                annot.setName(String.valueOf(bandIdCounter));
             }
-
-            addObjects(castBands);
+            addObjects(newBands);
+            BandSorter.LabelBands(newBands);
             showCompleteModelNotification();
         });
+    }
+
+    public void labelBands(){
+        Collection<PathObject> actionableAnnotations = new ArrayList<>();
+        for (PathObject annot : getAnnotationObjects()) {
+            if (annot.getPathClass() != null && Objects.equals(annot.getPathClass().getName(), "Gel Band")) {
+                actionableAnnotations.add(annot); // histogram should only activate on bands not other objects
+            }
+        }
+        BandSorter.LabelBands(actionableAnnotations);
     }
 
     /**
@@ -374,7 +379,7 @@ public class UIController {
      */
     public void populateTable() {
 
-        Collection<PathObject> selectedBands = new ArrayList<>();
+        ArrayList<PathObject> selectedBands = new ArrayList<>();
         if (genTableOnSelectedBands.isSelected()) {
             for (PathObject annot : getSelectedObjects()) {
                 if (annot.getPathClass() != null && Objects.equals(annot.getPathClass().getName(), "Gel Band")) {
@@ -382,6 +387,7 @@ public class UIController {
                 }
             }
         }
+
         TableRootCommand tableCommand = new TableRootCommand(qupath, "gelgenie_table",
                 "Data Table", true, enableGlobalBackground.isSelected(),
                 enableLocalBackground.isSelected(), localSensitivity.getValue(), selectedBands);

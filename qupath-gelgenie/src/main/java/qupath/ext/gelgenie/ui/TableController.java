@@ -13,6 +13,7 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.ImageView;
 import qupath.ext.gelgenie.graphics.EmbeddedBarChart;
 import qupath.ext.gelgenie.tools.ImageTools;
+import qupath.ext.gelgenie.tools.laneBandCompare;
 import qupath.lib.gui.QuPathGUI;
 import qupath.lib.images.ImageData;
 import qupath.lib.images.servers.ImageServer;
@@ -24,10 +25,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Objects;
+import java.util.*;
 
 import javafx.embed.swing.SwingFXUtils;
 import qupath.lib.regions.ImageRegion;
@@ -47,6 +45,8 @@ public class TableController {
     private TableColumn<BandEntry, ImageView> thumbnailCol;
     @FXML
     private TableColumn<BandEntry, Integer> bandCol;
+    @FXML
+    private TableColumn<BandEntry, Integer> laneCol;
     @FXML
     private TableColumn<BandEntry, String> nameCol;
     @FXML
@@ -86,6 +86,7 @@ public class TableController {
     @FXML
     private void initialize() {
         bandCol.setCellValueFactory(new PropertyValueFactory<>("bandID"));
+        laneCol.setCellValueFactory(new PropertyValueFactory<>("laneID"));
         nameCol.setCellValueFactory(new PropertyValueFactory<>("bandName"));
         pixelCol.setCellValueFactory(new PropertyValueFactory<>("pixelCount"));
         meanCol.setCellValueFactory(new PropertyValueFactory<>("averageIntensity"));
@@ -101,7 +102,7 @@ public class TableController {
 
         ImageData<BufferedImage> imageData = getCurrentImageData();
         ImageServer<BufferedImage> server = imageData.getServer();
-        Collection<PathObject> annots = getAnnotationObjects();
+        ArrayList<PathObject> annots = (ArrayList<PathObject>) getAnnotationObjects();
 
         // This code block depends on user settings, which are not provided until this runLater() command.
         Platform.runLater(() -> {
@@ -110,6 +111,7 @@ public class TableController {
                 computeTableColumns(selectedBands, server);
             }
             else{
+                annots.sort(new laneBandCompare());
                 computeTableColumns(annots, server);
             }
             toggleHistogram();
@@ -223,7 +225,23 @@ public class TableController {
                     localVolume = raw_volume - (localMean * all_pixels.length);
                 }
 
-                BandEntry curr_band = new BandEntry(8, annot.getName(), all_pixels.length,
+                int bandID;
+                int laneID;
+                if (annot.getMeasurements().get("BandID") == null){
+                    bandID = 0;
+                }
+                else{
+                    bandID = annot.getMeasurements().get("BandID").intValue();
+                }
+
+                if (annot.getMeasurements().get("LaneID") == null){
+                    laneID = 0;
+                }
+                else{
+                    laneID = annot.getMeasurements().get("LaneID").intValue();
+                }
+
+                BandEntry curr_band = new BandEntry(bandID, laneID, annot.getName(), all_pixels.length,
                         pixel_average, raw_volume, globalVolume, localVolume, 5.0, imviewer);
 
                 ObservableList<BandEntry> all_bands = mainTable.getItems();
@@ -253,10 +271,10 @@ public class TableController {
 
         BufferedWriter br = new BufferedWriter(new FileWriter(fileOutput));
 
-        br.write("Band Name, Pixel Count, Average Intensity, Raw Volume, Local Corrected Volume, Global Corrected Volume \n");
+        br.write("Lane ID, Band ID, Pixel Count, Average Intensity, Raw Volume, Local Corrected Volume, Global Corrected Volume \n");
 
         for (BandEntry band : bandData) {
-            String sb = band.getBandName() + "," + band.getPixelCount() + "," + band.getAverageIntensity() + "," + band.getRawVolume() + "," + band.getLocalVolume() + "," + band.getGlobalVolume() + "\n";
+            String sb = band.getLaneID() + "," + band.getBandID() + "," + band.getPixelCount() + "," + band.getAverageIntensity() + "," + band.getRawVolume() + "," + band.getLocalVolume() + "," + band.getGlobalVolume() + "\n";
             br.write(sb);
         }
         br.close();

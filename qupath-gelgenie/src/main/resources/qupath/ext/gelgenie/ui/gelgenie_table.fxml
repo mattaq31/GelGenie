@@ -18,6 +18,7 @@
                   <columns>
                       <TableColumn fx:id="thumbnailCol" prefWidth="125.0" style="-fx-alignment: CENTER;" text="Thumbnail" />
                       <TableColumn fx:id="bandCol" prefWidth="75.0" style="-fx-alignment: CENTER;" text="Band ID" />
+                      <TableColumn fx:id="laneCol" prefWidth="75.0" style="-fx-alignment: CENTER;" text="Lane ID" />
                       <TableColumn fx:id="nameCol" prefWidth="75.0" style="-fx-alignment: CENTER;" text="Band Name" />
                       <TableColumn fx:id="pixelCol" prefWidth="75.0" style="-fx-alignment: CENTER;" text="# Pixels" />
                       <TableColumn fx:id="meanCol" prefWidth="100.0" style="-fx-alignment: CENTER;" text="Mean Intensity" />

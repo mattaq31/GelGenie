@@ -118,7 +118,11 @@
                                 </ToggleButton>
                             </children>
                         </HBox>
-
+                        <Button fx:id="labelButton" disable="true" onAction="#labelBands" prefHeight="31.0" prefWidth="252.0" text="%ui.processing.relabel">
+                            <tooltip>
+                                <Tooltip text="%ui.processing.relabel.tooltip" />
+                            </tooltip>
+                        </Button>
                         <Separator prefWidth="200.0" />
                         <Label styleClass="regular" text="%ui.processing.globalbackground">
                             <font>
