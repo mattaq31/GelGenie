@@ -27,7 +27,6 @@ import qupath.ext.gelgenie.models.ModelInterfacing;
 import qupath.ext.gelgenie.tools.BandSorter;
 import qupath.ext.gelgenie.tools.ImageTools;
 import qupath.ext.gelgenie.models.ModelRunner;
-import qupath.lib.common.ThreadTools;
 import qupath.lib.gui.QuPathGUI;
 import qupath.fx.dialogs.Dialogs;
 import qupath.lib.images.ImageData;
@@ -40,8 +39,6 @@ import qupath.lib.objects.hierarchy.PathObjectHierarchy;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 
 import static qupath.lib.scripting.QP.*;
@@ -101,12 +98,9 @@ public class UIController {
     private final ObjectProperty<ImageData<BufferedImage>> imageDataProperty = new SimpleObjectProperty<>();
     private final static ResourceBundle resources = ResourceBundle.getBundle("qupath.ext.gelgenie.ui.strings");
 
-    private final ExecutorService pool = Executors.newSingleThreadExecutor(ThreadTools.createThreadFactory("gelgenie", true));
-
-    private final ObjectProperty<Task<?>> pendingTask = new SimpleObjectProperty<>();
+    private final ObjectProperty<Boolean> pendingTask = new SimpleObjectProperty<>();
 
     private SelectedObjectCounter selectedObjectCounter;
-    private int bandIdCounter = 0;
 
     /*
     This function is the first to run when the GUI window is created.
@@ -207,7 +201,6 @@ public class UIController {
      * Links button availability according to availability of images, annotations, etc.
      */
     private void configureButtonInteractivity() {
-        // TODO: pending task property currently unused, remove if not needed.
         runButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
         tableButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
         labelButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
@@ -324,6 +317,7 @@ public class UIController {
      */
     public void runBandInference(){
         showRunningModelNotification();
+        pendingTask.set(true);
         ImageData<BufferedImage> imageData = getCurrentImageData();
 
         ModelRunner modelRunner = new ModelRunner(modelChoiceBox.getSelectionModel().getSelectedItem(),
@@ -351,7 +345,6 @@ public class UIController {
                         removeObject(annot, false);
                     }
                 }
-                bandIdCounter = 0; // resets naming scheme
             }
             assert newBands != null; // todo: is this enough - what to show user if nothing found?
 
@@ -361,6 +354,7 @@ public class UIController {
             addObjects(newBands);
             BandSorter.LabelBands(newBands);
             showCompleteModelNotification();
+            pendingTask.set(null);
         });
     }
 

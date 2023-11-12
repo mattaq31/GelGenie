@@ -2,6 +2,7 @@ package qupath.ext.gelgenie.ui;
 
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 
@@ -28,6 +29,8 @@ import java.io.IOException;
 import java.util.*;
 
 import qupath.fx.dialogs.FileChoosers;
+import qupath.lib.objects.hierarchy.PathObjectHierarchy;
+import qupath.lib.objects.hierarchy.events.PathObjectSelectionModel;
 
 import static qupath.ext.gelgenie.graphics.EmbeddedBarChart.saveChart;
 import static qupath.ext.gelgenie.tools.ImageTools.extractLocalBackgroundPixels;
@@ -59,6 +62,10 @@ public class TableController {
     @FXML
     private TableColumn<BandEntry, Double> normVolCol;
     @FXML
+    private TableColumn<BandEntry, Double> normLocalVolCol;
+    @FXML
+    private TableColumn<BandEntry, Double> normGlobalVolCol;
+    @FXML
     private SplitPane dataTableSplitPane;
 
     private ObservableList<BandEntry> bandData;
@@ -83,6 +90,7 @@ public class TableController {
 
     @FXML
     private void initialize() {
+        // links table columns to properties of BandEntry class
         bandCol.setCellValueFactory(new PropertyValueFactory<>("bandID"));
         laneCol.setCellValueFactory(new PropertyValueFactory<>("laneID"));
         nameCol.setCellValueFactory(new PropertyValueFactory<>("bandName"));
@@ -92,15 +100,22 @@ public class TableController {
         localVolCol.setCellValueFactory(new PropertyValueFactory<>("localVolume"));
         globalVolCol.setCellValueFactory(new PropertyValueFactory<>("globalVolume"));
         normVolCol.setCellValueFactory(new PropertyValueFactory<>("normVolume"));
+        normLocalVolCol.setCellValueFactory(new PropertyValueFactory<>("normLocal"));
+        normGlobalVolCol.setCellValueFactory(new PropertyValueFactory<>("normGlobal"));
         thumbnailCol.setCellValueFactory(new PropertyValueFactory<>("parentAnnotation"));
 
-        meanCol.setCellFactory(TableController::getTableColumnTableCell);
-        localVolCol.setCellFactory(TableController::getTableColumnTableCell);
-        globalVolCol.setCellFactory(TableController::getTableColumnTableCell);
+        // formatting for double columns
+        meanCol.setCellFactory(TableController::getTableFormattedDouble);
+        localVolCol.setCellFactory(TableController::getTableFormattedDouble);
+        globalVolCol.setCellFactory(TableController::getTableFormattedDouble);
+        normVolCol.setCellFactory(TableController::getTableFormattedDouble);
+        normLocalVolCol.setCellFactory(TableController::getTableFormattedDouble);
+        normGlobalVolCol.setCellFactory(TableController::getTableFormattedDouble);
 
-
+        // getting data from viewer
         ImageData<BufferedImage> imageData = getCurrentImageData();
         ImageServer<BufferedImage> server = imageData.getServer();
+        final PathObjectHierarchy hierarchy = imageData.getHierarchy();
         var viewer = qupath.getAllViewers().stream().filter(v -> v.getImageData() == imageData).findFirst().orElse(null);
 
         // uses the implementation in qupath to extract a thumbnail from an annotation
@@ -108,7 +123,7 @@ public class TableController {
                 viewer, imageData.getServer(), true, 5,
                 qupath.getThreadPoolManager().getSingleThreadExecutor(this)));
 
-        // Set fixed cell size - this can avoid large numbers of non-visible cells being computed
+        // Set fixed cell size for the thumbnail - this can avoid large numbers of non-visible cells being computed
         mainTable.fixedCellSizeProperty().bind(Bindings.createDoubleBinding(() -> {
             if (thumbnailCol.isVisible())
                 return Math.max(24, thumbnailCol.getWidth() + 5);
@@ -161,9 +176,23 @@ public class TableController {
             return row;
         });
 
+        // the below synchronises selections on the table with selections in QuPath (and the histogram viewer)
+        // However, the opposite is currently not implemented (would require more code from SummaryMeasurementTableCommand).
+        mainTable.getSelectionModel().getSelectedItems().addListener(new ListChangeListener<>() {
+            @Override
+            public void onChanged(ListChangeListener.Change<? extends BandEntry> c) {
+                synchronizeSelectionModelToTable(hierarchy, c, mainTable);
+            }
+        });
+
     }
 
-    private static TableCell<BandEntry, Double> getTableColumnTableCell(TableColumn<BandEntry, Double> bandEntryDoubleTableColumn) {
+    /**
+     * Formats double columns to two decimal places.
+     * @param bandEntryDoubleTableColumn Column being edited.
+     * @return Edited value.
+     */
+    private static TableCell<BandEntry, Double> getTableFormattedDouble(TableColumn<BandEntry, Double> bandEntryDoubleTableColumn) {
         return new TableCell<>() {
             @Override
             protected void updateItem(Double value, boolean empty) {
@@ -221,6 +250,12 @@ public class TableController {
      * @param server: Server corresponding to open image.
      */
     private void computeTableColumns(Collection<PathObject> annots, ImageServer<BufferedImage> server){
+
+        double inf = Double.POSITIVE_INFINITY;
+        double[] minMax = {inf,-inf};
+        double[] globalMinMax = {inf,-inf};
+        double[] localMinMax = {inf,-inf};
+
         for (PathObject annot : annots) {
             //  only act on annotations marked as bands
             if (annot.getPathClass() != null && Objects.equals(annot.getPathClass().getName(), "Gel Band")) {
@@ -261,29 +296,48 @@ public class TableController {
                 }
 
                 BandEntry curr_band = new BandEntry(bandID, laneID, annot.getName(), all_pixels.length,
-                        pixel_average, raw_volume, globalVolume, localVolume, 5.0, annot);
+                        pixel_average, raw_volume, globalVolume, localVolume, annot);
 
                 ObservableList<BandEntry> all_bands = mainTable.getItems();
                 all_bands.add(curr_band);
 
                 bandData = all_bands;
                 mainTable.setItems(all_bands);
-                if (!localCorrection){ //TODO: table looks empty without these columns.  How to adjust?
-                    localVolCol.setVisible(false);
-                }
-                if (!globalCorrection){
-                    globalVolCol.setVisible(false);
-                }
+
+                // updates min/max values for normalization
+                minMax[0] = Math.min(minMax[0], raw_volume);
+                minMax[1] = Math.max(minMax[1], raw_volume);
+                localMinMax[0] = Math.min(localMinMax[0], localVolume);
+                localMinMax[1] = Math.max(localMinMax[1], localVolume);
+                globalMinMax[0] = Math.min(globalMinMax[0], globalVolume);
+                globalMinMax[1] = Math.max(globalMinMax[1], globalVolume);
             }
+        }
+
+        // normalised values can only be updated when everything else is complete
+        ObservableList<BandEntry> all_bands = mainTable.getItems();
+        for (BandEntry entry:all_bands){
+            entry.setNormVolume((entry.getRawVolume() - minMax[0]) / (minMax[1] - minMax[0]));
+            entry.setNormLocal((entry.getLocalVolume() - localMinMax[0]) / (localMinMax[1] - localMinMax[0]));
+            entry.setNormGlobal((entry.getGlobalVolume() - globalMinMax[0]) / (globalMinMax[1] - globalMinMax[0]));
+        }
+
+        if (!localCorrection){ //TODO: table looks empty without these columns.  How to adjust?
+            localVolCol.setVisible(false);
+            normLocalVolCol.setVisible(false);
+        }
+        if (!globalCorrection){
+            globalVolCol.setVisible(false);
+            normGlobalVolCol.setVisible(false);
         }
     }
 
     /**
-     * Exports table data to CSV.
+     * Exports salient table columns to CSV.
      * @throws IOException
      */
-    public void exportData() throws IOException { //TODO: still rudimentary, needs updating
-        File fileOutput = FileChoosers.promptToSaveFile("Export image region", null,
+    public void exportData() throws IOException {
+        File fileOutput = FileChoosers.promptToSaveFile("Export image region", new File("bandData.csv"),
                 FileChoosers.createExtensionFilter("Set CSV output filename", ".csv"));
         if (fileOutput == null)
             return;
@@ -299,6 +353,9 @@ public class TableController {
         br.close();
     }
 
+    /**
+     * Toggles the display of a histogram, which appears as a side panel in the table view.
+     */
     public void toggleHistogram(){
         if (barChartActive){
             dataTableSplitPane.getItems().remove(1);
@@ -311,6 +368,9 @@ public class TableController {
         }
     }
 
+    /**
+     * Collects data from table and prepares histogram.  Currently only presents raw and global corrected volumes.
+     */
     private void updateHistogramData(){
 
         Collection<double[]> dataList = new ArrayList<>();
@@ -344,6 +404,9 @@ public class TableController {
         displayChart.getData().addAll(allPlots);
     }
 
+    /**
+     * Saves histogram to file.
+     */
     public void saveHistogram(){
         saveChart(displayChart);
     }
@@ -360,6 +423,60 @@ public class TableController {
         this.localSensitivity = localSensitivity;
         if (!selectedBands.isEmpty()){
             this.selectedBands.addAll(selectedBands);
+        }
+    }
+
+    // The below was modified from QuPath's Summary MeasurementTableCommand
+    private boolean synchronizingTableToModel = false;
+    private boolean synchronizingModelToTable = false;
+    private void synchronizeSelectionModelToTable(final PathObjectHierarchy hierarchy, final ListChangeListener.Change<? extends BandEntry> change, final TableView<BandEntry> table) {
+        if (synchronizingTableToModel || hierarchy == null)
+            return;
+
+        PathObjectSelectionModel model = hierarchy.getSelectionModel();
+        if (model == null) {
+            return;
+        }
+
+        boolean wasSynchronizingToTree = synchronizingModelToTable;
+        try {
+            synchronizingModelToTable = true;
+
+            // Check - was anything removed?
+            boolean removed = false;
+            if (change != null) {
+                while (change.next())
+                    removed = removed | change.wasRemoved();
+            }
+
+            MultipleSelectionModel<BandEntry> treeModel = table.getSelectionModel();
+            List<BandEntry> selectedItems = treeModel.getSelectedItems();
+
+            // If we just have no selected items, and something was removed, then clear the selection
+            if (selectedItems.isEmpty() && removed) {
+                model.clearSelection();
+                return;
+            }
+
+            // If we just have one selected item, and also items were removed from the selection, then only select the one item we have
+//			if (selectedItems.size() == 1 && removed) {
+            if (selectedItems.size() == 1) {
+                model.setSelectedObject(selectedItems.get(0).getParentAnnotation(), false);
+                return;
+            }
+
+            // If we have multiple selected items, we need to ensure that everything in the tree matches with everything in the selection model
+            Set<BandEntry> toSelect = new HashSet<>(treeModel.getSelectedItems());
+            Collection<PathObject> annotSelect = new ArrayList<PathObject>();
+
+            for(BandEntry entry : toSelect) {
+            	annotSelect.add(entry.getParentAnnotation());
+            }
+
+            PathObject primary = treeModel.getSelectedItem().getParentAnnotation();
+            model.setSelectedObjects(annotSelect, primary);
+        } finally {
+            synchronizingModelToTable = wasSynchronizingToTree;
         }
     }
 

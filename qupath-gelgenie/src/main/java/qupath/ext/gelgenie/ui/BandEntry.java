@@ -1,6 +1,5 @@
 package qupath.ext.gelgenie.ui;
 
-import javafx.scene.image.ImageView;
 import qupath.lib.objects.PathObject;
 
 import java.util.Objects;
@@ -17,24 +16,13 @@ public class BandEntry {
     private double rawVolume;
     private double globalVolume;
     private double localVolume;
-    private double normVolume;
+    private double normVolume = 0.0;
+    private double normGlobal = 0.0;
+    private double normLocal = 0.0;
     private PathObject parentAnnotation;
 
     public BandEntry(int bandID, int laneID, String bandName, double pixelCount, double averageIntensity, double rawVolume,
-                     double globalVolume, double localVolume, double normVolume) {
-        this.bandID = bandID;
-        this.laneID = laneID;
-        this.bandName = bandName;
-        this.pixelCount = pixelCount;
-        this.averageIntensity = averageIntensity;
-        this.rawVolume = rawVolume;
-        this.globalVolume = globalVolume;
-        this.localVolume = localVolume;
-        this.normVolume = normVolume;
-    }
-
-    public BandEntry(int bandID, int laneID, String bandName, double pixelCount, double averageIntensity, double rawVolume,
-                     double globalVolume, double localVolume, double normVolume, PathObject parentAnnotation) {
+                     double globalVolume, double localVolume, PathObject parentAnnotation) {
         this.bandID = bandID;
         this.laneID = laneID;
         this.bandName = Objects.requireNonNullElse(bandName, "N/A");
@@ -43,7 +31,6 @@ public class BandEntry {
         this.rawVolume = rawVolume;
         this.globalVolume = globalVolume;
         this.localVolume = localVolume;
-        this.normVolume = normVolume;
         this.parentAnnotation = parentAnnotation;
     }
 
@@ -112,6 +99,22 @@ public class BandEntry {
 
     public void setNormVolume(double normVolume) {
         this.normVolume = normVolume;
+    }
+
+    public double getNormGlobal() {
+        return normGlobal;
+    }
+
+    public void setNormGlobal(double normVolume) {
+        this.normGlobal = normVolume;
+    }
+
+    public double getNormLocal() {
+        return normLocal;
+    }
+
+    public void setNormLocal(double normVolume) {
+        this.normLocal = normVolume;
     }
 
     public PathObject getParentAnnotation() {

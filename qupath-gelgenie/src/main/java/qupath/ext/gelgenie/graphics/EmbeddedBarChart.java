@@ -105,6 +105,10 @@ public class EmbeddedBarChart {
         return allPlots;
     }
 
+    /**
+     * Saves a bar chart to a file, prompting user to ask where it should be saved.
+     * @param Chart: Chart to save
+     */
     public static void saveChart(BarChart Chart){
 
         File fileOutput = FileChoosers.promptToSaveFile("Export Chart", new File("bandChart.png"),
