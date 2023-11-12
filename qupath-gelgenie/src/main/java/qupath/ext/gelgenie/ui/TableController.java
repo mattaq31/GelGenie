@@ -11,16 +11,14 @@ import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.image.ImageView;
 import qupath.ext.gelgenie.graphics.EmbeddedBarChart;
 import qupath.ext.gelgenie.tools.ImageTools;
 import qupath.ext.gelgenie.tools.laneBandCompare;
+import qupath.fx.dialogs.Dialogs;
 import qupath.lib.gui.QuPathGUI;
-import qupath.lib.gui.images.servers.RenderedImageServer;
 import qupath.lib.images.ImageData;
 import qupath.lib.images.servers.ImageServer;
 import qupath.lib.objects.PathObject;
-import qupath.lib.regions.RegionRequest;
 
 import java.awt.image.BufferedImage;
 import java.io.BufferedWriter;
@@ -29,12 +27,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 
-import javafx.embed.swing.SwingFXUtils;
-import qupath.lib.regions.ImageRegion;
 import qupath.fx.dialogs.FileChoosers;
 
 import static qupath.ext.gelgenie.graphics.EmbeddedBarChart.saveChart;
-import static qupath.ext.gelgenie.tools.ImageTools.createAnnotationImageFrame;
 import static qupath.ext.gelgenie.tools.ImageTools.extractLocalBackgroundPixels;
 import static qupath.lib.scripting.QP.*;
 
@@ -79,6 +74,8 @@ public class TableController {
     private final Collection<PathObject> selectedBands = new ArrayList<>();
 
     double globalMean = 0.0;
+    private final static ResourceBundle resources = ResourceBundle.getBundle("qupath.ext.gelgenie.ui.strings");
+
 
     public TableController() {
         this.qupath = QuPathGUI.getInstance();
@@ -189,7 +186,10 @@ public class TableController {
             try {
                 globalMean = calculateGlobalBackgroundAverage(server);
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                globalCorrection = false;
+                Dialogs.showInfoNotification(
+                        resources.getString("title"),
+                        resources.getString("ui.processing.no-global-mean"));
             }
         }
     }
@@ -203,10 +203,10 @@ public class TableController {
     private double calculateGlobalBackgroundAverage(ImageServer<BufferedImage> server) throws Exception {
         double global_mean = 0.0;
         Collection<PathObject> annots = getAnnotationObjects();
-        for (PathObject annot : annots) { //TODO: what happens if multiple annotations match the correct class?
+        for (PathObject annot : annots) {
             if (annot.getPathClass() != null && Objects.equals(annot.getPathClass().getName(), "Global Background")) {
                 double[] all_pixels = ImageTools.extractAnnotationPixels(annot, server);
-                global_mean = Arrays.stream(all_pixels).average().getAsDouble();
+                global_mean = global_mean + Arrays.stream(all_pixels).average().getAsDouble();
             }
         }
         if (global_mean == 0.0) {
