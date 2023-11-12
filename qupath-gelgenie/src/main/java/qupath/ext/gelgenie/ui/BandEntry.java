@@ -1,6 +1,7 @@
 package qupath.ext.gelgenie.ui;
 
 import javafx.scene.image.ImageView;
+import qupath.lib.objects.PathObject;
 
 import java.util.Objects;
 
@@ -17,7 +18,7 @@ public class BandEntry {
     private double globalVolume;
     private double localVolume;
     private double normVolume;
-    private ImageView thumbnail;
+    private PathObject parentAnnotation;
 
     public BandEntry(int bandID, int laneID, String bandName, double pixelCount, double averageIntensity, double rawVolume,
                      double globalVolume, double localVolume, double normVolume) {
@@ -33,7 +34,7 @@ public class BandEntry {
     }
 
     public BandEntry(int bandID, int laneID, String bandName, double pixelCount, double averageIntensity, double rawVolume,
-                     double globalVolume, double localVolume, double normVolume, ImageView thumbnail) {
+                     double globalVolume, double localVolume, double normVolume, PathObject parentAnnotation) {
         this.bandID = bandID;
         this.laneID = laneID;
         this.bandName = Objects.requireNonNullElse(bandName, "N/A");
@@ -43,7 +44,7 @@ public class BandEntry {
         this.globalVolume = globalVolume;
         this.localVolume = localVolume;
         this.normVolume = normVolume;
-        this.thumbnail = thumbnail;
+        this.parentAnnotation = parentAnnotation;
     }
 
     public int getBandID() {
@@ -113,11 +114,11 @@ public class BandEntry {
         this.normVolume = normVolume;
     }
 
-    public ImageView getThumbnail() {
-        return thumbnail;
+    public PathObject getParentAnnotation() {
+        return parentAnnotation;
     }
 
-    public void setThumbnail(ImageView thumbnail) {
-        this.thumbnail = thumbnail;
+    public void setParentAnnotation(PathObject parentAnnotation) {
+        this.parentAnnotation = parentAnnotation;
     }
 }

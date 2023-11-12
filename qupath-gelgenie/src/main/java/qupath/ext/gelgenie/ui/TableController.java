@@ -1,6 +1,7 @@
 package qupath.ext.gelgenie.ui;
 
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 
@@ -15,6 +16,7 @@ import qupath.ext.gelgenie.graphics.EmbeddedBarChart;
 import qupath.ext.gelgenie.tools.ImageTools;
 import qupath.ext.gelgenie.tools.laneBandCompare;
 import qupath.lib.gui.QuPathGUI;
+import qupath.lib.gui.images.servers.RenderedImageServer;
 import qupath.lib.images.ImageData;
 import qupath.lib.images.servers.ImageServer;
 import qupath.lib.objects.PathObject;
@@ -42,7 +44,7 @@ public class TableController {
     @FXML
     private TableView<BandEntry> mainTable;
     @FXML
-    private TableColumn<BandEntry, ImageView> thumbnailCol;
+    private TableColumn<BandEntry, PathObject> thumbnailCol;
     @FXML
     private TableColumn<BandEntry, Integer> bandCol;
     @FXML
@@ -61,7 +63,6 @@ public class TableController {
     private TableColumn<BandEntry, Double> globalVolCol;
     @FXML
     private TableColumn<BandEntry, Double> normVolCol;
-
     @FXML
     private SplitPane dataTableSplitPane;
 
@@ -94,14 +95,30 @@ public class TableController {
         localVolCol.setCellValueFactory(new PropertyValueFactory<>("localVolume"));
         globalVolCol.setCellValueFactory(new PropertyValueFactory<>("globalVolume"));
         normVolCol.setCellValueFactory(new PropertyValueFactory<>("normVolume"));
-        thumbnailCol.setCellValueFactory(new PropertyValueFactory<>("thumbnail"));
+        thumbnailCol.setCellValueFactory(new PropertyValueFactory<>("parentAnnotation"));
 
         meanCol.setCellFactory(TableController::getTableColumnTableCell);
         localVolCol.setCellFactory(TableController::getTableColumnTableCell);
         globalVolCol.setCellFactory(TableController::getTableColumnTableCell);
 
+
         ImageData<BufferedImage> imageData = getCurrentImageData();
         ImageServer<BufferedImage> server = imageData.getServer();
+        var viewer = qupath.getAllViewers().stream().filter(v -> v.getImageData() == imageData).findFirst().orElse(null);
+
+        // uses the implementation in qupath to extract a thumbnail from an annotation
+        thumbnailCol.setCellFactory(column -> thumbnailManager.createTableCell(
+                viewer, imageData.getServer(), true, 5,
+                qupath.getThreadPoolManager().getSingleThreadExecutor(this)));
+
+        // Set fixed cell size - this can avoid large numbers of non-visible cells being computed
+        mainTable.fixedCellSizeProperty().bind(Bindings.createDoubleBinding(() -> {
+            if (thumbnailCol.isVisible())
+                return Math.max(24, thumbnailCol.getWidth() + 5);
+            else
+                return -1.0;
+        }, thumbnailCol.widthProperty(), thumbnailCol.visibleProperty()));
+
         ArrayList<PathObject> annots = (ArrayList<PathObject>) getAnnotationObjects();
 
         // This code block depends on user settings, which are not provided until this runLater() command.
@@ -114,7 +131,7 @@ public class TableController {
                 annots.sort(new laneBandCompare());
                 computeTableColumns(annots, server);
             }
-            toggleHistogram();
+            // toggleHistogram(); Having the histogram pop up by default can be annoying sometimes.
         });
 
         // permanent chart settings
@@ -131,6 +148,22 @@ public class TableController {
         mainTable.setPlaceholder(new Label("No gel band data to display"));
         TableView.TableViewSelectionModel<BandEntry> selectionModel = mainTable.getSelectionModel();
         selectionModel.setSelectionMode(SelectionMode.MULTIPLE);
+
+        // when the table is double-clicked, the viewer zooms in on the selected band
+        mainTable.setRowFactory(params -> {
+            var row = new TableRow<BandEntry>();
+            row.setOnMouseClicked(e -> {
+                if (e.getClickCount() == 2) {
+                    if (row.getItem() == null)
+                        return;
+                    var roi = row.getItem().getParentAnnotation().getROI();
+                    if (roi != null && viewer != null && viewer.getHierarchy() != null)
+                        viewer.centerROI(roi);
+                }
+            });
+            return row;
+        });
+
     }
 
     private static TableCell<BandEntry, Double> getTableColumnTableCell(TableColumn<BandEntry, Double> bandEntryDoubleTableColumn) {
@@ -193,20 +226,6 @@ public class TableController {
             if (annot.getPathClass() != null && Objects.equals(annot.getPathClass().getName(), "Gel Band")) {
                 double[] all_pixels = ImageTools.extractAnnotationPixels(annot, server); // extracts a list of pixels matching the specific selected annotation
 
-                int padding = 10;  // TODO: make this user adjustable
-
-                // Generates thumbnails for each band
-                ImageRegion thumbnailRegion = createAnnotationImageFrame(annot, padding);
-                RegionRequest request = RegionRequest.createInstance(server.getPath(), 1.0, thumbnailRegion);
-                BufferedImage img;
-                try {
-                    img = server.readRegion(request);
-                } catch (IOException ex) {
-                    throw new RuntimeException(ex);
-                }
-                ImageView imviewer = new ImageView();
-                imviewer.setImage(SwingFXUtils.toFXImage(img, null));
-
                 // computes intensity volumes
                 double pixel_average = Arrays.stream(all_pixels).average().getAsDouble();
                 double raw_volume = Arrays.stream(all_pixels).sum();
@@ -242,7 +261,7 @@ public class TableController {
                 }
 
                 BandEntry curr_band = new BandEntry(bandID, laneID, annot.getName(), all_pixels.length,
-                        pixel_average, raw_volume, globalVolume, localVolume, 5.0, imviewer);
+                        pixel_average, raw_volume, globalVolume, localVolume, 5.0, annot);
 
                 ObservableList<BandEntry> all_bands = mainTable.getItems();
                 all_bands.add(curr_band);

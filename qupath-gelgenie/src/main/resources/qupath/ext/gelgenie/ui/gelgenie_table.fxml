@@ -16,7 +16,7 @@
          <items>
               <TableView fx:id="mainTable" prefHeight="400.0" prefWidth="1010.0">
                   <columns>
-                      <TableColumn fx:id="thumbnailCol" prefWidth="125.0" style="-fx-alignment: CENTER;" text="Thumbnail" />
+                      <TableColumn fx:id="thumbnailCol" style="-fx-alignment: CENTER;" text="Thumbnail" />
                       <TableColumn fx:id="bandCol" prefWidth="75.0" style="-fx-alignment: CENTER;" text="Band ID" />
                       <TableColumn fx:id="laneCol" prefWidth="75.0" style="-fx-alignment: CENTER;" text="Lane ID" />
                       <TableColumn fx:id="nameCol" prefWidth="75.0" style="-fx-alignment: CENTER;" text="Band Name" />
