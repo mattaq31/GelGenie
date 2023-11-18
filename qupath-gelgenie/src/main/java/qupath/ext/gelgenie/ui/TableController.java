@@ -12,11 +12,14 @@ import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import qupath.ext.gelgenie.graphics.EmbeddedBarChart;
 import qupath.ext.gelgenie.tools.ImageTools;
 import qupath.ext.gelgenie.tools.laneBandCompare;
 import qupath.fx.dialogs.Dialogs;
 import qupath.lib.gui.QuPathGUI;
+import qupath.lib.gui.viewer.QuPathViewer;
 import qupath.lib.images.ImageData;
 import qupath.lib.images.servers.ImageServer;
 import qupath.lib.objects.PathObject;
@@ -26,7 +29,9 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
 
 import qupath.fx.dialogs.FileChoosers;
 import qupath.lib.objects.hierarchy.PathObjectHierarchy;
@@ -73,6 +78,7 @@ public class TableController {
     private BarChart<String, Number> displayChart;
 
     public QuPathGUI qupath;
+    private static final Logger logger = LoggerFactory.getLogger(TableController.class);
 
     // user-defined settings
     private boolean globalCorrection = false;
@@ -119,7 +125,7 @@ public class TableController {
         var viewer = qupath.getAllViewers().stream().filter(v -> v.getImageData() == imageData).findFirst().orElse(null);
 
         // uses the implementation in qupath to extract a thumbnail from an annotation
-        thumbnailCol.setCellFactory(column -> thumbnailManager.createTableCell(
+        thumbnailCol.setCellFactory(column -> createTableCellByReflection(
                 viewer, imageData.getServer(), true, 5,
                 qupath.getThreadPoolManager().getSingleThreadExecutor(this)));
 
@@ -423,6 +429,37 @@ public class TableController {
         this.localSensitivity = localSensitivity;
         if (!selectedBands.isEmpty()){
             this.selectedBands.addAll(selectedBands);
+        }
+    }
+
+
+    /**
+     * Provides access to QuPath's tablecell thumbnail creation method via reflection (provided by Pete).
+     * @param viewer: Current image viewer
+     * @param server: Server corresponding to current image
+     * @param paintObject: Set to true to paint out the annotation within the thumbnail
+     * @param padding: Padding to include around image
+     * @param pool: Thread pool
+     * @return Updated table cell with thumbnail
+     */
+    public static <S extends PathObject, T extends PathObject> TableCell<S, T>  createTableCellByReflection(
+            QuPathViewer viewer, ImageServer<BufferedImage> server, boolean paintObject, double padding, ExecutorService pool
+    ) {
+        Class<?> cls = null;
+        try {
+            cls = Class.forName("qupath.lib.gui.commands.PathObjectImageManagers");
+            var method = cls.getDeclaredMethod("createTableCell",
+                    QuPathViewer.class,
+                    ImageServer.class,
+                    boolean.class,
+                    double.class,
+                    ExecutorService.class
+            );
+            method.setAccessible(true);
+            return (TableCell)method.invoke(null, viewer, server, paintObject, padding, pool);
+        } catch (ClassNotFoundException | InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
+            logger.warn("Exception creating table cell: {}", e.getMessage(), e);
+            return new TableCell<>();
         }
     }
 

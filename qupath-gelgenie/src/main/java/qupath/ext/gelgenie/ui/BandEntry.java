@@ -1,13 +1,15 @@
 package qupath.ext.gelgenie.ui;
 
 import qupath.lib.objects.PathObject;
+import qupath.lib.objects.classes.PathClass;
+import qupath.lib.roi.interfaces.ROI;
 
 import java.util.Objects;
 
 /**
  * Main class that holds all data  displayed in gel data table.  Mainly consists of getters/setters.
  */
-public class BandEntry {
+public class BandEntry extends PathObject {
     private int bandID;
     private int laneID;
     private String bandName;
@@ -123,5 +125,28 @@ public class BandEntry {
 
     public void setParentAnnotation(PathObject parentAnnotation) {
         this.parentAnnotation = parentAnnotation;
+    }
+
+    // Methods below are required to implement the abstract methods in a PathObject.
+    // However, these should never be used and the actual annotation PathObject should be access via getParentAnnotation().
+    @Override
+    public boolean isEditable() {
+        throw new RuntimeException("This method has not been implemented in GelGenie.");
+    }
+    @Override
+    public PathClass getPathClass() {
+        throw new RuntimeException("This method has not been implemented in GelGenie.");
+    }
+    @Override
+    public void setPathClass(PathClass pathClass, double classProbability) {
+        throw new RuntimeException("This method has not been implemented in GelGenie.");
+    }
+    @Override
+    public double getClassProbability() {
+        throw new RuntimeException("This method has not been implemented in GelGenie.");
+    }
+    @Override
+    public ROI getROI() {
+        throw new RuntimeException("This method has not been implemented in GelGenie.");
     }
 }

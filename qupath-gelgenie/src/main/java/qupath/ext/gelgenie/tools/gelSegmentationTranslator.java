@@ -5,13 +5,8 @@ import ai.djl.modality.cv.Image;
 import ai.djl.modality.cv.output.CategoryMask;
 import ai.djl.modality.cv.translator.BaseImageTranslator;
 
-import ai.djl.modality.cv.util.NDImageUtils;
-import ai.djl.ndarray.NDArray;
 import ai.djl.ndarray.NDList;
 
-import ai.djl.ndarray.types.Shape;
-
-import ai.djl.translate.Transform;
 import ai.djl.translate.Translator;
 import ai.djl.translate.TranslatorContext;
 
