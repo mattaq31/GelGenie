@@ -187,7 +187,7 @@ public class TableController {
         mainTable.getSelectionModel().getSelectedItems().addListener(new ListChangeListener<>() {
             @Override
             public void onChanged(ListChangeListener.Change<? extends BandEntry> c) {
-                synchronizeSelectionModelToTable(hierarchy, c, mainTable);
+                synchroniseTableSelection(hierarchy, c, mainTable);
             }
         });
 
@@ -463,58 +463,50 @@ public class TableController {
         }
     }
 
-    // The below was modified from QuPath's Summary MeasurementTableCommand
-    private boolean synchronizingTableToModel = false;
-    private boolean synchronizingModelToTable = false;
-    private void synchronizeSelectionModelToTable(final PathObjectHierarchy hierarchy, final ListChangeListener.Change<? extends BandEntry> change, final TableView<BandEntry> table) {
-        if (synchronizingTableToModel || hierarchy == null)
-            return;
+    /**
+     * This function synchronises a selection in the table with the selection in the rest of QuPath.
+     * This allows users to view their selected band's pixel distribution, even from within a table.
+     */
+    private void synchroniseTableSelection(final PathObjectHierarchy hierarchy,
+                                           final ListChangeListener.Change<? extends BandEntry> change,
+                                           final TableView<BandEntry> table) {
+        if (hierarchy == null) return;
 
         PathObjectSelectionModel model = hierarchy.getSelectionModel();
-        if (model == null) {
+        if (model == null) return;
+
+        // Checks if anything was removed
+        boolean removed = false;
+        if (change != null) {
+            while (change.next())
+                removed = removed | change.wasRemoved();
+        }
+
+        MultipleSelectionModel<BandEntry> treeModel = table.getSelectionModel();
+        List<BandEntry> selectedItems = treeModel.getSelectedItems();
+
+        // If we just have no selected items, and something was removed, then clear the selection
+        if (selectedItems.isEmpty() && removed) {
+            model.clearSelection();
             return;
         }
 
-        boolean wasSynchronizingToTree = synchronizingModelToTable;
-        try {
-            synchronizingModelToTable = true;
-
-            // Check - was anything removed?
-            boolean removed = false;
-            if (change != null) {
-                while (change.next())
-                    removed = removed | change.wasRemoved();
-            }
-
-            MultipleSelectionModel<BandEntry> treeModel = table.getSelectionModel();
-            List<BandEntry> selectedItems = treeModel.getSelectedItems();
-
-            // If we just have no selected items, and something was removed, then clear the selection
-            if (selectedItems.isEmpty() && removed) {
-                model.clearSelection();
-                return;
-            }
-
-            // If we just have one selected item, and also items were removed from the selection, then only select the one item we have
-//			if (selectedItems.size() == 1 && removed) {
-            if (selectedItems.size() == 1) {
-                model.setSelectedObject(selectedItems.get(0).getParentAnnotation(), false);
-                return;
-            }
-
-            // If we have multiple selected items, we need to ensure that everything in the tree matches with everything in the selection model
-            Set<BandEntry> toSelect = new HashSet<>(treeModel.getSelectedItems());
-            Collection<PathObject> annotSelect = new ArrayList<PathObject>();
-
-            for(BandEntry entry : toSelect) {
-            	annotSelect.add(entry.getParentAnnotation());
-            }
-
-            PathObject primary = treeModel.getSelectedItem().getParentAnnotation();
-            model.setSelectedObjects(annotSelect, primary);
-        } finally {
-            synchronizingModelToTable = wasSynchronizingToTree;
+        // If there is just one selected item, and also items were removed from the selection, then only select the one item we have
+        if (selectedItems.size() == 1) {
+            model.setSelectedObject(selectedItems.get(0).getParentAnnotation(), false);
+            return;
         }
+
+        // If there are multiple selected items, need to ensure that everything in the tree matches with everything in the selection model
+        Set<BandEntry> toSelect = new HashSet<>(treeModel.getSelectedItems());
+        Collection<PathObject> annotSelect = new ArrayList<PathObject>();
+
+        for(BandEntry entry : toSelect) {
+            annotSelect.add(entry.getParentAnnotation());
+        }
+
+        PathObject primary = treeModel.getSelectedItem().getParentAnnotation();
+        model.setSelectedObjects(annotSelect, primary);
     }
 
 }
