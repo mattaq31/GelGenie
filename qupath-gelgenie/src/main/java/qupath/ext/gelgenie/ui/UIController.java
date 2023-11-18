@@ -11,7 +11,6 @@ import javafx.beans.binding.ObjectBinding;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.ObservableList;
-import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.geometry.Side;
 import javafx.scene.chart.BarChart;
@@ -52,8 +51,6 @@ public class UIController {
     public QuPathGUI qupath;
 
     // These attributes are all linked to FXML elements in the GUI.
-    @FXML
-    private Label labelMessage;
     @FXML
     private Button runButton;
     @FXML
