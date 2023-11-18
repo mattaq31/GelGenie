@@ -182,19 +182,6 @@
             </children>
         </VBox>
     </TitledPane>
-
-    <!--    Export Pane************************************************************-->
-    <TitledPane animated="false" text="%ui.export.pane">
-        <VBox alignment="CENTER">
-            <children>
-                <Button fx:id="TEMP" disable="true" onAction="#populateTable" prefHeight="31.0" prefWidth="252.0" text="View Data Table">
-                    <tooltip>
-                        <Tooltip text="%ui.model.download.tooltip" />
-                    </tooltip>
-                </Button>
-            </children>
-        </VBox>
-    </TitledPane>
     <!--    Advanced Pane************************************************************-->
     <TitledPane animated="false" text="%ui.advanced.pane" expanded="false">
         <VBox alignment="CENTER">

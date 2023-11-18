@@ -385,6 +385,7 @@ public class TableController {
         ObservableList<BandEntry> all_bands = mainTable.getItems();
         double[] rawPixels = new double[all_bands.size()];
         double[] globalCorrVol = new double[all_bands.size()];
+        double[] localCorrVol = new double[all_bands.size()];
 
         String[] labels = new String[all_bands.size()];
         int counter = 0;
@@ -395,6 +396,9 @@ public class TableController {
             if (this.globalCorrection){
                 globalCorrVol[counter] = band.getGlobalVolume();
             }
+            if (this.localCorrection){
+                localCorrVol[counter] = band.getLocalVolume();
+            }
             counter++;
         }
         dataList.add(rawPixels);
@@ -404,6 +408,12 @@ public class TableController {
             dataList.add(globalCorrVol);
             legendList.add("Global Corrected Volume");
         }
+
+        if (this.localCorrection){
+            dataList.add(localCorrVol);
+            legendList.add("Local Corrected Volume");
+        }
+
         ObservableList<XYChart.Series<String, Number>> allPlots = EmbeddedBarChart.plotBars(dataList, legendList, labels);
 
         displayChart.getData().clear(); // removes previous data

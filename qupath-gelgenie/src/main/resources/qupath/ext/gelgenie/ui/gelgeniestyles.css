@@ -1,49 +1,7 @@
-/* Title */
-.wsinfer-title {
-  -fx-font-size: 150%;
-  -fx-font-weight: bold;
-  -fx-text-fill: -fx-text-base-color;
-}
-
-/* Sub-title */
-.wsinfer-sub-title {
-  -fx-text-fill: -fx-text-base-color;
-  -fx-opacity:0.6;
-  -fx-font-style: italic;
-  /*-fx-padding: -7.5;*/
-}
-
-/* message-label-styles */
-.warning-message {
-  -fx-text-fill: -qp-script-error-color;
-  -fx-opacity:0.8;
-  -fx-font-style: italic;
-}
-.standard-message {
-  -fx-text-fill: -fx-text-base-color;
-  -fx-opacity:0.6;
-  -fx-font-style: italic;
-}
-
-/* separator */
-.wsinfer .separator {
-  -fx-line-color: -fx-text-base-color;
-  -fx-padding: 15;
-}
-
 /* spacing - current use in HBox*/
 .standard-spacing {
   -fx-spacing: 7.5;
 }
-
-.standard-padding {
-  -fx-padding: 5;
-  }
-
-/*download button*/
-/*.download-btn {
-    -fx-background-image: url("icons/download.png");
-}*/
 
 .download-icon {
     -fx-font-family: FontAwesome;
