@@ -13,7 +13,7 @@ public class BandSorter {
             // TODO: sometimes bands are still missed with this system.
             //  Will probably have to recursively repeat the search for each new band that is added to a lane.
             // Or implement someway to identify and delete split/spurious bands.
-            PathObject leftMostBand = Collections.min(bands, new centroidCompareX());
+            PathObject leftMostBand = Collections.min(bands, new CentroidCompareX());
             double lowerX = leftMostBand.getROI().getBoundsX();
             double upperX = leftMostBand.getROI().getBoundsX() + leftMostBand.getROI().getBoundsWidth();
             ArrayList<PathObject> currentLaneBands = new ArrayList<>();

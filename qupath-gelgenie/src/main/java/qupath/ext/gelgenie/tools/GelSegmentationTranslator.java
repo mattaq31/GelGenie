@@ -21,7 +21,7 @@ import java.util.Map;
  * A {@link Translator} that post-process the {@link Image} into {@link CategoryMask} with output
  * mask representing the class that each pixel in the original image belong to.
  */
-public class gelSegmentationTranslator extends BaseImageTranslator<CategoryMask> {
+public class GelSegmentationTranslator extends BaseImageTranslator<CategoryMask> {
 
     private SynsetLoader synsetLoader;
     private List<String> classes;
@@ -29,7 +29,7 @@ public class gelSegmentationTranslator extends BaseImageTranslator<CategoryMask>
     private int imageWidth;
     private int imageHeight;
 
-    public gelSegmentationTranslator(Builder builder, int imageWidth, int imageHeight) {
+    public GelSegmentationTranslator(Builder builder, int imageWidth, int imageHeight) {
 
         super(builder);
         this.synsetLoader = builder.synsetLoader();
@@ -112,9 +112,9 @@ public class gelSegmentationTranslator extends BaseImageTranslator<CategoryMask>
             return this;
         }
 
-        public gelSegmentationTranslator build(int imageWidth, int imageHeight) {
+        public GelSegmentationTranslator build(int imageWidth, int imageHeight) {
             validate();
-            return new gelSegmentationTranslator(this, imageWidth, imageHeight);
+            return new GelSegmentationTranslator(this, imageWidth, imageHeight);
         }
 
         public void configPreProcess(Map<String, ?> arguments) {

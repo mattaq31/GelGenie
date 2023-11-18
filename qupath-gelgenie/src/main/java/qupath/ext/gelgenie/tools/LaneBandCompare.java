@@ -4,7 +4,7 @@ import qupath.lib.objects.PathObject;
 
 import java.util.Comparator;
 
-public class laneBandCompare implements Comparator<PathObject> {
+public class LaneBandCompare implements Comparator<PathObject> {
     public int compare(PathObject a, PathObject b) {
 
         // defaults just in case lane/band ID are not set

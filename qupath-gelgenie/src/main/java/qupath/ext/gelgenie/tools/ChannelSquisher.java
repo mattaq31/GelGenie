@@ -3,7 +3,7 @@ package qupath.ext.gelgenie.tools;
 import ai.djl.ndarray.NDArray;
 import ai.djl.translate.Transform;
 
-public class channelSquisher implements Transform {
+public class ChannelSquisher implements Transform {
 
     @Override
     public NDArray transform(NDArray array) {

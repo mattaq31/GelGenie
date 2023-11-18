@@ -12,9 +12,9 @@ import org.bytedeco.javacpp.indexer.FloatIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.bytedeco.opencv.opencv_core.Mat;
 import org.opencv.core.CvType;
-import qupath.ext.gelgenie.tools.channelSquisher;
-import qupath.ext.gelgenie.tools.divisibleSizePad;
-import qupath.ext.gelgenie.tools.gelSegmentationTranslator;
+import qupath.ext.gelgenie.tools.ChannelSquisher;
+import qupath.ext.gelgenie.tools.DivisibleSizePad;
+import qupath.ext.gelgenie.tools.GelSegmentationTranslator;
 import qupath.imagej.processing.RoiLabeling;
 import qupath.imagej.tools.IJTools;
 import qupath.lib.gui.dialogs.Dialogs;
@@ -162,10 +162,10 @@ public class ModelRunner {
         // TOD: move image height/width finding in the input processing function, so that model doesn't need to be generated from scratch each time
 
         checkPyTorchLibrary();
-        Translator<Image, CategoryMask> translator = gelSegmentationTranslator.builder()
+        Translator<Image, CategoryMask> translator = GelSegmentationTranslator.builder()
                 .addTransform(new ToTensor())
-                .addTransform(new divisibleSizePad(32))
-                .addTransform(new channelSquisher())
+                .addTransform(new DivisibleSizePad(32))
+                .addTransform(new ChannelSquisher())
                 .build(request.getWidth(), request.getHeight());
 
         ImageFactory factory = ImageFactory.getInstance();

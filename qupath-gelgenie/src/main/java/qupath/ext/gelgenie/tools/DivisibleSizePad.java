@@ -5,10 +5,10 @@ import ai.djl.ndarray.NDManager;
 import ai.djl.ndarray.types.Shape;
 import ai.djl.translate.Transform;
 
-public class divisibleSizePad implements Transform {
+public class DivisibleSizePad implements Transform {
 
     int multiplier;
-    public divisibleSizePad(int multiplier){
+    public DivisibleSizePad(int multiplier){
         this.multiplier = multiplier;
     }
     @Override

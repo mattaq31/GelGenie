@@ -16,7 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qupath.ext.gelgenie.graphics.EmbeddedBarChart;
 import qupath.ext.gelgenie.tools.ImageTools;
-import qupath.ext.gelgenie.tools.laneBandCompare;
+import qupath.ext.gelgenie.tools.LaneBandCompare;
 import qupath.fx.dialogs.Dialogs;
 import qupath.lib.gui.QuPathGUI;
 import qupath.lib.gui.viewer.QuPathViewer;
@@ -146,7 +146,7 @@ public class TableController {
                 computeTableColumns(selectedBands, server);
             }
             else{
-                annots.sort(new laneBandCompare());
+                annots.sort(new LaneBandCompare());
                 computeTableColumns(annots, server);
             }
             // toggleHistogram(); Having the histogram pop up by default can be annoying sometimes.
