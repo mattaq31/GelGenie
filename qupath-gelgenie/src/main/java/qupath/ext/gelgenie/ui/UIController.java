@@ -216,7 +216,15 @@ public class UIController {
      * Links button availability according to availability of images, annotations, etc.
      */
     private void configureButtonInteractivity() {
-        runButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
+        runButton.disableProperty().bind(
+                Bindings.createBooleanBinding(
+                        () ->  imageDataProperty.isNull().or(pendingTask.isNotNull()).get() ||
+                                    modelChoiceBox.getSelectionModel().getSelectedItem() == null ||
+                                    !modelChoiceBox.getSelectionModel().getSelectedItem().isValid(),
+                    imageDataProperty,
+                    pendingTask,
+                    modelChoiceBox.getSelectionModel().selectedItemProperty()
+                ));
         tableButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
         labelButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
 
@@ -330,7 +338,7 @@ public class UIController {
      * Runs the segmentation model on the provided image or within the selected annotation,
      * generating annotations for each located band.
      */
-    public void runBandInference(){
+    public void runBandInference() {
         showRunningModelNotification();
         pendingTask.set(true);
         ImageData<BufferedImage> imageData = getCurrentImageData();
