@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import qupath.ext.gelgenie.graphics.EmbeddedBarChart;
 import qupath.ext.gelgenie.models.GelGenieModel;
 import qupath.ext.gelgenie.models.ModelInterfacing;
+import qupath.ext.gelgenie.models.PytorchManager;
 import qupath.ext.gelgenie.tools.BandSorter;
 import qupath.ext.gelgenie.tools.ImageTools;
 import qupath.ext.gelgenie.models.ModelRunner;
@@ -91,6 +92,8 @@ public class UIController {
     private BarChart<String, Number> bandChart;
     @FXML
     private ChoiceBox<GelGenieModel> modelChoiceBox;
+    @FXML
+    private ChoiceBox<String> deviceChoiceBox;
 
     private final ObjectProperty<ImageData<BufferedImage>> imageDataProperty = new SimpleObjectProperty<>();
     private final static ResourceBundle resources = ResourceBundle.getBundle("qupath.ext.gelgenie.ui.strings");
@@ -116,8 +119,22 @@ public class UIController {
         configureBarChart(); // sets up embedded bar chart
         configureAnnotationListener(); // sets up listener that triggers the appropriate functions when an annotation is selected/deselected
         getModelsPopulateList(); // sets up model dropdown menu
+        getDevicesPopulateList();
 
         logger.info("GelGenie GUI loaded without errors");
+    }
+
+    private void getDevicesPopulateList() {
+        var availableDevices = PytorchManager.getAvailableDevices();
+        deviceChoiceBox.getItems().setAll(availableDevices);
+        var selected = GelGeniePrefs.deviceProperty().get();
+        if (availableDevices.contains(selected)) {
+            deviceChoiceBox.getSelectionModel().select(selected);
+        } else {
+            deviceChoiceBox.getSelectionModel().selectFirst();
+        }
+        deviceChoiceBox.getSelectionModel().selectedItemProperty().addListener(
+                (value, oldValue, newValue) -> GelGeniePrefs.deviceProperty().set(newValue));
     }
 
     /*
@@ -161,6 +178,7 @@ public class UIController {
      * Links the model checkboxes together so that when one is selected, the other must be off
      */
     private void configureCheckBoxes() {
+        engineSelect.selectedProperty().bindBidirectional(GelGeniePrefs.useDJLProperty());
         runFullImage.selectedProperty().addListener(new ChangeListener<Boolean>() {
             @Override
             public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
@@ -317,8 +335,9 @@ public class UIController {
         pendingTask.set(true);
         ImageData<BufferedImage> imageData = getCurrentImageData();
 
-        ModelRunner modelRunner = new ModelRunner(modelChoiceBox.getSelectionModel().getSelectedItem(),
-                                                  engineSelect.isSelected());
+        ModelRunner modelRunner = new ModelRunner(
+                modelChoiceBox.getSelectionModel().getSelectedItem(),
+                engineSelect.isSelected());
 
         ForkJoinPool.commonPool().execute(() -> {
             Collection<PathObject> newBands = null;
@@ -326,12 +345,14 @@ public class UIController {
                 try {
                     newBands = modelRunner.runFullImageInference(imageData);
                 } catch (IOException | MalformedModelException | ModelNotFoundException | TranslateException e) {
+                    pendingTask.set(null);
                     throw new RuntimeException(e);
                 }
             } else if (runSelected.isSelected()) { // runs model on data within selected annotation only
                 try {
                     newBands = modelRunner.runAnnotationInference(imageData, getSelectedObject());
                 } catch (IOException | MalformedModelException | TranslateException | ModelNotFoundException e) {
+                    pendingTask.set(null);
                     throw new RuntimeException(e);
                 }
             }
@@ -343,15 +364,17 @@ public class UIController {
                     }
                 }
             }
-            assert newBands != null; // todo: is this enough - what to show user if nothing found?
-
+            pendingTask.set(null);
+            if (newBands == null) {
+                Dialogs.showWarningNotification("GelGenie", "No bands detected!");
+                return;
+            }
             for (PathObject annot : newBands) {
                 annot.setPathClass(PathClass.fromString("Gel Band", 8000));
             }
             addObjects(newBands);
             BandSorter.LabelBands(newBands);
             showCompleteModelNotification();
-            pendingTask.set(null);
         });
     }
 

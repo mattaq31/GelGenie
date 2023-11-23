@@ -187,9 +187,9 @@
         <VBox alignment="CENTER">
             <children>
                 <CheckBox fx:id="engineSelect" mnemonicParsing="false" text="%ui.advanced.djlswitch">
-               <padding>
-                  <Insets bottom="8.0" />
-               </padding>
+                <padding>
+                    <Insets bottom="8.0" />
+                </padding>
                 </CheckBox>
                 <HBox alignment="CENTER_RIGHT" styleClass="standard-spacing">
                     <children>
@@ -209,6 +209,10 @@
                     <VBox.margin>
                         <Insets />
                     </VBox.margin>
+                </HBox>
+                <HBox alignment="CENTER" styleClass="standard-spacing">
+                    <Label text="Device" />
+                    <ChoiceBox fx:id="deviceChoiceBox"/>
                 </HBox>
             </children>
         </VBox>

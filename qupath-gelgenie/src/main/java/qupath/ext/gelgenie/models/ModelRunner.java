@@ -12,9 +12,12 @@ import org.bytedeco.javacpp.indexer.FloatIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.bytedeco.opencv.opencv_core.Mat;
 import org.opencv.core.CvType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import qupath.ext.gelgenie.tools.ChannelSquisher;
 import qupath.ext.gelgenie.tools.DivisibleSizePad;
 import qupath.ext.gelgenie.tools.GelSegmentationTranslator;
+import qupath.ext.gelgenie.ui.GelGeniePrefs;
 import qupath.imagej.processing.RoiLabeling;
 import qupath.imagej.tools.IJTools;
 import qupath.lib.gui.dialogs.Dialogs;
@@ -45,10 +48,13 @@ import ai.djl.translate.*;
 import ai.djl.training.util.*;
 import ai.djl.modality.cv.ImageFactory;
 
+
 /**
  * Main class taking care of running segmentation models using OpenCV and onnx files.
  */
 public class ModelRunner {
+    private static final Logger logger = LoggerFactory.getLogger(ModelRunner.class);
+
     // TODO: many of these settings could be adjustable or user-adjustable
     private final double downsample = 1.0;
     private GelGenieModel baseModel;
@@ -160,10 +166,11 @@ public class ModelRunner {
         // TODO: go through parameters and see if anything needs to be updated
         // TODO: full documentation
         // TOD: move image height/width finding in the input processing function, so that model doesn't need to be generated from scratch each time
+        Device device = PytorchManager.getDevice();
 
         checkPyTorchLibrary();
         Translator<Image, CategoryMask> translator = GelSegmentationTranslator.builder()
-                .addTransform(new ToTensor())
+                .addTransform(createToTensorTransform(device))
                 .addTransform(new DivisibleSizePad(32))
                 .addTransform(new ChannelSquisher())
                 .build(request.getWidth(), request.getHeight());
@@ -176,6 +183,7 @@ public class ModelRunner {
         Criteria<Image, CategoryMask> criteria = Criteria.builder()
                 .setTypes(Image.class, CategoryMask.class)
                 .optModelPath(baseModel.getTSFile().toPath())
+                .optDevice(device)
                 .optOption("mapLocation", "true") // this model requires mapLocation for GPU
                 .optEngine("PyTorch")
                 .optTranslator(translator)
@@ -199,6 +207,14 @@ public class ModelRunner {
             }
         }
         return findSplitROIs(imMat, request, 1); // final splitter operation
+    }
+
+    private static Transform createToTensorTransform(Device device) {
+        logger.debug("Creating ToTensor transform");
+        if (PytorchManager.isMPS(device))
+            return new MpsSupport.ToTensor32();
+        else
+            return new ToTensor();
     }
 
     /**
