@@ -41,8 +41,10 @@ public class PytorchManager {
         String deviceName = GelGeniePrefs.deviceProperty().get();
         switch (deviceName) {
             case "gpu":
+                logger.info("Using GPU");
                 return Device.gpu();
             case "cpu":
+                logger.info("Using CPU");
                 return Device.cpu();
             default:
                 logger.info("Attempting to set device to {}", deviceName);
@@ -75,9 +77,9 @@ public class PytorchManager {
                     includesMPS = true;
             }
         }
-        // CPU should always be available
-        if (availableDevices.isEmpty())
-            availableDevices.add("cpu");
+        // CPU should always be available, so we don't need to check
+//        if (availableDevices.isEmpty())
+        availableDevices.add("cpu");
 
         // If we could use MPS, but don't have it already, add it
         if (!includesMPS && GeneralTools.isMac() && "aarch64".equals(System.getProperty("os.arch"))) {
