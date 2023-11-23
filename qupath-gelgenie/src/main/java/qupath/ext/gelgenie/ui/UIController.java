@@ -125,6 +125,7 @@ public class UIController {
     }
 
     private void configureDevicesList() {
+        useDJLCheckBox.setSelected(false);
         if (useDJLCheckBox.isSelected()) {
             deviceChoiceBox.setDisable(false);
             addDevices();

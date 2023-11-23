@@ -6,7 +6,7 @@ import qupath.lib.gui.prefs.PathPrefs;
 
 public class GelGeniePrefs {
     private static final StringProperty deviceProperty = PathPrefs.createPersistentPreference("gelgenie.device", "cpu");
-    private static final BooleanProperty useDJLProperty = PathPrefs.createPersistentPreference("gelgenie.djl", true);
+    private static final BooleanProperty useDJLProperty = PathPrefs.createPersistentPreference("gelgenie.djl", false);
     public static StringProperty deviceProperty() {
         return deviceProperty;
     }
