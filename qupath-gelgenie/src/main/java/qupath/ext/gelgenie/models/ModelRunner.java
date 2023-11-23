@@ -18,9 +18,9 @@ import qupath.ext.gelgenie.tools.ChannelSquisher;
 import qupath.ext.gelgenie.tools.DivisibleSizePad;
 import qupath.ext.gelgenie.tools.GelSegmentationTranslator;
 import qupath.ext.gelgenie.ui.GelGeniePrefs;
+import qupath.fx.dialogs.Dialogs;
 import qupath.imagej.processing.RoiLabeling;
 import qupath.imagej.tools.IJTools;
-import qupath.lib.gui.dialogs.Dialogs;
 import qupath.lib.images.ImageData;
 import qupath.lib.images.servers.ImageServer;
 import qupath.lib.objects.PathObject;
@@ -220,7 +220,7 @@ public class ModelRunner {
     /**
      * Attempts to check if PyTorch library is available and if not, downloads it. TODO: improve legibility of this area
      */
-    private void checkPyTorchLibrary(){
+    private void checkPyTorchLibrary() {
         try {
             // Ensure PyTorch engine is available
             if (!PytorchManager.hasPyTorchEngine()) {

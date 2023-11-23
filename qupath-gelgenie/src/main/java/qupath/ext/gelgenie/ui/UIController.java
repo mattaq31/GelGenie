@@ -130,6 +130,12 @@ public class UIController {
             addDevices();
         }
         useDJLCheckBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue) {
+                if (!PytorchManager.hasPyTorchEngine()) {
+                    Dialogs.showErrorMessage(resources.getString("title"), resources.getString("error.download-pytorch"));
+                    useDJLCheckBox.setSelected(false);
+                }
+            }
             deviceChoiceBox.setDisable(!newValue);
             addDevices();
         });
@@ -385,7 +391,7 @@ public class UIController {
             }
             pendingTask.set(null);
             if (newBands == null) {
-                Dialogs.showWarningNotification("GelGenie", "No bands detected!");
+                Dialogs.showWarningNotification(resources.getString("title"), resources.getString("error.no-bands"));
                 return;
             }
             for (PathObject annot : newBands) {
