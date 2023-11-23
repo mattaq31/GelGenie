@@ -186,7 +186,7 @@
     <TitledPane animated="false" text="%ui.advanced.pane" expanded="false">
         <VBox alignment="CENTER">
             <children>
-                <CheckBox fx:id="engineSelect" mnemonicParsing="false" text="%ui.advanced.djlswitch">
+                <CheckBox fx:id="useDJLCheckBox" mnemonicParsing="false" text="%ui.advanced.djlswitch">
                 <padding>
                     <Insets bottom="8.0" />
                 </padding>

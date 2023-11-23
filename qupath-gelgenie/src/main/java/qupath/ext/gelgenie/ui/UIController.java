@@ -81,7 +81,7 @@ public class UIController {
     @FXML
     private CheckBox genTableOnSelectedBands;
     @FXML
-    private CheckBox engineSelect;
+    private CheckBox useDJLCheckBox;
 
     @FXML
     private Spinner<Integer> localSensitivity;
@@ -119,12 +119,25 @@ public class UIController {
         configureBarChart(); // sets up embedded bar chart
         configureAnnotationListener(); // sets up listener that triggers the appropriate functions when an annotation is selected/deselected
         getModelsPopulateList(); // sets up model dropdown menu
-        getDevicesPopulateList();
+        configureDevicesList();
 
         logger.info("GelGenie GUI loaded without errors");
     }
 
-    private void getDevicesPopulateList() {
+    private void configureDevicesList() {
+        if (useDJLCheckBox.isSelected()) {
+            deviceChoiceBox.setDisable(false);
+            addDevices();
+        }
+        useDJLCheckBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            deviceChoiceBox.setDisable(!newValue);
+            addDevices();
+        });
+        deviceChoiceBox.getSelectionModel().selectedItemProperty().addListener(
+                (value, oldValue2, newValue2) -> GelGeniePrefs.deviceProperty().set(newValue2));
+    }
+
+    private void addDevices() {
         var availableDevices = PytorchManager.getAvailableDevices();
         deviceChoiceBox.getItems().setAll(availableDevices);
         var selected = GelGeniePrefs.deviceProperty().get();
@@ -133,8 +146,6 @@ public class UIController {
         } else {
             deviceChoiceBox.getSelectionModel().selectFirst();
         }
-        deviceChoiceBox.getSelectionModel().selectedItemProperty().addListener(
-                (value, oldValue, newValue) -> GelGeniePrefs.deviceProperty().set(newValue));
     }
 
     /*
@@ -178,7 +189,7 @@ public class UIController {
      * Links the model checkboxes together so that when one is selected, the other must be off
      */
     private void configureCheckBoxes() {
-        engineSelect.selectedProperty().bindBidirectional(GelGeniePrefs.useDJLProperty());
+        useDJLCheckBox.selectedProperty().bindBidirectional(GelGeniePrefs.useDJLProperty());
         runFullImage.selectedProperty().addListener(new ChangeListener<Boolean>() {
             @Override
             public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
@@ -345,7 +356,7 @@ public class UIController {
 
         ModelRunner modelRunner = new ModelRunner(
                 modelChoiceBox.getSelectionModel().getSelectedItem(),
-                engineSelect.isSelected());
+                useDJLCheckBox.isSelected());
 
         ForkJoinPool.commonPool().execute(() -> {
             Collection<PathObject> newBands = null;
