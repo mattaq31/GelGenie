@@ -1,6 +1,8 @@
 GelGenie
 ==============================
 
+[![Platform Support](https://img.shields.io/badge/Platform-Linux%20%7C%20macOS%20%7C%20Windows-blue)](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-blue) [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-green.svg)](https://opensource.org/licenses/Apache-2.0) ![GitHub all releases](https://img.shields.io/github/downloads/mattaq31/GelGenie/total)
+
 Repo containing 1) a python package for training and evaluating gel image segmentation models, 2) a QuPath plugin to use these models directly in QuPath and 3) a prototype Electron GUI for segmenting gel images using classical watershed segmentation.
 
 Full Description TBD
