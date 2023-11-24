@@ -90,7 +90,6 @@
                         </children>
                     </HBox>
                 </VBox>
-
             </children>
         </VBox>
     </TitledPane>
@@ -176,7 +175,6 @@
                                 <Tooltip text="%ui.processing.viewdatatooltip" />
                             </tooltip>
                         </Button>
-
                     </children>
                 </VBox>
             </children>
@@ -186,11 +184,6 @@
     <TitledPane animated="false" text="%ui.advanced.pane" expanded="false">
         <VBox alignment="CENTER">
             <children>
-                <CheckBox fx:id="engineSelect" mnemonicParsing="false" text="%ui.advanced.djlswitch">
-               <padding>
-                  <Insets bottom="8.0" />
-               </padding>
-                </CheckBox>
                 <HBox alignment="CENTER_RIGHT" styleClass="standard-spacing">
                     <children>
                         <Label styleClass="regular" text="%ui.advanced.HistoDisplayLabel" />
@@ -209,6 +202,15 @@
                     <VBox.margin>
                         <Insets />
                     </VBox.margin>
+                </HBox>
+                <CheckBox fx:id="useDJLCheckBox" mnemonicParsing="false" text="%ui.advanced.djlswitch">
+                    <padding>
+                        <Insets bottom="8.0" />
+                    </padding>
+                </CheckBox>
+                <HBox alignment="CENTER" styleClass="standard-spacing">
+                    <Label text="%ui.advanced.Device" />
+                    <ChoiceBox fx:id="deviceChoiceBox"/>
                 </HBox>
             </children>
         </VBox>

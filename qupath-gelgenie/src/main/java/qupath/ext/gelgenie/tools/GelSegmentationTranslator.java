@@ -39,7 +39,7 @@ public class GelSegmentationTranslator extends BaseImageTranslator<CategoryMask>
 
     @Override
     public void prepare(TranslatorContext ctx) throws IOException {
-        if (classes == null) { // usually reads this from file, in this case we can just harcode it once
+        if (classes == null) { // usually reads this from file, in this case we can just hardcode it once
             classes = new ArrayList<>();
             classes.add("Background");
             classes.add("Gel Band");

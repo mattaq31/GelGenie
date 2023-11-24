@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import qupath.ext.gelgenie.graphics.EmbeddedBarChart;
 import qupath.ext.gelgenie.models.GelGenieModel;
 import qupath.ext.gelgenie.models.ModelInterfacing;
+import qupath.ext.gelgenie.models.PytorchManager;
 import qupath.ext.gelgenie.tools.BandSorter;
 import qupath.ext.gelgenie.tools.ImageTools;
 import qupath.ext.gelgenie.models.ModelRunner;
@@ -80,7 +81,7 @@ public class UIController {
     @FXML
     private CheckBox genTableOnSelectedBands;
     @FXML
-    private CheckBox engineSelect;
+    private CheckBox useDJLCheckBox;
 
     @FXML
     private Spinner<Integer> localSensitivity;
@@ -91,6 +92,8 @@ public class UIController {
     private BarChart<String, Number> bandChart;
     @FXML
     private ChoiceBox<GelGenieModel> modelChoiceBox;
+    @FXML
+    private ChoiceBox<String> deviceChoiceBox;
 
     private final ObjectProperty<ImageData<BufferedImage>> imageDataProperty = new SimpleObjectProperty<>();
     private final static ResourceBundle resources = ResourceBundle.getBundle("qupath.ext.gelgenie.ui.strings");
@@ -116,8 +119,40 @@ public class UIController {
         configureBarChart(); // sets up embedded bar chart
         configureAnnotationListener(); // sets up listener that triggers the appropriate functions when an annotation is selected/deselected
         getModelsPopulateList(); // sets up model dropdown menu
+        configureDevicesList();
 
         logger.info("GelGenie GUI loaded without errors");
+    }
+
+    private void configureDevicesList() {
+        useDJLCheckBox.setSelected(false);
+        if (useDJLCheckBox.isSelected()) {
+            deviceChoiceBox.setDisable(false);
+            addDevices();
+        }
+        useDJLCheckBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue) {
+                if (!PytorchManager.hasPyTorchEngine()) {
+                    Dialogs.showErrorMessage(resources.getString("title"), resources.getString("error.download-pytorch"));
+                    useDJLCheckBox.setSelected(false);
+                }
+            }
+            deviceChoiceBox.setDisable(!newValue);
+            addDevices();
+        });
+        deviceChoiceBox.getSelectionModel().selectedItemProperty().addListener(
+                (value, oldValue2, newValue2) -> GelGeniePrefs.deviceProperty().set(newValue2));
+    }
+
+    private void addDevices() {
+        var availableDevices = PytorchManager.getAvailableDevices();
+        deviceChoiceBox.getItems().setAll(availableDevices);
+        var selected = GelGeniePrefs.deviceProperty().get();
+        if (availableDevices.contains(selected)) {
+            deviceChoiceBox.getSelectionModel().select(selected);
+        } else {
+            deviceChoiceBox.getSelectionModel().selectFirst();
+        }
     }
 
     /*
@@ -161,6 +196,7 @@ public class UIController {
      * Links the model checkboxes together so that when one is selected, the other must be off
      */
     private void configureCheckBoxes() {
+        useDJLCheckBox.selectedProperty().bindBidirectional(GelGeniePrefs.useDJLProperty());
         runFullImage.selectedProperty().addListener(new ChangeListener<Boolean>() {
             @Override
             public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
@@ -198,7 +234,15 @@ public class UIController {
      * Links button availability according to availability of images, annotations, etc.
      */
     private void configureButtonInteractivity() {
-        runButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
+        runButton.disableProperty().bind(
+                Bindings.createBooleanBinding(
+                        () ->  imageDataProperty.isNull().or(pendingTask.isNotNull()).get() ||
+                                    modelChoiceBox.getSelectionModel().getSelectedItem() == null ||
+                                    !modelChoiceBox.getSelectionModel().getSelectedItem().isValid(),
+                    imageDataProperty,
+                    pendingTask,
+                    modelChoiceBox.getSelectionModel().selectedItemProperty()
+                ));
         tableButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
         labelButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
 
@@ -312,13 +356,14 @@ public class UIController {
      * Runs the segmentation model on the provided image or within the selected annotation,
      * generating annotations for each located band.
      */
-    public void runBandInference(){
+    public void runBandInference() {
         showRunningModelNotification();
         pendingTask.set(true);
         ImageData<BufferedImage> imageData = getCurrentImageData();
 
-        ModelRunner modelRunner = new ModelRunner(modelChoiceBox.getSelectionModel().getSelectedItem(),
-                                                  engineSelect.isSelected());
+        ModelRunner modelRunner = new ModelRunner(
+                modelChoiceBox.getSelectionModel().getSelectedItem(),
+                useDJLCheckBox.isSelected());
 
         ForkJoinPool.commonPool().execute(() -> {
             Collection<PathObject> newBands = null;
@@ -326,12 +371,14 @@ public class UIController {
                 try {
                     newBands = modelRunner.runFullImageInference(imageData);
                 } catch (IOException | MalformedModelException | ModelNotFoundException | TranslateException e) {
+                    pendingTask.set(null);
                     throw new RuntimeException(e);
                 }
             } else if (runSelected.isSelected()) { // runs model on data within selected annotation only
                 try {
                     newBands = modelRunner.runAnnotationInference(imageData, getSelectedObject());
                 } catch (IOException | MalformedModelException | TranslateException | ModelNotFoundException e) {
+                    pendingTask.set(null);
                     throw new RuntimeException(e);
                 }
             }
@@ -343,15 +390,17 @@ public class UIController {
                     }
                 }
             }
-            assert newBands != null; // todo: is this enough - what to show user if nothing found?
-
+            pendingTask.set(null);
+            if (newBands == null) {
+                Dialogs.showWarningNotification(resources.getString("title"), resources.getString("error.no-bands"));
+                return;
+            }
             for (PathObject annot : newBands) {
                 annot.setPathClass(PathClass.fromString("Gel Band", 8000));
             }
             addObjects(newBands);
             BandSorter.LabelBands(newBands);
             showCompleteModelNotification();
-            pendingTask.set(null);
         });
     }
 
