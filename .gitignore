@@ -140,7 +140,14 @@ scratch/scratch_data/*
 
 samples/
 node_modules/
+
+# python related ignores
 python-gelgenie/gelgenie/segmentation/wandb/*
+python-gelgenie/scratch/*
+python-gelgenie/scratch_scripts/*
+
+# qupath related ignores
 qupath/*
 qupath-extension-wsinfer/*
 qupath-extension-djl/*
+
