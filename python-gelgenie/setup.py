@@ -4,9 +4,10 @@ from setuptools import setup, find_packages
 setup(
     name="GelGenie",
     author="Matthew Aquilina, Kiros Kwan, Filip Busic",
-    description="TBD",
+    description="Set of tools for training deep learning models to carry out "
+                "gel electrophoresis band segmentation using PyTorch.",
     version="1.0.0",
-    url="https://github.com/mattaq31/Automatic-Gel-Analysis/",
+    url="https://github.com/mattaq31/GelGenie/",
     packages=find_packages(),
     entry_points='''
     [console_scripts]

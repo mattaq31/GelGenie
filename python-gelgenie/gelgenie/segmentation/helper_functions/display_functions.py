@@ -1,7 +1,6 @@
 import numpy as np
 from matplotlib import pyplot as plt
 import os
-from gelgenie.gel_tools.band_detection import watershed_seg
 
 
 def plot_img_and_mask(img, mask):

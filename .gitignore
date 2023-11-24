@@ -140,7 +140,7 @@ scratch/scratch_data/*
 
 samples/
 node_modules/
-gelgenie/segmentation/wandb/*
+python-gelgenie/gelgenie/segmentation/wandb/*
 qupath/*
 qupath-extension-wsinfer/*
 qupath-extension-djl/*

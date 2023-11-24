@@ -1,4 +1,4 @@
-from gel_tools import GelAnalysis
+from gelgenie.gel_tools import GelAnalysis
 from PIL import Image
 import matplotlib.pyplot as plt
 
@@ -11,8 +11,8 @@ import pandas as pd
 import matplotlib.patches as patches
 
 
-from gel_tools.band_detection import watershed_seg, mask_expansion
-from gel_tools.utils import convert_pil_image_base_64, convert_numpy_image_base_64
+from gelgenie.gel_tools.band_detection import watershed_seg, mask_expansion
+from gelgenie.gel_tools import convert_pil_image_base_64, convert_numpy_image_base_64
 
 if __name__ == '__main__':
 

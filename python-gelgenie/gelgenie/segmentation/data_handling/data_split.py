@@ -1,6 +1,6 @@
 import os
 from os.path import join
-from segmentation.helper_functions.general_functions import extract_image_names_from_folder, create_dir_if_empty
+from gelgenie.segmentation.helper_functions.general_functions import extract_image_names_from_folder, create_dir_if_empty
 import numpy as np
 import shutil
 

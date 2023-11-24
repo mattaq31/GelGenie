@@ -15,6 +15,7 @@ import numpy as np
 
 from gelgenie.gel_tools import GelAnalysis
 
+
 # Allows one to run server from any base filepath
 os.chdir(os.path.abspath(os.path.join(__file__, os.path.pardir)))
 

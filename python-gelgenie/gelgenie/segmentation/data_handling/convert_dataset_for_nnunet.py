@@ -1,9 +1,6 @@
 import os
 import imageio
 import cv2
-import shutil
-from PIL import Image
-import numpy as np
 
 from gelgenie.segmentation.helper_functions.general_functions import create_dir_if_empty, extract_image_names_from_folder
 

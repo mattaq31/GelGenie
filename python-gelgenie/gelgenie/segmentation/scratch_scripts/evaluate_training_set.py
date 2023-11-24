@@ -9,11 +9,11 @@ import wandb
 from pathlib import Path
 import logging
 
-from segmentation.data_handling.dataloaders import ImageMaskDataset
-from segmentation.helper_functions.dice_score import dice_loss
-from segmentation.helper_functions.stat_functions import excel_stats
-from segmentation.helper_functions.display_functions import plot_stats, visualise_segmentation
-from segmentation.scratch_scripts.basic_eval import evaluate
+from gelgenie.segmentation.data_handling.dataloaders import ImageMaskDataset
+from gelgenie.segmentation.helper_functions.dice_score import dice_loss
+from gelgenie.segmentation.helper_functions.stat_functions import excel_stats
+from gelgenie.segmentation.helper_functions.display_functions import plot_stats, visualise_segmentation
+from gelgenie.segmentation.scratch_scripts.basic_eval import evaluate
 
 
 def train_net(net,

@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 from scipy import ndimage
 from gelgenie.segmentation.helper_functions.dice_score import dice_coeff
 
-from gelgenie.segmentation.unet import UNet, smp_UNet, smp_UNetPlusPlus
+from gelgenie.segmentation import UNet, smp_UNet, smp_UNetPlusPlus
 from gelgenie.segmentation.data_handling.dataloaders import ImageMaskDataset, ImageDataset
 
 

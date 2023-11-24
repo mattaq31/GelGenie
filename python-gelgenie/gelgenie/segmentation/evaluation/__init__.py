@@ -50,7 +50,6 @@ def segmentation_pipeline(model_and_epoch, model_folder, input_folder, output_fo
 
     from os.path import join
     from gelgenie.segmentation.evaluation.core_functions import segment_and_analyze
-    from gelgenie.segmentation.evaluation.reference_image_analysis import standard_ladder_analysis
     from gelgenie.segmentation.helper_functions.general_functions import create_dir_if_empty
 
     experiment_names, eval_epochs = zip(*model_and_epoch)

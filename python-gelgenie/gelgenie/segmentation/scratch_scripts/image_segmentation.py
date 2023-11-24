@@ -12,7 +12,7 @@ from torch.utils.data import Dataset
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 
-from segmentation.unet import UNet
+from gelgenie.segmentation.unet import UNet
 
 
 def segmentationEval(net, dataloader, device):

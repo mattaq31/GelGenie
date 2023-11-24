@@ -60,7 +60,7 @@ def visual_onnx_export(model_folder, epoch, image_folder):
     :return: N/A
     """
     from matplotlib import pyplot as plt
-    from gelgenie.segmentation.data_handling.dataloaders import ImageDataset
+    from segmentation.data_handling.dataloaders import ImageDataset
     import cv2
     from skimage.color import label2rgb
     import onnxruntime

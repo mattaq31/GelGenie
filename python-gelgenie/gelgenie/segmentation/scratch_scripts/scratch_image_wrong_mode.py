@@ -1,7 +1,7 @@
-from segmentation.data_handling import prep_train_val_dataloaders
+from gelgenie.segmentation.data_handling import prep_train_val_dataloaders
 from tqdm import tqdm
 
-from segmentation.unet import UNet
+from gelgenie.segmentation.unet import UNet
 
 dir_img = 'C:/2022_Summer_Intern/Gel_Images_UNet_Test/Images_Q1+Q2+selected/'
 dir_mask = 'C:/2022_Summer_Intern/Gel_Images_UNet_Test/Masks_Q1+Q2+selected/'

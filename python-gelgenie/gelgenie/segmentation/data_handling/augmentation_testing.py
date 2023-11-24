@@ -5,7 +5,7 @@ import numpy as np
 
 from gelgenie.segmentation.helper_functions.general_functions import create_dir_if_empty
 from gelgenie.segmentation.data_handling.dataloaders import ImageDataset
-from segmentation.data_handling import get_training_augmentation
+from gelgenie.segmentation.data_handling import get_training_augmentation
 import albumentations as albu
 
 

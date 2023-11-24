@@ -1,6 +1,6 @@
 import cv2
 import matplotlib.pyplot as plt
-from gel_tools.utils import Preprocessor
+from gelgenie.gel_tools import Preprocessor
 from scratch.lane_finder import LaneFinder
 
 

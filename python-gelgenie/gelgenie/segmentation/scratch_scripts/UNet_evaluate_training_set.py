@@ -8,9 +8,9 @@ import toml
 
 import torch
 
-from segmentation.unet import UNet
-from segmentation.test_scripts.evaluate_training_set import train_net
-from segmentation.helper_functions.general_functions import create_dir_if_empty
+from gelgenie.segmentation.unet import UNet
+from gelgenie.segmentation.test_scripts.evaluate_training_set import train_net
+from gelgenie.segmentation.helper_functions.general_functions import create_dir_if_empty
 
 
 def experiment_setup(parameters, **kwargs):
@@ -90,7 +90,7 @@ def experiment_setup(parameters, **kwargs):
     elif params['base_hardware'] == "MA_mac":  # Paths for working on Matthew's mac
         base_dir = "/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models"
     else:
-        base_dir = './'
+        base_dir = '/'
 
     # Make base directory for storing everything
     base_dir = os.path.join(base_dir, params['experiment_name'] + '_' + strftime("%Y_%m_%d_%H;%M;%S"))
