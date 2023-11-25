@@ -88,7 +88,7 @@ public class GelGenieModel {
     /**
      * Check if the LFS pointer that contains the SHA has later modified time
      * than the model file. This should always be true since we download the
-     * model first.  This is only applied only the TS file currently.  TODO: extend to ONNX too
+     * model first.  This is only applied to the TS file currently.  TODO: extend to ONNX too
      * @return true if the modified times are as expected.
      */
     private boolean checkModifiedTimes() {

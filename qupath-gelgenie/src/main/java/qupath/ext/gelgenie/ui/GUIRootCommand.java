@@ -1,5 +1,6 @@
 package qupath.ext.gelgenie.ui;
 
+import javafx.scene.image.Image;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
@@ -73,6 +74,10 @@ public class GUIRootCommand implements Runnable {
         else {
             stage.setTitle(resources.getString("title") + " " + panel_name);
         }
+
+        // TODO: when github repo is live, replace the local logo with the online github one (or cache?)
+        // TODO: create an 'About' page with bigger logo inside it + developer names
+        // stage.getIcons().add(new Image("file:/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/graphics/logo/v1/gelgenie_small.png"));
         stage.setScene(scene);
         stage.setResizable(resizable);
 

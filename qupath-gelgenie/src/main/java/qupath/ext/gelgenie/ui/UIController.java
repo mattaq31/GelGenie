@@ -119,11 +119,15 @@ public class UIController {
         configureBarChart(); // sets up embedded bar chart
         configureAnnotationListener(); // sets up listener that triggers the appropriate functions when an annotation is selected/deselected
         getModelsPopulateList(); // sets up model dropdown menu
-        configureDevicesList();
+        configureDevicesList(); // sets up hardware devices for computational speed-up
+        configureAdditionalPersistentSettings(); // sets up miscellaneous persistent settings
 
         logger.info("GelGenie GUI loaded without errors");
     }
 
+    /*
+    This function enables the DJL buttons only if the PyTorch engine is available.
+     */
     private void configureDevicesList() {
         useDJLCheckBox.setSelected(false);
         if (useDJLCheckBox.isSelected()) {
@@ -144,6 +148,9 @@ public class UIController {
                 (value, oldValue2, newValue2) -> GelGeniePrefs.deviceProperty().set(newValue2));
     }
 
+    /*
+    This function scans the user's hardware to see if any GPU or MPL devices are available to speed up model computation.
+     */
     private void addDevices() {
         var availableDevices = PytorchManager.getAvailableDevices();
         deviceChoiceBox.getItems().setAll(availableDevices);
@@ -192,11 +199,22 @@ public class UIController {
         bandChart.getYAxis().setLabel("Frequency");
     }
 
+    /*
+    Links additional settings to a persistent state that haven't been covered in other areas.
+     */
+    private void configureAdditionalPersistentSettings(){
+        localSensitivity.getValueFactory().valueProperty().bindBidirectional(GelGeniePrefs.localCorrectionPixels());
+    }
+
     /**
-     * Links the model checkboxes together so that when one is selected, the other must be off
+     * Attaches checkboxes to extension persistent settings and links the model checkboxes together so that
+     * when one is selected, the other must be off.
      */
     private void configureCheckBoxes() {
         useDJLCheckBox.selectedProperty().bindBidirectional(GelGeniePrefs.useDJLProperty());
+        deletePreviousBands.selectedProperty().bindBidirectional(GelGeniePrefs.deletePreviousBandsProperty());
+        enableGlobalBackground.selectedProperty().bindBidirectional(GelGeniePrefs.globalCorrectionProperty());
+        enableLocalBackground.selectedProperty().bindBidirectional(GelGeniePrefs.localCorrectionProperty());
         runFullImage.selectedProperty().addListener(new ChangeListener<Boolean>() {
             @Override
             public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
@@ -234,6 +252,7 @@ public class UIController {
      * Links button availability according to availability of images, annotations, etc.
      */
     private void configureButtonInteractivity() {
+
         runButton.disableProperty().bind(
                 Bindings.createBooleanBinding(
                         () ->  imageDataProperty.isNull().or(pendingTask.isNotNull()).get() ||
@@ -243,6 +262,7 @@ public class UIController {
                     pendingTask,
                     modelChoiceBox.getSelectionModel().selectedItemProperty()
                 ));
+
         tableButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
         labelButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
 
