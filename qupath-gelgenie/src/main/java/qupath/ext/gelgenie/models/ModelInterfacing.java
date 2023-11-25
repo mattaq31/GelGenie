@@ -27,6 +27,22 @@ public class ModelInterfacing {
     private static GelGenieModelCollection cachedModelCollection;
 
     /**
+     * Loads a named gelgenie model from the available collection.
+     * @param modelName: String name of the model to be loaded
+     * @return The model, in the wrapper class format.
+     * @throws IllegalArgumentException
+     */
+    public static GelGenieModel loadModel(String modelName) throws IllegalArgumentException {
+        Objects.requireNonNull(modelName, "Model name cannot be null");
+        var modelCollection = getModelCollection();
+        var model = modelCollection.getModels().getOrDefault(modelName, null);
+        if (model == null) {
+            throw new IllegalArgumentException("No model found with name: " + modelName);
+        }
+        return model;
+    }
+
+    /**
      * Gets the list of models available for downloading.  This might require getting the list from HuggingFace.
      * @return
      */

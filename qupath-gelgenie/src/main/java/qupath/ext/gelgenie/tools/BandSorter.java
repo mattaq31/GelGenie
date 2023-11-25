@@ -1,7 +1,12 @@
 package qupath.ext.gelgenie.tools;
 
 import qupath.lib.objects.PathObject;
+import qupath.lib.scripting.QP;
+
+import java.nio.file.Path;
 import java.util.*;
+
+import static qupath.lib.scripting.QP.getSelectedObjects;
 
 public class BandSorter {
 
@@ -43,6 +48,19 @@ public class BandSorter {
 
             laneIdCounter++;
         }
+    }
+
+    /**
+     * Script-friendly system where labelling is applied to all gel bands in the current image.
+     */
+    public static void LabelBands(){
+        Collection<PathObject> actionableAnnotations = new ArrayList<>();
+        for (PathObject annot : QP.getAnnotationObjects()) {
+            if (annot.getPathClass() != null && Objects.equals(annot.getPathClass().getName(), "Gel Band")) {
+                actionableAnnotations.add(annot);
+            }
+        }
+        LabelBands(actionableAnnotations);
     }
 }
 

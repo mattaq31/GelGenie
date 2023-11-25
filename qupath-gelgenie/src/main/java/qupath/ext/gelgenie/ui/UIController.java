@@ -35,6 +35,7 @@ import qupath.lib.objects.PathObject;
 import qupath.lib.objects.classes.PathClass;
 import qupath.lib.objects.hierarchy.events.PathObjectSelectionListener;
 import qupath.lib.objects.hierarchy.PathObjectHierarchy;
+import qupath.lib.plugins.workflow.DefaultScriptableWorkflowStep;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -381,22 +382,23 @@ public class UIController {
         pendingTask.set(true);
         ImageData<BufferedImage> imageData = getCurrentImageData();
 
-        ModelRunner modelRunner = new ModelRunner(
-                modelChoiceBox.getSelectionModel().getSelectedItem(),
-                useDJLCheckBox.isSelected());
-
         ForkJoinPool.commonPool().execute(() -> {
             Collection<PathObject> newBands = null;
             if (runFullImage.isSelected()) { // runs model on entire image
                 try {
-                    newBands = modelRunner.runFullImageInference(imageData);
+                    newBands = ModelRunner.runFullImageInference(modelChoiceBox.getSelectionModel().getSelectedItem(),
+                            useDJLCheckBox.isSelected(), imageData);
+                    addInferenceToHistoryWorkflow(imageData,
+                            modelChoiceBox.getSelectionModel().getSelectedItem().getName(), useDJLCheckBox.isSelected());
                 } catch (IOException | MalformedModelException | ModelNotFoundException | TranslateException e) {
                     pendingTask.set(null);
                     throw new RuntimeException(e);
                 }
             } else if (runSelected.isSelected()) { // runs model on data within selected annotation only
                 try {
-                    newBands = modelRunner.runAnnotationInference(imageData, getSelectedObject());
+                    newBands = ModelRunner.runAnnotationInference(modelChoiceBox.getSelectionModel().getSelectedItem(),
+                            useDJLCheckBox.isSelected(), imageData, getSelectedObject());
+
                 } catch (IOException | MalformedModelException | TranslateException | ModelNotFoundException e) {
                     pendingTask.set(null);
                     throw new RuntimeException(e);
@@ -420,6 +422,7 @@ public class UIController {
             }
             addObjects(newBands);
             BandSorter.LabelBands(newBands);
+            addLabellingToHistoryWorkflow(imageData);
             showCompleteModelNotification();
         });
     }
@@ -432,6 +435,24 @@ public class UIController {
             }
         }
         BandSorter.LabelBands(actionableAnnotations);
+    }
+
+    private static void addInferenceToHistoryWorkflow(ImageData<?> imageData, String modelName, boolean useDJL) {
+        imageData.getHistoryWorkflow()
+                .addStep(
+                        new DefaultScriptableWorkflowStep(
+                                resources.getString("workflow.inference"),
+                                ModelRunner.class.getName() + ".runFullImageInferenceAndAddAnnotations(\""+modelName+"\","+useDJL+")"
+                        ));
+    }
+
+    private static void addLabellingToHistoryWorkflow(ImageData<?> imageData) {
+        imageData.getHistoryWorkflow()
+                .addStep(
+                        new DefaultScriptableWorkflowStep(
+                                resources.getString("workflow.labelling"),
+                                BandSorter.class.getName() + ".LabelBands()"
+                        ));
     }
 
     /**

@@ -27,6 +27,9 @@ public class GelGenieModel {
 
     private String description;
 
+    @SerializedName("modelName")
+    private String modelName;
+
     @SerializedName("hf_repo_id")
     private String hfRepoId;
 
@@ -43,6 +46,10 @@ public class GelGenieModel {
     private String abbrvName;
 
     public String getName() {
+        return modelName;
+    }
+
+    public String getRepoName() {
         return hfRepoId;
     }
 
