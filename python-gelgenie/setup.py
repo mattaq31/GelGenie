@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="GelGenie",
-    author="Matthew Aquilina, Kiros Kwan, Filip Busic",
+    author="Matthew Aquilina, Kiros Kwan, Filip Buŝić",
     description="Set of tools for training deep learning models to carry out "
                 "gel electrophoresis band segmentation using PyTorch.",
     version="1.0.0",
