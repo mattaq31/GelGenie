@@ -34,6 +34,10 @@ def segment_and_analyze(models, model_names, input_folder, output_folder):
     dataset = ImageDataset(input_folder, 1, padding=False, individual_padding=True)
     dataloader = DataLoader(dataset, shuffle=False, batch_size=1, num_workers=0, pin_memory=True)
     images_per_row = 2
+    double_indexing = True  # axes will have two indices rather than one
+
+    if math.ceil((len(model_names) + 1)/images_per_row) == 1:  # axes will only have one index rather than 2
+        double_indexing = False
 
     for mname in model_names:
         create_dir_if_empty(os.path.join(output_folder, mname))
@@ -54,12 +58,20 @@ def segment_and_analyze(models, model_names, input_folder, output_folder):
         # results preview
         fig, ax = plt.subplots(math.ceil((len(all_model_outputs) + 1)/images_per_row), images_per_row, figsize=(15, 15))
 
-        zero_ax_index = index_converter(0, images_per_row)
+        if double_indexing:
+            zero_ax_index = index_converter(0, images_per_row)
+        else:
+            zero_ax_index = 0
+
         ax[zero_ax_index].imshow(np_image, cmap='gray')
         ax[zero_ax_index].set_title('Reference Image')
 
         for index, (mask, name) in enumerate(zip(all_model_outputs, model_names)):
-            plot_index = index_converter(index+1, images_per_row)
+            if double_indexing:
+                plot_index = index_converter(index+1, images_per_row)
+            else:
+                plot_index = index + 1
+
             ax[plot_index].imshow(mask)
             if len(name) > 14:
                 title = name[:int(len(name)/2)] + '\n' + name[int(len(name)/2):]
