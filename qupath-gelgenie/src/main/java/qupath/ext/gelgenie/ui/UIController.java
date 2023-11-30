@@ -3,6 +3,7 @@ package qupath.ext.gelgenie.ui;
 import ai.djl.MalformedModelException;
 import ai.djl.repository.zoo.ModelNotFoundException;
 import ai.djl.translate.TranslateException;
+import com.google.gson.JsonArray;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.*;
@@ -409,11 +410,14 @@ public class UIController {
             }
 
             if (deletePreviousBands.isSelected()) { //removes all annotations before adding new ones
+                ArrayList<PathObject> removables = new ArrayList<>();
                 for (PathObject annot : getAnnotationObjects()) {
-                    if (annot.getPathClass() != null && Objects.equals(annot.getPathClass().getName(), "Gel Band")) {
-                        removeObject(annot, false);
+                    var pathClass = PathClass.getInstance("Gel Band");
+                    if (annot.getPathClass() != null && annot.getPathClass().equals(pathClass)) {
+                        removables.add(annot);
                     }
                 }
+                removeObjects(removables, false);
             }
             pendingTask.set(null);
             if (newBands == null) {
