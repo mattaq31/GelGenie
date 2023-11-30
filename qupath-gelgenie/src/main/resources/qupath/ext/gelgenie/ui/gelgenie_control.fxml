@@ -4,6 +4,7 @@
 <?import javafx.scene.chart.BarChart?>
 <?import javafx.scene.chart.CategoryAxis?>
 <?import javafx.scene.chart.NumberAxis?>
+<?import javafx.scene.control.Accordion?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.ChoiceBox?>
@@ -21,200 +22,234 @@
 <?import javafx.scene.text.Text?>
 
 <VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefWidth="330" stylesheets="@gelgeniestyles.css" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" xmlns="http://javafx.com/javafx/20.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="qupath.ext.gelgenie.ui.UIController">
-    <!--    Processing Pane************************************************************-->
-    <TitledPane fx:id="pane1" animated="false" text="%ui.processing.pane" VBox.vgrow="NEVER">
-        <VBox alignment="TOP_CENTER" styleClass="standard-spacing ">
-            <children>
-                <!-- **********************Models**********************-->
-                <VBox alignment="CENTER">
-                    <children>
-                        <Label styleClass="regular" text="%ui.model" />
-                        <HBox alignment="CENTER" styleClass="standard-spacing standard-padding">
-                            <children>
-                                <ChoiceBox id="deviceChoices" fx:id="modelChoiceBox" prefHeight="31.0" prefWidth="344.0">
-                                    <tooltip>
-                                        <Tooltip text="%ui.model.tooltip" />
-                                    </tooltip>
-                                </ChoiceBox>
-                                <Button fx:id="downloadButton" mnemonicParsing="false" onAction="#downloadModel" prefHeight="31.0" prefWidth="39.0">
-                                    <tooltip>
-                                        <Tooltip text="%ui.model.download.tooltip" />
-                                    </tooltip>
-                                    <graphic>
-                                        <Text styleClass="download-icon"></Text>
-                                    </graphic>
-                                </Button>
-                            </children>
-                        </HBox>
-                    </children>
-                </VBox>
-                <!--**********************Run Options**********************-->
-                <VBox alignment="CENTER" styleClass="standard-spacing standard-padding">
-                    <HBox alignment="BASELINE_RIGHT" styleClass="standard-spacing">
+   <Accordion expandedPane="$pane1">
+     <panes>
+          <!--    Processing Pane************************************************************-->
+          <TitledPane fx:id="pane1" animated="false" text="%ui.processing.pane">
+              <VBox alignment="TOP_CENTER" styleClass="standard-spacing ">
+                  <children>
+                      <!-- **********************Models**********************-->
+                      <VBox alignment="CENTER">
+                          <children>
+                              <Label styleClass="regular" text="%ui.model" />
+                              <HBox alignment="CENTER" styleClass="standard-spacing standard-padding">
+                                  <children>
+                                      <ChoiceBox id="deviceChoices" fx:id="modelChoiceBox" prefHeight="31.0" prefWidth="344.0">
+                                          <tooltip>
+                                              <Tooltip text="%ui.model.tooltip" />
+                                          </tooltip>
+                                      </ChoiceBox>
+                                      <Button fx:id="downloadButton" mnemonicParsing="false" onAction="#downloadModel" prefHeight="31.0" prefWidth="39.0">
+                                          <tooltip>
+                                              <Tooltip text="%ui.model.download.tooltip" />
+                                          </tooltip>
+                                          <graphic>
+                                              <Text styleClass="download-icon"></Text>
+                                          </graphic>
+                                      </Button>
+                                  </children>
+                              </HBox>
+                          </children>
+                      </VBox>
+                      <!--**********************Run Options**********************-->
+                      <VBox alignment="CENTER" styleClass="standard-spacing standard-padding">
+                          <HBox alignment="BASELINE_RIGHT" styleClass="standard-spacing">
+                              <children>
+                                  <CheckBox fx:id="runFullImage" mnemonicParsing="false" nodeOrientation="RIGHT_TO_LEFT" selected="true" text="%ui.model.runall" />
+                              </children>
+                              <padding>
+                                  <Insets right="80.0" />
+                              </padding>
+                          </HBox>
+      
+                          <HBox alignment="BASELINE_RIGHT" styleClass="standard-spacing">
+                              <children>
+                                  <CheckBox fx:id="runSelected" alignment="CENTER" contentDisplay="RIGHT" mnemonicParsing="false" nodeOrientation="RIGHT_TO_LEFT" text="%ui.model.runselected" />
+                              </children>
+                              <padding>
+                                  <Insets right="80.0" />
+                              </padding>
+                          </HBox>
+      
+                          <HBox alignment="BASELINE_RIGHT" styleClass="standard-spacing">
+                              <children>
+                                  <CheckBox fx:id="deletePreviousBands" mnemonicParsing="false" nodeOrientation="RIGHT_TO_LEFT" text="%ui.model.deleteprevious" />
+                              </children>
+                              <padding>
+                                  <Insets right="80.0" />
+                              </padding>
+                          </HBox>
+      
+                      </VBox>
+                      <!--**********************Run Button**********************-->
+                      <VBox alignment="CENTER" styleClass="standard-spacing standard-padding">
+                          <HBox alignment="CENTER" styleClass="standard-spacing">
+                              <children>
+                                  <Button fx:id="runButton" disable="true" onAction="#runBandInference" prefHeight="31.0" prefWidth="252.0" text="%ui.run">
+                                      <tooltip>
+                                          <Tooltip text="%ui.run.tooltip" />
+                                      </tooltip>
+                                  </Button>
+                              </children>
+                          </HBox>
+                      </VBox>
+                  </children>
+              </VBox>
+          </TitledPane>
+      
+         <!--    Processing Pane************************************************************-->
+          <TitledPane fx:id="pane2" animated="false" text="%ui.quantitate.pane">
+              <VBox alignment="TOP_CENTER" styleClass="standard-spacing standard-padding">
+                  <children>
+                      <VBox alignment="CENTER" styleClass="standard-spacing">
+                          <children>
+      
+                                          <HBox alignment="CENTER" styleClass="standard-spacing">
+                                  <children>
+                                      <Label styleClass="regular" text="%ui.processing.bandvis" />
+      
+                                                  <ToggleButton fx:id="toggleAnnotations" mnemonicParsing="false">
+                                          <tooltip>
+                                              <Tooltip text="%ui.processing.bandvistooltip" />
+                                          </tooltip>
+                                      </ToggleButton>
+                                      <ToggleButton fx:id="toggleBandNames" mnemonicParsing="false">
+                                          <tooltip>
+                                              <Tooltip text="%ui.processing.bandnametooltip" />
+                                          </tooltip>
+                                      </ToggleButton>
+                                  </children>
+                              </HBox>
+                              <Button fx:id="labelButton" disable="true" onAction="#labelBands" prefHeight="31.0" prefWidth="252.0" text="%ui.processing.relabel">
+                                  <tooltip>
+                                      <Tooltip text="%ui.processing.relabel.tooltip" />
+                                  </tooltip>
+                              </Button>
+                              <Separator prefWidth="200.0" />
+                              <Label styleClass="regular" text="%ui.processing.globalbackground">
+                                  <font>
+                                      <Font name="System Bold" size="13.0" />
+                                  </font>
+                              </Label>
+                              <HBox alignment="CENTER_RIGHT" styleClass="standard-spacing">
+                                  <children>
+                                      <Button fx:id="globalBackgroundSelector" disable="true" onAction="#setGlobalBackgroundPatch" prefHeight="31.0" prefWidth="170.0" text="%ui.processing.globalselect">
+                                          <tooltip>
+                                              <Tooltip text="%ui.processing.globalselecttooltip" />
+                                          </tooltip>
+                                      </Button>
+                                      <CheckBox fx:id="enableGlobalBackground" mnemonicParsing="false" nodeOrientation="RIGHT_TO_LEFT" text="%ui.processing.enableglobal" />
+                                  </children>
+                                  <padding>
+                                      <Insets right="40.0" />
+                                  </padding>
+                              </HBox>
+                              <Separator prefWidth="200.0" />
+                              <Label text="%ui.processing.localbackground">
+                                  <font>
+                                      <Font name="System Bold" size="13.0" />
+                                  </font>
+                              </Label>
+                              <HBox alignment="CENTER_RIGHT" styleClass="standard-spacing">
+                                  <children>
+                                      <Label styleClass="regular" text="%ui.processing.localsensitivity" />
+                                      <Spinner fx:id="localSensitivity" prefWidth="70.0">
+                                          <tooltip>
+                                              <Tooltip text="%ui.processing.localsensitivitytooltip" />
+                                          </tooltip>
+                                          <valueFactory>
+                                              <SpinnerValueFactory.IntegerSpinnerValueFactory initialValue="5" max="100" min="1" />
+                                          </valueFactory>
+                                      </Spinner>
+                                      <CheckBox fx:id="enableLocalBackground" mnemonicParsing="false" nodeOrientation="RIGHT_TO_LEFT" text="%ui.processing.enablelocal" />
+                                  </children>
+                                  <padding>
+                                      <Insets right="40.0" />
+                                  </padding>
+                                  <VBox.margin>
+                                      <Insets />
+                                  </VBox.margin>
+                              </HBox>
+                              <Separator prefWidth="200.0" />
+                              <CheckBox fx:id="genTableOnSelectedBands" mnemonicParsing="false" text="%ui.processing.tableonselectedbands" />
+                              <Button fx:id="tableButton" disable="true" onAction="#populateTable" prefHeight="31.0" prefWidth="252.0" text="%ui.processing.viewdata">
+                                  <tooltip>
+                                      <Tooltip text="%ui.processing.viewdatatooltip" />
+                                  </tooltip>
+                              </Button>
+                          </children>
+                      </VBox>
+                  </children>
+              </VBox>
+          </TitledPane>
+          <!--    Advanced Pane************************************************************-->
+          <TitledPane animated="false" text="%ui.advanced.pane">
+              <VBox alignment="CENTER">
+                  <children>
+                      <Label text="%ui.advanced.histotitle">
+                          <font>
+                              <Font name="System Bold" size="13.0" />
+                          </font>
+                     <padding>
+                        <Insets bottom="5.0" />
+                     </padding>
+                      </Label>
+                      <HBox alignment="CENTER_RIGHT" styleClass="standard-spacing">
+                          <children>
+                              <Label styleClass="regular" text="%ui.advanced.HistoDisplayLabel" />
+                              <Spinner fx:id="maxHistoDisplay" prefWidth="70.0">
+                                  <tooltip>
+                                      <Tooltip text="%ui.advanced.HistoDisplayTooltip" />
+                                  </tooltip>
+                                  <valueFactory>
+                                      <SpinnerValueFactory.IntegerSpinnerValueFactory initialValue="5" max="20" min="1" />
+                                  </valueFactory>
+                              </Spinner>
+                          </children>
+                          <padding>
+                              <Insets right="20.0" />
+                          </padding>
+                          <VBox.margin>
+                              <Insets />
+                          </VBox.margin>
+                      </HBox>
+                      <Separator prefWidth="200.0">
+                     <padding>
+                        <Insets top="5.0" />
+                     </padding></Separator>
+
+                      <Label text="%ui.advanced.DJL">
+                          <font>
+                              <Font name="System Bold" size="13.0" />
+                          </font>
+                     <padding>
+                        <Insets bottom="5.0" top="5.0" />
+                     </padding>
+                      </Label>
+
+                      <HBox alignment="BASELINE_RIGHT" styleClass="standard-spacing">
                         <children>
-                            <CheckBox fx:id="runFullImage" mnemonicParsing="false" nodeOrientation="RIGHT_TO_LEFT" selected="true" text="%ui.model.runall" />
+                            <CheckBox fx:id="useDJLCheckBox" alignment="CENTER" contentDisplay="RIGHT" mnemonicParsing="false" nodeOrientation="RIGHT_TO_LEFT" text="%ui.advanced.djlswitch" />
                         </children>
-                        <padding>
-                            <Insets right="80.0" />
-                        </padding>
-                    </HBox>
-
-                    <HBox alignment="BASELINE_RIGHT" styleClass="standard-spacing">
-                        <children>
-                            <CheckBox fx:id="runSelected" alignment="CENTER" contentDisplay="RIGHT" mnemonicParsing="false" nodeOrientation="RIGHT_TO_LEFT" text="%ui.model.runselected" />
-                        </children>
-                        <padding>
-                            <Insets right="80.0" />
-                        </padding>
-                    </HBox>
-
-                    <HBox alignment="BASELINE_RIGHT" styleClass="standard-spacing">
-                        <children>
-                            <CheckBox fx:id="deletePreviousBands" mnemonicParsing="false" nodeOrientation="RIGHT_TO_LEFT" text="%ui.model.deleteprevious" />
-                        </children>
-                        <padding>
-                            <Insets right="80.0" />
-                        </padding>
-                    </HBox>
-
-                </VBox>
-                <!--**********************Run Button**********************-->
-                <VBox alignment="CENTER" styleClass="standard-spacing standard-padding">
-                    <HBox alignment="CENTER" styleClass="standard-spacing">
-                        <children>
-                            <Button fx:id="runButton" disable="true" onAction="#runBandInference" prefHeight="31.0" prefWidth="252.0" text="%ui.run">
-                                <tooltip>
-                                    <Tooltip text="%ui.run.tooltip" />
-                                </tooltip>
-                            </Button>
-                        </children>
-                    </HBox>
-                </VBox>
-            </children>
-        </VBox>
-    </TitledPane>
-
-    <!--    Processing Pane************************************************************-->
-    <TitledPane fx:id="pane2" animated="false" text="%ui.quantitate.pane" VBox.vgrow="NEVER">
-        <VBox alignment="TOP_CENTER" styleClass="standard-spacing standard-padding">
-            <children>
-                <VBox alignment="CENTER" styleClass="standard-spacing">
-                    <children>
-
-                        <HBox alignment="CENTER" styleClass="standard-spacing">
-                            <children>
-                                <Label styleClass="regular" text="%ui.processing.bandvis" />
-
-                                <ToggleButton fx:id="toggleAnnotations" mnemonicParsing="false">
-                                    <tooltip>
-                                        <Tooltip text="%ui.processing.bandvistooltip" />
-                                    </tooltip>
-                                </ToggleButton>
-                                <ToggleButton fx:id="toggleBandNames" mnemonicParsing="false">
-                                    <tooltip>
-                                        <Tooltip text="%ui.processing.bandnametooltip" />
-                                    </tooltip>
-                                </ToggleButton>
-                            </children>
-                        </HBox>
-                        <Button fx:id="labelButton" disable="true" onAction="#labelBands" prefHeight="31.0" prefWidth="252.0" text="%ui.processing.relabel">
-                            <tooltip>
-                                <Tooltip text="%ui.processing.relabel.tooltip" />
-                            </tooltip>
-                        </Button>
-                        <Separator prefWidth="200.0" />
-                        <Label styleClass="regular" text="%ui.processing.globalbackground">
-                            <font>
-                                <Font name="System Bold" size="13.0" />
-                            </font>
-                        </Label>
-                        <HBox alignment="CENTER_RIGHT" styleClass="standard-spacing">
-                            <children>
-                                <Button fx:id="globalBackgroundSelector" disable="true" onAction="#setGlobalBackgroundPatch" prefHeight="31.0" prefWidth="170.0" text="%ui.processing.globalselect">
-                                    <tooltip>
-                                        <Tooltip text="%ui.processing.globalselecttooltip" />
-                                    </tooltip>
-                                </Button>
-                                <CheckBox fx:id="enableGlobalBackground" mnemonicParsing="false" nodeOrientation="RIGHT_TO_LEFT" text="%ui.processing.enableglobal" />
-                            </children>
                             <padding>
-                                <Insets right="40.0" />
+                                <Insets bottom="8.0" right="60.0" />
                             </padding>
-                        </HBox>
+                      </HBox>
 
-                        <Separator prefWidth="200.0" />
-                        <Label text="%ui.processing.localbackground">
-                            <font>
-                                <Font name="System Bold" size="13.0" />
-                            </font>
-                        </Label>
-                        <HBox alignment="CENTER_RIGHT" styleClass="standard-spacing">
-                            <children>
-                                <Label styleClass="regular" text="%ui.processing.localsensitivity" />
-                                <Spinner fx:id="localSensitivity" prefWidth="70.0">
-                                    <tooltip>
-                                        <Tooltip text="%ui.processing.localsensitivitytooltip" />
-                                    </tooltip>
-                                    <valueFactory>
-                                        <SpinnerValueFactory.IntegerSpinnerValueFactory initialValue="5" max="100" min="1" />
-                                    </valueFactory>
-                                </Spinner>
-                                <CheckBox fx:id="enableLocalBackground" mnemonicParsing="false" nodeOrientation="RIGHT_TO_LEFT" text="%ui.processing.enablelocal" />
-                            </children>
-                            <padding>
-                                <Insets right="40.0" />
-                            </padding>
-                            <VBox.margin>
-                                <Insets />
-                            </VBox.margin>
-                        </HBox>
-                        <Separator prefWidth="200.0" />
-                        <CheckBox fx:id="genTableOnSelectedBands" mnemonicParsing="false" text="%ui.processing.tableonselectedbands" />
-                        <Button fx:id="tableButton" disable="true" onAction="#populateTable" prefHeight="31.0" prefWidth="252.0" text="%ui.processing.viewdata">
-                            <tooltip>
-                                <Tooltip text="%ui.processing.viewdatatooltip" />
-                            </tooltip>
-                        </Button>
-                    </children>
-                </VBox>
-            </children>
-        </VBox>
-    </TitledPane>
-    <!--    Advanced Pane************************************************************-->
-    <TitledPane animated="false" text="%ui.advanced.pane" expanded="false">
-        <VBox alignment="CENTER">
-            <children>
-                <HBox alignment="CENTER_RIGHT" styleClass="standard-spacing">
-                    <children>
-                        <Label styleClass="regular" text="%ui.advanced.HistoDisplayLabel" />
-                        <Spinner fx:id="maxHistoDisplay" prefWidth="70.0">
-                            <tooltip>
-                                <Tooltip text="%ui.advanced.HistoDisplayTooltip" />
-                            </tooltip>
-                            <valueFactory>
-                                <SpinnerValueFactory.IntegerSpinnerValueFactory initialValue="5" max="20" min="1" />
-                            </valueFactory>
-                        </Spinner>
-                    </children>
-                    <padding>
-                        <Insets right="20.0" />
-                    </padding>
-                    <VBox.margin>
-                        <Insets />
-                    </VBox.margin>
-                </HBox>
-                <CheckBox fx:id="useDJLCheckBox" mnemonicParsing="false" text="%ui.advanced.djlswitch">
-                    <padding>
-                        <Insets bottom="8.0" />
-                    </padding>
-                </CheckBox>
-                <HBox alignment="CENTER" styleClass="standard-spacing">
-                    <Label text="%ui.advanced.Device" />
-                    <ChoiceBox fx:id="deviceChoiceBox"/>
-                </HBox>
-            </children>
-        </VBox>
-    </TitledPane>
+                      <HBox alignment="BASELINE_RIGHT" styleClass="standard-spacing">
+                          <children>
+                              <Label text="%ui.advanced.Device" />
+                              <ChoiceBox fx:id="deviceChoiceBox" />
+                          </children>
+                          <padding>
+                              <Insets right="60.0" />
+                          </padding>
+                      </HBox>
+                  </children>
+              </VBox>
+          </TitledPane>
+     </panes>
+   </Accordion>
     <!--    Histogram Pane************************************************************-->
     <TitledPane animated="false" text="%ui.histoview.pane">
         <BarChart fx:id="bandChart">
