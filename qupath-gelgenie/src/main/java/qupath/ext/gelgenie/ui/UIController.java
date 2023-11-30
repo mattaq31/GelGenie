@@ -4,6 +4,7 @@ import ai.djl.MalformedModelException;
 import ai.djl.repository.zoo.ModelNotFoundException;
 import ai.djl.translate.TranslateException;
 import javafx.beans.binding.Bindings;
+import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.*;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -102,6 +103,7 @@ public class UIController {
     private final ObjectProperty<Boolean> pendingTask = new SimpleObjectProperty<>();
 
     private SelectedObjectCounter selectedObjectCounter;
+    private BooleanBinding runButtonBinding;
 
     /*
     This function is the first to run when the GUI window is created.
@@ -131,8 +133,8 @@ public class UIController {
      */
     private void configureDevicesList() {
         useDJLCheckBox.setSelected(false);
+        deviceChoiceBox.setDisable(!useDJLCheckBox.isSelected());
         if (useDJLCheckBox.isSelected()) {
-            deviceChoiceBox.setDisable(false);
             addDevices();
         }
         useDJLCheckBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
@@ -254,16 +256,15 @@ public class UIController {
      */
     private void configureButtonInteractivity() {
 
-        runButton.disableProperty().bind(
-                Bindings.createBooleanBinding(
-                        () ->  imageDataProperty.isNull().or(pendingTask.isNotNull()).get() ||
-                                    modelChoiceBox.getSelectionModel().getSelectedItem() == null ||
-                                    !modelChoiceBox.getSelectionModel().getSelectedItem().isValid(),
-                    imageDataProperty,
-                    pendingTask,
-                    modelChoiceBox.getSelectionModel().selectedItemProperty()
-                ));
-
+        runButtonBinding = Bindings.createBooleanBinding(
+                () ->  imageDataProperty.isNull().or(pendingTask.isNotNull()).get() ||
+                        modelChoiceBox.getSelectionModel().getSelectedItem() == null ||
+                        !modelChoiceBox.getSelectionModel().getSelectedItem().isValid(),
+                imageDataProperty,
+                pendingTask,
+                modelChoiceBox.getSelectionModel().selectedItemProperty()
+        );
+        runButton.disableProperty().bind(runButtonBinding);
         tableButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
         labelButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
 
@@ -333,10 +334,12 @@ public class UIController {
                 model.downloadModel();
             } catch (IOException e) {
                 Dialogs.showErrorMessage(resources.getString("title"), resources.getString("error.downloading"));
+                logger.error("Error downloading model", e);
                 return;
             }
             showModelAvailableNotification(model.getName());
             downloadButton.setDisable(true);
+            runButtonBinding.invalidate(); // fire an update to the binding, so the run button becomes available
         });
     }
 

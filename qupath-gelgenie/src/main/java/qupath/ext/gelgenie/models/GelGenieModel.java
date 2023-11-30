@@ -1,3 +1,20 @@
+/*
+ * Copyright 2023 University of Edinburgh
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ * Copied with attribution from qupath-extension-wsinfer.
+ */
 // This was mostly edited from the WSInfer extension - need to check with Pete how to properly attribute
 
 package qupath.ext.gelgenie.models;
@@ -5,13 +22,10 @@ package qupath.ext.gelgenie.models;
 import com.google.gson.annotations.SerializedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import qupath.lib.gui.prefs.PathPrefs;
-import qupath.lib.io.GsonTools;
 
 import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -123,11 +137,15 @@ public class GelGenieModel {
         return Paths.get(ModelInterfacing.getUserDirectory(), hfRepoId, hfRevision).toFile();
     }
 
-
     private static String checkSumSHA256(File file) throws IOException, NoSuchAlgorithmException {
         byte[] data = Files.readAllBytes(file.toPath());
         byte[] hash = MessageDigest.getInstance("SHA-256").digest(data);
-        return new BigInteger(1, hash).toString(16);
+        StringBuilder hexString = new StringBuilder(new BigInteger(1, hash).toString(16));
+
+        while (hexString.length() < 64) {
+            hexString.insert(0, '0');
+        }
+        return hexString.toString();
     }
 
     /**
