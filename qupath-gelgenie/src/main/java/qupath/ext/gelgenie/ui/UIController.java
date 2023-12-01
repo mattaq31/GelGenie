@@ -4,6 +4,7 @@ import ai.djl.MalformedModelException;
 import ai.djl.repository.zoo.ModelNotFoundException;
 import ai.djl.translate.TranslateException;
 import com.google.gson.JsonArray;
+import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.*;
@@ -18,6 +19,7 @@ import javafx.geometry.Side;
 import javafx.scene.chart.BarChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
+import javafx.scene.layout.VBox;
 import org.controlsfx.control.action.Action;
 import org.controlsfx.control.action.ActionUtils;
 import org.slf4j.Logger;
@@ -97,6 +99,10 @@ public class UIController {
     private ChoiceBox<GelGenieModel> modelChoiceBox;
     @FXML
     private ChoiceBox<String> deviceChoiceBox;
+    @FXML
+    private TabPane mainTabGroup;
+    @FXML
+    private Tab modelTab;
 
     private final ObjectProperty<ImageData<BufferedImage>> imageDataProperty = new SimpleObjectProperty<>();
     private final static ResourceBundle resources = ResourceBundle.getBundle("qupath.ext.gelgenie.ui.strings");
@@ -125,8 +131,31 @@ public class UIController {
         getModelsPopulateList(); // sets up model dropdown menu
         configureDevicesList(); // sets up hardware devices for computational speed-up
         configureAdditionalPersistentSettings(); // sets up miscellaneous persistent settings
+        configureTabGroup(); // sets up tab pane
 
         logger.info("GelGenie GUI loaded without errors");
+    }
+
+    /*
+    This function sets up a listener that resizes the tab pane to match the content in the selected tab.
+     */
+    private void configureTabGroup(){
+        // Set an event handler for tab selection changes
+        mainTabGroup.getSelectionModel().selectedItemProperty().addListener((observable, oldTab, newTab) -> {
+            if (newTab != null) {
+                resizeTabPane(newTab);
+            }
+        });
+        Platform.runLater(() -> resizeTabPane(modelTab)); // runs function once on the landing page
+    }
+
+    /*
+    This is the main functionality for resizing the tab pane (based on the internal VBox height).
+     */
+    private void resizeTabPane(Tab selectedTab) {
+        // Assuming that the content of the tab is VBox
+        double newHeight = ((VBox) selectedTab.getContent()).getChildren().get(0).getBoundsInParent().getHeight();
+        mainTabGroup.setPrefHeight(newHeight + 40); // 40 is a buffer for tab headers and padding
     }
 
     /*
