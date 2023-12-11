@@ -3,7 +3,6 @@ package qupath.ext.gelgenie.ui;
 import ai.djl.MalformedModelException;
 import ai.djl.repository.zoo.ModelNotFoundException;
 import ai.djl.translate.TranslateException;
-import com.google.gson.JsonArray;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
@@ -406,18 +405,29 @@ public class UIController {
                 resources.getString("title"),
                 resources.getString("ui.popup.model-complete"));
     }
+
+    /**
+     * Helper class for storing user preferences for model inference.
+     * @param runFullImagePref: Whether to run the model on the entire image or just the selected annotation.
+     * @param deletePreviousBandsPref: Whether to delete all previous annotations after generating new ones.
+     */
+    private record ModelInferencePreferences(boolean runFullImagePref, boolean deletePreviousBandsPref) { }
+
     /**
      * Runs the segmentation model on the provided image or within the selected annotation,
      * generating annotations for each located band.
      */
     public void runBandInference() {
+
+        ModelInferencePreferences inferencePrefs = new ModelInferencePreferences(runFullImage.isSelected(), deletePreviousBands.isSelected());
+
         showRunningModelNotification();
         pendingTask.set(true);
         ImageData<BufferedImage> imageData = getCurrentImageData();
 
         ForkJoinPool.commonPool().execute(() -> {
             Collection<PathObject> newBands = null;
-            if (runFullImage.isSelected()) { // runs model on entire image
+            if (inferencePrefs.runFullImagePref()) { // runs model on entire image
                 try {
                     newBands = ModelRunner.runFullImageInference(modelChoiceBox.getSelectionModel().getSelectedItem(),
                             useDJLCheckBox.isSelected(), imageData);
@@ -427,7 +437,7 @@ public class UIController {
                     pendingTask.set(null);
                     throw new RuntimeException(e);
                 }
-            } else if (runSelected.isSelected()) { // runs model on data within selected annotation only
+            } else { // runs model on data within selected annotation only
                 try {
                     newBands = ModelRunner.runAnnotationInference(modelChoiceBox.getSelectionModel().getSelectedItem(),
                             useDJLCheckBox.isSelected(), imageData, getSelectedObject());
@@ -438,7 +448,7 @@ public class UIController {
                 }
             }
 
-            if (deletePreviousBands.isSelected()) { //removes all annotations before adding new ones
+            if (inferencePrefs.deletePreviousBandsPref()) { //removes all annotations before adding new ones
                 ArrayList<PathObject> removables = new ArrayList<>();
                 for (PathObject annot : getAnnotationObjects()) {
                     var pathClass = PathClass.getInstance("Gel Band");
@@ -449,6 +459,7 @@ public class UIController {
                 removeObjects(removables, false);
             }
             pendingTask.set(null);
+
             if (newBands == null) {
                 Dialogs.showWarningNotification(resources.getString("title"), resources.getString("error.no-bands"));
                 return;

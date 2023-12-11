@@ -9,4 +9,13 @@
     -fx-fill: -fx-text-base-color;
 }
 
+.tab-icon {
+    -fx-font-family: FontAwesome;
+    -fx-font-size: 12px;
+    -fx-fill: -fx-text-base-color;
+}
+
+.tab .tab-label {
+    -fx-font-weight: bold;
+}
 
