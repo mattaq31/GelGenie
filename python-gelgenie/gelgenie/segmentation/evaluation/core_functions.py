@@ -29,9 +29,9 @@ def index_converter(ind, images_per_row):
     return int(ind / images_per_row), ind % images_per_row  # converts indices to double
 
 
-def segment_and_analyze(models, model_names, input_folder, output_folder):
+def segment_and_analyze(models, model_names, input_folder, output_folder, minmax_norm=False):
 
-    dataset = ImageDataset(input_folder, 1, padding=False, individual_padding=True)
+    dataset = ImageDataset(input_folder, 1, padding=False, individual_padding=True, minmax_norm=minmax_norm)
     dataloader = DataLoader(dataset, shuffle=False, batch_size=1, num_workers=0, pin_memory=True)
     images_per_row = 2
     double_indexing = True  # axes will have two indices rather than one
