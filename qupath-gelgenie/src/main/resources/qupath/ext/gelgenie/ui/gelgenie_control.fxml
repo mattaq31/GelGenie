@@ -128,7 +128,6 @@
                                 <children>
                                     <VBox alignment="CENTER" styleClass="standard-spacing">
                                         <children>
-
                                             <HBox alignment="CENTER" styleClass="standard-spacing">
                                                 <children>
                                                     <Label styleClass="regular" text="%ui.processing.bandvis" />
@@ -164,6 +163,29 @@
                                                         </tooltip>
                                                     </Button>
                                                     <CheckBox fx:id="enableGlobalBackground" mnemonicParsing="false" nodeOrientation="RIGHT_TO_LEFT" text="%ui.processing.enableglobal" />
+                                                </children>
+                                                <padding>
+                                                    <Insets right="60.0" />
+                                                </padding>
+                                            </HBox>
+                                            <Separator prefWidth="200.0" />
+                                            <Label styleClass="regular" text="%ui.processing.rollingbackground">
+                                                <font>
+                                                    <Font name="System Bold" size="13.0" />
+                                                </font>
+                                            </Label>
+                                            <HBox alignment="CENTER_RIGHT" styleClass="standard-spacing">
+                                                <children>
+                                                    <Label styleClass="regular" text="%ui.processing.rollingradius" />
+                                                    <Spinner fx:id="rollingRadius" prefWidth="70.0">
+                                                        <tooltip>
+                                                            <Tooltip text="%ui.processing.rollingradiustooltip" />
+                                                        </tooltip>
+                                                        <valueFactory>
+                                                            <SpinnerValueFactory.IntegerSpinnerValueFactory initialValue="50" max="1000" min="1" />
+                                                        </valueFactory>
+                                                    </Spinner>
+                                                    <CheckBox fx:id="enableRollingBackground" mnemonicParsing="false" nodeOrientation="RIGHT_TO_LEFT" text="%ui.processing.enablerolling" />
                                                 </children>
                                                 <padding>
                                                     <Insets right="60.0" />

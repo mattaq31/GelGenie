@@ -1,5 +1,8 @@
 package qupath.ext.gelgenie.ui;
 
+import ij.ImagePlus;
+import ij.plugin.filter.BackgroundSubtracter;
+
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.collections.ListChangeListener;
@@ -12,12 +15,14 @@ import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import org.bytedeco.opencv.opencv_core.Mat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qupath.ext.gelgenie.graphics.EmbeddedBarChart;
 import qupath.ext.gelgenie.tools.ImageTools;
 import qupath.ext.gelgenie.tools.LaneBandCompare;
 import qupath.fx.dialogs.Dialogs;
+import qupath.imagej.tools.IJTools;
 import qupath.lib.gui.QuPathGUI;
 import qupath.lib.gui.viewer.QuPathViewer;
 import qupath.lib.images.ImageData;
@@ -36,9 +41,12 @@ import java.util.concurrent.ExecutorService;
 import qupath.fx.dialogs.FileChoosers;
 import qupath.lib.objects.hierarchy.PathObjectHierarchy;
 import qupath.lib.objects.hierarchy.events.PathObjectSelectionModel;
+import qupath.lib.regions.RegionRequest;
+import qupath.opencv.tools.OpenCVTools;
 
 import static qupath.ext.gelgenie.graphics.EmbeddedBarChart.saveChart;
 import static qupath.ext.gelgenie.tools.ImageTools.extractLocalBackgroundPixels;
+import static qupath.imagej.images.servers.ImageJServer.convertToBufferedImage;
 import static qupath.lib.scripting.QP.*;
 
 public class TableController {
@@ -65,11 +73,15 @@ public class TableController {
     @FXML
     private TableColumn<BandEntry, Double> globalVolCol;
     @FXML
+    private TableColumn<BandEntry, Double> rollingVolCol;
+    @FXML
     private TableColumn<BandEntry, Double> normVolCol;
     @FXML
     private TableColumn<BandEntry, Double> normLocalVolCol;
     @FXML
     private TableColumn<BandEntry, Double> normGlobalVolCol;
+    @FXML
+    private TableColumn<BandEntry, Double> normRollingVolCol;
     @FXML
     private SplitPane dataTableSplitPane;
 
@@ -83,8 +95,11 @@ public class TableController {
     // user-defined settings
     private boolean globalCorrection = false;
     private boolean localCorrection = false;
+    private boolean rollingBallCorrection = false;
     private int localSensitivity = 5;
+    private int rollingRadius = 50;
     private final Collection<PathObject> selectedBands = new ArrayList<>();
+    private Mat rollingBallImage;
 
     double globalMean = 0.0;
     private final static ResourceBundle resources = ResourceBundle.getBundle("qupath.ext.gelgenie.ui.strings");
@@ -105,18 +120,22 @@ public class TableController {
         rawCol.setCellValueFactory(new PropertyValueFactory<>("rawVolume"));
         localVolCol.setCellValueFactory(new PropertyValueFactory<>("localVolume"));
         globalVolCol.setCellValueFactory(new PropertyValueFactory<>("globalVolume"));
+        rollingVolCol.setCellValueFactory(new PropertyValueFactory<>("rollingVolume"));
         normVolCol.setCellValueFactory(new PropertyValueFactory<>("normVolume"));
         normLocalVolCol.setCellValueFactory(new PropertyValueFactory<>("normLocal"));
         normGlobalVolCol.setCellValueFactory(new PropertyValueFactory<>("normGlobal"));
+        normRollingVolCol.setCellValueFactory(new PropertyValueFactory<>("normRolling"));
         thumbnailCol.setCellValueFactory(new PropertyValueFactory<>("parentAnnotation"));
 
         // formatting for double columns
         meanCol.setCellFactory(TableController::getTableFormattedDouble);
         localVolCol.setCellFactory(TableController::getTableFormattedDouble);
         globalVolCol.setCellFactory(TableController::getTableFormattedDouble);
+        rollingVolCol.setCellFactory(TableController::getTableFormattedDouble);
         normVolCol.setCellFactory(TableController::getTableFormattedDouble);
         normLocalVolCol.setCellFactory(TableController::getTableFormattedDouble);
         normGlobalVolCol.setCellFactory(TableController::getTableFormattedDouble);
+        normRollingVolCol.setCellFactory(TableController::getTableFormattedDouble);
 
         // getting data from viewer
         ImageData<BufferedImage> imageData = getCurrentImageData();
@@ -142,6 +161,13 @@ public class TableController {
         // This code block depends on user settings, which are not provided until this runLater() command.
         Platform.runLater(() -> {
             calculateGlobalBackground(server);
+
+            try {
+                rollingBallImage = findRollingBallImage(server);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+
             if (!selectedBands.isEmpty()){
                 computeTableColumns(selectedBands, server);
             }
@@ -230,6 +256,28 @@ public class TableController {
     }
 
     /**
+     * Passes the rolling ball filter over the entire input image and stores it for downstream processing.
+     * @param server: Main image server
+     * @return: Rolling ball filtered image
+     * @throws IOException
+     */
+    private Mat findRollingBallImage(ImageServer<BufferedImage> server) throws IOException {
+
+        RegionRequest request = RegionRequest.createInstance(server, 1.0); // generates full image request
+
+        ImagePlus imp = IJTools.convertToImagePlus(server, request).getImage(); // converts to ImageJ format
+
+        BackgroundSubtracter bs = new BackgroundSubtracter(); // creates background subtracter
+
+        // all default settings used except for rollingRadius, which can be user-defined
+        bs.rollingBallBackground(imp.getProcessor(), rollingRadius, false, false, false, false, false);
+
+        // converts to OpenCV image for downstream processing
+        BufferedImage subtractedImage = convertToBufferedImage(imp, 0,0, null);
+        return OpenCVTools.imageToMat(subtractedImage);
+    }
+
+    /**
      * Computes the average pixel value of global background patches.
      * @param server: Server corresponding to current image
      * @return Computed global mean.
@@ -255,12 +303,13 @@ public class TableController {
      * @param annots: List of annotations in image.
      * @param server: Server corresponding to open image.
      */
-    private void computeTableColumns(Collection<PathObject> annots, ImageServer<BufferedImage> server){
+    private void computeTableColumns(Collection<PathObject> annots, ImageServer<BufferedImage> server)  {
 
         double inf = Double.POSITIVE_INFINITY;
         double[] minMax = {inf,-inf};
         double[] globalMinMax = {inf,-inf};
         double[] localMinMax = {inf,-inf};
+        double[] rollingMinMax = {inf,-inf};
 
         for (PathObject annot : annots) {
             //  only act on annotations marked as bands
@@ -277,12 +326,17 @@ public class TableController {
 
                 double globalVolume = 0;
                 double localVolume = 0;
+                double rollingBallVolume = 0;
 
                 if (globalCorrection){
                     globalVolume = raw_volume - (globalMean * all_pixels.length);
                 }
                 if (localCorrection){
                     localVolume = raw_volume - (localMean * all_pixels.length);
+                }
+                if (rollingBallCorrection){ // rolling ball values need to be computed on its specific image
+                    double[] rbPixels = ImageTools.extractAnnotationPixelsFromMat(annot, rollingBallImage);
+                    rollingBallVolume = Arrays.stream(rbPixels).sum();
                 }
 
                 int bandID;
@@ -302,7 +356,7 @@ public class TableController {
                 }
 
                 BandEntry curr_band = new BandEntry(bandID, laneID, annot.getName(), all_pixels.length,
-                        pixel_average, raw_volume, globalVolume, localVolume, annot);
+                        pixel_average, raw_volume, globalVolume, localVolume, rollingBallVolume, annot);
 
                 ObservableList<BandEntry> all_bands = mainTable.getItems();
                 all_bands.add(curr_band);
@@ -317,6 +371,8 @@ public class TableController {
                 localMinMax[1] = Math.max(localMinMax[1], localVolume);
                 globalMinMax[0] = Math.min(globalMinMax[0], globalVolume);
                 globalMinMax[1] = Math.max(globalMinMax[1], globalVolume);
+                rollingMinMax[0] = Math.min(rollingMinMax[0], rollingBallVolume);
+                rollingMinMax[1] = Math.max(rollingMinMax[1], rollingBallVolume);
             }
         }
 
@@ -326,6 +382,7 @@ public class TableController {
             entry.setNormVolume((entry.getRawVolume() - minMax[0]) / (minMax[1] - minMax[0]));
             entry.setNormLocal((entry.getLocalVolume() - localMinMax[0]) / (localMinMax[1] - localMinMax[0]));
             entry.setNormGlobal((entry.getGlobalVolume() - globalMinMax[0]) / (globalMinMax[1] - globalMinMax[0]));
+            entry.setNormRolling((entry.getRollingVolume() - rollingMinMax[0]) / (rollingMinMax[1] - rollingMinMax[0]));
         }
 
         if (!localCorrection){ //TODO: table looks empty without these columns.  How to adjust?
@@ -335,6 +392,10 @@ public class TableController {
         if (!globalCorrection){
             globalVolCol.setVisible(false);
             normGlobalVolCol.setVisible(false);
+        }
+        if (!rollingBallCorrection){
+            rollingVolCol.setVisible(false);
+            normRollingVolCol.setVisible(false);
         }
     }
 
@@ -386,6 +447,7 @@ public class TableController {
         double[] rawPixels = new double[all_bands.size()];
         double[] globalCorrVol = new double[all_bands.size()];
         double[] localCorrVol = new double[all_bands.size()];
+        double[] rollingCorrVol = new double[all_bands.size()];
 
         String[] labels = new String[all_bands.size()];
         int counter = 0;
@@ -398,6 +460,9 @@ public class TableController {
             }
             if (this.localCorrection){
                 localCorrVol[counter] = band.getLocalVolume();
+            }
+            if (this.rollingBallCorrection){
+                rollingCorrVol[counter] = band.getRollingVolume();
             }
             counter++;
         }
@@ -412,6 +477,10 @@ public class TableController {
         if (this.localCorrection){
             dataList.add(localCorrVol);
             legendList.add("Local Corrected Volume");
+        }
+        if (this.rollingBallCorrection){
+            dataList.add(rollingCorrVol);
+            legendList.add("Rolling Ball Corrected Volume");
         }
 
         ObservableList<XYChart.Series<String, Number>> allPlots = EmbeddedBarChart.plotBars(dataList, legendList, labels);
@@ -431,12 +500,17 @@ public class TableController {
      * Sets user preferences.
      * @param globalCorrection: Enable global background calculation
      * @param localCorrection: Enable local background calculation
+     * @param rollingBallCorrection: Enable rolling ball background calculation
      * @param localSensitivity: Pixel sensitivity for local background calculation
      */
-    public void setPreferences(boolean globalCorrection, boolean localCorrection, int localSensitivity, Collection<PathObject> selectedBands) {
+    public void setPreferences(boolean globalCorrection, boolean localCorrection, boolean rollingBallCorrection,
+                               int localSensitivity, int rollingRadius, Collection<PathObject> selectedBands) {
         this.localCorrection = localCorrection;
         this.globalCorrection = globalCorrection;
+        this.rollingBallCorrection = rollingBallCorrection;
         this.localSensitivity = localSensitivity;
+        this.rollingRadius = rollingRadius;
+
         if (!selectedBands.isEmpty()){
             this.selectedBands.addAll(selectedBands);
         }

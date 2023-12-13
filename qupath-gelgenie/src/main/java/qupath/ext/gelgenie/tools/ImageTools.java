@@ -1,6 +1,9 @@
 package qupath.ext.gelgenie.tools;
 
+import ij.ImagePlus;
+import ij.plugin.filter.BackgroundSubtracter;
 import org.bytedeco.opencv.opencv_core.Mat;
+import qupath.imagej.tools.IJTools;
 import qupath.lib.awt.common.BufferedImageTools;
 import qupath.lib.images.servers.ImageServer;
 import qupath.lib.objects.PathObject;
@@ -11,6 +14,8 @@ import qupath.opencv.tools.OpenCVTools;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.ArrayList;
+
+import static qupath.imagej.images.servers.ImageJServer.convertToBufferedImage;
 
 /**
  * This class contains useful functions for dealing with and extracting image pixels
@@ -40,7 +45,30 @@ public class ImageTools {
         }
 
         // selects pixels which are in the mask and not the outer edges of the rectangular region
-        return extractPixelsfromMask(img, im_mask, false);
+        return extractPixelsfromMask(OpenCVTools.imageToMat(img), OpenCVTools.imageToMat(im_mask), false);
+    }
+    /**
+     * Extracts pixels from a selected annotation, with an OpenCV image provided instead of an ImageServer.
+     *
+     * @param annotation: Specific annotation containing data of interest
+     * @param fullImage: OpenCV Mat containing full image of interest
+     */
+    public static double[] extractAnnotationPixelsFromMat(PathObject annotation, Mat fullImage) {
+
+        // creates a mask of the correct shape within the image
+        BufferedImage im_mask = BufferedImageTools.createROIMask((int) Math.ceil(annotation.getROI().getBoundsWidth()),
+                (int) Math.ceil(annotation.getROI().getBoundsHeight()), annotation.getROI(),
+                annotation.getROI().getBoundsX(), annotation.getROI().getBoundsY(), 1.0);
+
+        // crops out rectangular region bordering annotation from opencv image
+        Mat croppedImage = OpenCVTools.crop(fullImage,
+                (int) annotation.getROI().getBoundsX(),
+                (int) annotation.getROI().getBoundsY(),
+                (int) annotation.getROI().getBoundsWidth(),
+                (int) annotation.getROI().getBoundsHeight());
+
+        // extracts masked pixels as normal
+        return extractPixelsfromMask(croppedImage, OpenCVTools.imageToMat(im_mask), false);
     }
 
     /**
@@ -66,22 +94,19 @@ public class ImageTools {
         BufferedImage im_mask = BufferedImageTools.createROIMask(request.getWidth(),
                 request.getHeight(), annotation.getROI(), request.getX(), request.getY(), 1.0);
 
-        return extractPixelsfromMask(img, im_mask, true);
+        return extractPixelsfromMask(OpenCVTools.imageToMat(img), OpenCVTools.imageToMat(im_mask), true);
     }
 
     /**
      * Given a rectangular image and a mask situated within the image, extract the pixels that are present
      * (or not present) within the mask.
-     * @param image: Rectangular frame of image
-     * @param mask: Mask containing irregular shape within rectangular frame
+     * @param rectangular_mat: Rectangular frame of image
+     * @param mat_mask: Mask containing irregular shape within rectangular frame
      * @param ExtractNotMaskedPixels: Set to true to extract pixels outside of mask rather than within
      * @return Array of pixels that are present within the mask
      */
-    public static double[] extractPixelsfromMask(BufferedImage image, BufferedImage mask, Boolean ExtractNotMaskedPixels) {
+    public static double[] extractPixelsfromMask(Mat rectangular_mat, Mat mat_mask, Boolean ExtractNotMaskedPixels) {
 
-        // converts everything to openCV format to allow pixel operations
-        Mat rectangular_mat = OpenCVTools.imageToMat(image);
-        Mat mat_mask = OpenCVTools.imageToMat(mask);
         double[] mask_pixels = OpenCVTools.extractDoubles(mat_mask);
         double[] main_pixels = OpenCVTools.extractDoubles(rectangular_mat);
         ArrayList<Double> final_pixels = new ArrayList<Double>();

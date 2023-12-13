@@ -260,6 +260,7 @@ public class ModelRunner {
 
         // Convert to an ImageJ-friendly form for now
         ImagePlus imp = OpenCVTools.matToImagePlus("Result", maskMat);
+
         // Apply the maximum finder to the second channel
         ImageProcessor ip = imp.getStack().getProcessor(maximumFinderChannel);
         ByteProcessor bpDetected = maxFinder.findMaxima(ip, tolerance, threshold, ij.plugin.filter.MaximumFinder.SEGMENTED, excludeOnEdges, isEDM);
