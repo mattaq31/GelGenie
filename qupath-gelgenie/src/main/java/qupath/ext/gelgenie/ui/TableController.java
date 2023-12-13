@@ -411,10 +411,10 @@ public class TableController {
 
         BufferedWriter br = new BufferedWriter(new FileWriter(fileOutput));
 
-        br.write("Lane ID,Band ID,Pixel Count,Average Intensity,Raw Volume,Local Corrected Volume,Global Corrected Volume\n");
+        br.write("Lane ID,Band ID,Pixel Count,Average Intensity,Raw Volume,Local Corrected Volume,Global Corrected Volume,Rolling Ball Corrected Volume\n");
 
         for (BandEntry band : bandData) {
-            String sb = band.getLaneID() + "," + band.getBandID() + "," + band.getPixelCount() + "," + band.getAverageIntensity() + "," + band.getRawVolume() + "," + band.getLocalVolume() + "," + band.getGlobalVolume() + "\n";
+            String sb = band.getLaneID() + "," + band.getBandID() + "," + band.getPixelCount() + "," + band.getAverageIntensity() + "," + band.getRawVolume() + "," + band.getLocalVolume() + "," + band.getGlobalVolume() + band.getRollingVolume() + "\n";
             br.write(sb);
         }
         br.close();
