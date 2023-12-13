@@ -4,7 +4,7 @@ import pandas as pd
 
 base_folder = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/quantitative_results/gelanalyzer'
 
-for i in range(30):
+for i in range(31):
     analysis = join(base_folder, str(i))
     if os.path.isdir(analysis):
         full_data = []
@@ -27,3 +27,4 @@ for i in range(30):
 
         df = pd.DataFrame(full_data, columns=['Lane ID', 'Band ID', 'Raw Volume', 'Background Corrected Volume'])
         df.to_csv(join(analysis, 'collated_data.csv'), index=False)
+
