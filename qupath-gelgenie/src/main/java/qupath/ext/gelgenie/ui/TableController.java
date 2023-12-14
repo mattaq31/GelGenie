@@ -578,7 +578,11 @@ public class TableController {
         ImageServer<BufferedImage> server = getCurrentImageData().getServer();
         double globalMean = calculateGlobalBackgroundAverage(server);
         Mat rollingBallImage = findRollingBallImage(server, rollingRadius);
-        ObservableList<BandEntry> bandData = computeTableColumns(getAnnotationObjects(), server, globalCorrection, localCorrection, rollingBallCorrection, localSensitivity, globalMean, rollingBallImage);
+
+        ArrayList<PathObject> annots = (ArrayList<PathObject>) getAnnotationObjects(); // sorts annotations by lane/band ID since this sorting is lost after reloading an image
+        annots.sort(new LaneBandCompare());
+
+        ObservableList<BandEntry> bandData = computeTableColumns(annots, server, globalCorrection, localCorrection, rollingBallCorrection, localSensitivity, globalMean, rollingBallImage);
         exportDataToFolder(bandData, folder, filename);
     }
 
