@@ -510,6 +510,18 @@ public class UIController {
                         ));
     }
 
+    private static void addDataComputeAndExportToHistoryWorkflow(ImageData<?> imageData, boolean globalCorrection,
+                                                                 boolean localCorrection, boolean rollingCorrection,
+                                                                 int localSensitivity, int rollingRadius) {
+        imageData.getHistoryWorkflow()
+                .addStep(
+                        new DefaultScriptableWorkflowStep(
+                                resources.getString("workflow.computeandexport"),
+                                TableController.class.getName() +
+                                        ".computeAndExportBandData("+globalCorrection+","+localCorrection+","+rollingCorrection+","+localSensitivity+","+rollingRadius+",\"OUTPUT FOLDER\",\"OUTPUT FILENAME OR NULL\")"
+                        ));
+    }
+
     /**
      * Generates a band data table when requested.  User preferences are also passed on to the table creator class.
      */
@@ -529,6 +541,11 @@ public class UIController {
                 enableLocalBackground.isSelected(), enableRollingBackground.isSelected(),
                 localSensitivity.getValue(), rollingRadius.getValue(), selectedBands);
         tableCommand.run();
+
+        // adds scriptable command for later execution
+        addDataComputeAndExportToHistoryWorkflow(getCurrentImageData(), enableGlobalBackground.isSelected(),
+                                                enableLocalBackground.isSelected(), enableRollingBackground.isSelected(),
+                                                localSensitivity.getValue(), rollingRadius.getValue());
     }
 
     /**
