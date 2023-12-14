@@ -1,10 +1,11 @@
 import os
 import imageio
-from gelgenie.segmentation.helper_functions.general_functions import extract_image_names_from_folder
+from gelgenie.segmentation.helper_functions.general_functions import extract_image_names_from_folder, create_dir_if_empty
 import matplotlib.pyplot as plt
 from scipy import ndimage as ndi
 from skimage.color import label2rgb
 import cv2
+from tqdm import tqdm
 
 
 nnunet_folder = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_results/test_aug29_nnunet/'
@@ -18,12 +19,18 @@ gelgenie_folder = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analy
 ref_folder = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/gel_testing/neb_only'
 out_folder = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_results/test_aug29_nnunet/gelgenie_comparison_neb'
 
+nnunet_folder = '/Users/matt/Desktop/nnunet_output'
+gelgenie_folder = '/Users/matt/Desktop/gelgenie_output/unet_global_padding_nov_4'
+ref_folder = '/Users/matt/Desktop/input_data'
+out_folder = '/Users/matt/Desktop/gelgenie_nnunet_comparison'
+
 ref_files = extract_image_names_from_folder(ref_folder)
 gelgenie_files = extract_image_names_from_folder(gelgenie_folder)
 nnunet_files = extract_image_names_from_folder(nnunet_folder)
 
-for i, (rfile, gfile, nfile) in enumerate(zip(ref_files, gelgenie_files, nnunet_files)):
+create_dir_if_empty(out_folder)
 
+for i, (rfile, gfile, nfile) in tqdm(enumerate(zip(ref_files, gelgenie_files, nnunet_files))):
     basename = os.path.basename(rfile).split('.')[0]
     n_im = imageio.v2.imread(nfile)
     g_im = imageio.v2.imread(gfile)
@@ -41,7 +48,7 @@ for i, (rfile, gfile, nfile) in enumerate(zip(ref_files, gelgenie_files, nnunet_
     ax[0].set_title('Reference Image')
 
     ax[1].imshow(g_im)
-    ax[1].set_title('GelGenie Prediction (26 Aug)')
+    ax[1].set_title('GelGenie Prediction (4 Nov)')
 
     ax[2].imshow(n_labels)
     ax[2].set_title('nnUNet Prediction')
