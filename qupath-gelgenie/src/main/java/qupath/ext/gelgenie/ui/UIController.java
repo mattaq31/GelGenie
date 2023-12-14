@@ -83,6 +83,8 @@ public class UIController {
     @FXML
     private CheckBox enableLocalBackground;
     @FXML
+    private CheckBox enableRollingBackground;
+    @FXML
     private CheckBox genTableOnSelectedBands;
     @FXML
     private CheckBox useDJLCheckBox;
@@ -91,6 +93,9 @@ public class UIController {
     private Spinner<Integer> localSensitivity;
     @FXML
     private Spinner<Integer> maxHistoDisplay;
+
+    @FXML
+    private Spinner<Integer> rollingRadius;
 
     @FXML
     private BarChart<String, Number> bandChart;
@@ -236,6 +241,7 @@ public class UIController {
      */
     private void configureAdditionalPersistentSettings(){
         localSensitivity.getValueFactory().valueProperty().bindBidirectional(GelGeniePrefs.localCorrectionPixels());
+        rollingRadius.getValueFactory().valueProperty().bindBidirectional(GelGeniePrefs.rollingRadius());
     }
 
     /**
@@ -247,6 +253,8 @@ public class UIController {
         deletePreviousBands.selectedProperty().bindBidirectional(GelGeniePrefs.deletePreviousBandsProperty());
         enableGlobalBackground.selectedProperty().bindBidirectional(GelGeniePrefs.globalCorrectionProperty());
         enableLocalBackground.selectedProperty().bindBidirectional(GelGeniePrefs.localCorrectionProperty());
+        enableRollingBackground.selectedProperty().bindBidirectional(GelGeniePrefs.rollingCorrectionProperty());
+
         runFullImage.selectedProperty().addListener(new ChangeListener<Boolean>() {
             @Override
             public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
@@ -502,6 +510,18 @@ public class UIController {
                         ));
     }
 
+    private static void addDataComputeAndExportToHistoryWorkflow(ImageData<?> imageData, boolean globalCorrection,
+                                                                 boolean localCorrection, boolean rollingCorrection,
+                                                                 int localSensitivity, int rollingRadius) {
+        imageData.getHistoryWorkflow()
+                .addStep(
+                        new DefaultScriptableWorkflowStep(
+                                resources.getString("workflow.computeandexport"),
+                                TableController.class.getName() +
+                                        ".computeAndExportBandData("+globalCorrection+","+localCorrection+","+rollingCorrection+","+localSensitivity+","+rollingRadius+",\"OUTPUT FOLDER\",\"OUTPUT FILENAME OR NULL\")"
+                        ));
+    }
+
     /**
      * Generates a band data table when requested.  User preferences are also passed on to the table creator class.
      */
@@ -518,8 +538,14 @@ public class UIController {
 
         TableRootCommand tableCommand = new TableRootCommand(qupath, "gelgenie_table",
                 "Data Table", true, enableGlobalBackground.isSelected(),
-                enableLocalBackground.isSelected(), localSensitivity.getValue(), selectedBands);
+                enableLocalBackground.isSelected(), enableRollingBackground.isSelected(),
+                localSensitivity.getValue(), rollingRadius.getValue(), selectedBands);
         tableCommand.run();
+
+        // adds scriptable command for later execution
+        addDataComputeAndExportToHistoryWorkflow(getCurrentImageData(), enableGlobalBackground.isSelected(),
+                                                enableLocalBackground.isSelected(), enableRollingBackground.isSelected(),
+                                                localSensitivity.getValue(), rollingRadius.getValue());
     }
 
     /**

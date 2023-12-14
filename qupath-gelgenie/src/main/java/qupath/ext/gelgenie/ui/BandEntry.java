@@ -18,13 +18,16 @@ public class BandEntry extends PathObject {
     private double rawVolume;
     private double globalVolume;
     private double localVolume;
+
+    private double rollingVolume;
     private double normVolume = 0.0;
     private double normGlobal = 0.0;
     private double normLocal = 0.0;
+    private double normRolling = 0.0;
     private PathObject parentAnnotation;
 
     public BandEntry(int bandID, int laneID, String bandName, double pixelCount, double averageIntensity, double rawVolume,
-                     double globalVolume, double localVolume, PathObject parentAnnotation) {
+                     double globalVolume, double localVolume, double rollingVolume, PathObject parentAnnotation) {
         this.bandID = bandID;
         this.laneID = laneID;
         this.bandName = Objects.requireNonNullElse(bandName, "N/A");
@@ -33,6 +36,7 @@ public class BandEntry extends PathObject {
         this.rawVolume = rawVolume;
         this.globalVolume = globalVolume;
         this.localVolume = localVolume;
+        this.rollingVolume = rollingVolume;
         this.parentAnnotation = parentAnnotation;
     }
 
@@ -95,6 +99,14 @@ public class BandEntry extends PathObject {
         this.localVolume = localVolume;
     }
 
+    public double getRollingVolume() {
+        return rollingVolume;
+    }
+
+    public void setRollingVolume(double rollingVolume) {
+        this.rollingVolume = rollingVolume;
+    }
+
     public double getNormVolume() {
         return normVolume;
     }
@@ -118,6 +130,12 @@ public class BandEntry extends PathObject {
     public void setNormLocal(double normVolume) {
         this.normLocal = normVolume;
     }
+
+    public double getNormRolling() {
+        return normRolling;
+    }
+
+    public void setNormRolling(double normRolling) {this.normRolling = normRolling; }
 
     public PathObject getParentAnnotation() {
         return parentAnnotation;

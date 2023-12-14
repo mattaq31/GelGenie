@@ -25,6 +25,8 @@
                       <TableColumn fx:id="normLocalVolCol" prefWidth="150.0" style="-fx-alignment: CENTER;" text="Norm. Local Volume" />
                       <TableColumn fx:id="globalVolCol" prefWidth="170.0" style="-fx-alignment: CENTER;" text="Global Corrected Volume" />
                       <TableColumn fx:id="normGlobalVolCol" prefWidth="150.0" style="-fx-alignment: CENTER;" text="Norm. Global Volume" />
+                      <TableColumn fx:id="rollingVolCol" prefWidth="170.0" style="-fx-alignment: CENTER;" text="Rolling Ball Volume" />
+                      <TableColumn fx:id="normRollingVolCol" prefWidth="150.0" style="-fx-alignment: CENTER;" text="Norm. Rolling Volume" />
                   </columns>
               </TableView>
          </items>

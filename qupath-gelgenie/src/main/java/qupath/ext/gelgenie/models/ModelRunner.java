@@ -105,6 +105,17 @@ public class ModelRunner {
         GelGenieModel selectedModel = ModelInterfacing.loadModel(model);
         return runFullImageInference(selectedModel, useDJL, QP.getCurrentImageData());
     }
+
+    /**
+     * Runs segmentation on a full image, in a scripting-friendly format.  Additionally, automatically adds found annotations to QuPath's viewer.
+     * @param model: String-name of model to be used (must be available in model collection)
+     * @param useDJL: Boolean - set to true to use DJL, set to false to use OpenCV.
+     * @return Collection of individual gel bands found in image.
+     * @throws IOException
+     * @throws TranslateException
+     * @throws ModelNotFoundException
+     * @throws MalformedModelException
+     */
     public static Collection<PathObject> runFullImageInferenceAndAddAnnotations(String model, Boolean useDJL) throws TranslateException, ModelNotFoundException, MalformedModelException, IOException {
         Collection<PathObject> annotations = runFullImageInference(model, useDJL);
         for (PathObject annot : annotations) {
@@ -260,6 +271,7 @@ public class ModelRunner {
 
         // Convert to an ImageJ-friendly form for now
         ImagePlus imp = OpenCVTools.matToImagePlus("Result", maskMat);
+
         // Apply the maximum finder to the second channel
         ImageProcessor ip = imp.getStack().getProcessor(maximumFinderChannel);
         ByteProcessor bpDetected = maxFinder.findMaxima(ip, tolerance, threshold, ij.plugin.filter.MaximumFinder.SEGMENTED, excludeOnEdges, isEDM);
