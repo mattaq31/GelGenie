@@ -20,6 +20,7 @@ apply_augmentations = false
 padding = true
 individual_padding = false
 weak_augmentations = false
+minmax_norm = false
 
 [model]
 model_name = 'UNDEFINED'   # model architecture name

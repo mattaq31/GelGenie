@@ -7,7 +7,7 @@ from gelgenie.segmentation.helper_functions.general_functions import extract_ima
 
 def prep_train_val_dataloaders(dir_train_img, dir_train_mask, split_training_dataset, dir_val_img, dir_val_mask,
                                n_channels, val_percent, batch_size, num_workers,
-                               apply_augmentations, weak_augmentations, padding, individual_padding):
+                               apply_augmentations, weak_augmentations, padding, individual_padding, minmax_norm):
     """
     Prepares a matched training and validation dataloader for training a segmentation model.
     :param dir_train_img: Path of directory of training set images
@@ -23,6 +23,7 @@ def prep_train_val_dataloaders(dir_train_img, dir_train_mask, split_training_dat
     :param weak_augmentations: (Bool) Set to true to only allow non-destructive augmentations
     :param padding: (Bool) Whether to apply padding to images and masks when loading training and validation images
     :param individual_padding (Bool) Whether to apply padding to images and masks individually (only batch size of 1 possible)
+    :param minmax_norm: (Bool) Whether to apply minmax normalization to images (unique normalisation for each image)
     :return: Training dataloader, Validation dataloader, number of training images, number of validation images
     """
 
@@ -53,11 +54,12 @@ def prep_train_val_dataloaders(dir_train_img, dir_train_mask, split_training_dat
 
     train_set = ImageMaskDataset(dir_train_img, dir_train_mask, n_channels,
                                  augmentations=augmentations if apply_augmentations else None,
-                                 padding=padding, individual_padding=individual_padding, image_names=train_image_names)
+                                 padding=padding, individual_padding=individual_padding, image_names=train_image_names,
+                                 minmax_norm=minmax_norm)
 
     val_set = ImageMaskDataset(dir_val_img, dir_val_mask, n_channels,  # validation set enforced to not have extra padding (as will be the case at test time)
                                augmentations=None, padding=False, individual_padding=True,
-                               image_names=val_image_names)
+                               image_names=val_image_names, minmax_norm=minmax_norm)
 
     # Confirm the length of training/validation sets
     n_train = len(train_set)
