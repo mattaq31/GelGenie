@@ -11,6 +11,7 @@ from tqdm import tqdm
 import math
 import imageio
 import numpy as np
+import itertools
 
 
 ref_data_folder = os.path.join(os.path.abspath(os.path.join(__file__, os.path.pardir, os.path.pardir, os.path.pardir)),
@@ -25,11 +26,35 @@ def model_predict_and_process(model, image):
     return mask, ordered_mask
 
 
+def model_multi_augment_predict_and_process(model, image):
+    """
+    This function runs the provided model multiple times on augmented versions of the input, then combines the
+    outputs into one averaged estimate.
+    :param model: Pytorch segmentation model
+    :param image: gel image in N,C,H,W format
+    :return: direct pytorch mask and ordered numpy mask for easy use
+    """
+    mirror_axes = [0, 1]
+
+    with torch.no_grad():
+        mask = model(image)
+        axes_combinations = [c for i in range(len(mirror_axes)) for c in
+                             itertools.combinations([m + 2 for m in mirror_axes], i + 1)]
+        for axes in axes_combinations:
+            mask += torch.flip(model(torch.flip(image, axes)), axes)
+        mask /= (len(axes_combinations) + 1)
+
+    one_hot = F.one_hot(mask.argmax(dim=1), 2).permute(0, 3, 1, 2).float()
+    ordered_mask = one_hot.numpy().squeeze()
+
+    return mask, ordered_mask
+
+
 def index_converter(ind, images_per_row):
     return int(ind / images_per_row), ind % images_per_row  # converts indices to double
 
 
-def segment_and_analyze(models, model_names, input_folder, output_folder, minmax_norm=False):
+def segment_and_analyze(models, model_names, input_folder, output_folder, minmax_norm=False, multi_augment=False):
 
     dataset = ImageDataset(input_folder, 1, padding=False, individual_padding=True, minmax_norm=minmax_norm)
     dataloader = DataLoader(dataset, shuffle=False, batch_size=1, num_workers=0, pin_memory=True)
@@ -48,7 +73,10 @@ def segment_and_analyze(models, model_names, input_folder, output_folder, minmax
         np_image = batch['image'].detach().squeeze().cpu().numpy()
         all_model_outputs = []
         for model, mname in zip(models, model_names):
-            _, mask = model_predict_and_process(model, batch['image'])
+            if multi_augment:
+                _, mask = model_multi_augment_predict_and_process(model, batch['image'])
+            else:
+                _, mask = model_predict_and_process(model, batch['image'])
 
             labels, _ = ndi.label(mask.argmax(axis=0))
             rgb_labels = label2rgb(labels, image=np_image)

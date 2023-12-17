@@ -24,6 +24,12 @@ gelgenie_folder = '/Users/matt/Desktop/gelgenie_output/unet_global_padding_nov_4
 ref_folder = '/Users/matt/Desktop/input_data'
 out_folder = '/Users/matt/Desktop/gelgenie_nnunet_comparison'
 
+nnunet_folder = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models/December 2023/nnunet_full_set/quant_data_eval/nnunet_output_quant'
+gelgenie_folder = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models/December 2023/nnunet_full_set/quant_data_eval/gg_output_quant/unet_global_padding_nov_4'
+ref_folder = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models/December 2023/nnunet_full_set/quant_data_eval/quant_data'
+out_folder = '/Users/matt/Desktop/gelgenie_nnunet_comparison'
+
+
 ref_files = extract_image_names_from_folder(ref_folder)
 gelgenie_files = extract_image_names_from_folder(gelgenie_folder)
 nnunet_files = extract_image_names_from_folder(nnunet_folder)

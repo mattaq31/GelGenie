@@ -150,4 +150,4 @@ python-gelgenie/scratch_scripts/*
 qupath/*
 qupath-extension-wsinfer/*
 qupath-extension-djl/*
-
+nnUNet/*

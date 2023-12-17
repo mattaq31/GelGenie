@@ -10,6 +10,8 @@ input_folders = ['/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyz
                  '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/maximal_set/lsdb_gels/val_images',
                  '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/maximal_set/nathan_gels/val_images']
 
+input_folders = ['/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/quantitative_results/base_data',]
+
 out_folder = '/Users/matt/Desktop/nnunet_data'
 dataset_name = 'GELTEST'
 

@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import qupath.ext.gelgenie.tools.ChannelSquisher;
 import qupath.ext.gelgenie.tools.DivisibleSizePad;
 import qupath.ext.gelgenie.tools.GelSegmentationTranslator;
+import qupath.ext.gelgenie.tools.NnUNetSegmentationTranslator;
 import qupath.fx.dialogs.Dialogs;
 import qupath.imagej.processing.RoiLabeling;
 import qupath.imagej.tools.IJTools;
@@ -84,9 +85,13 @@ public class ModelRunner {
         RegionRequest request = RegionRequest.createInstance(server, downsample);
 
         if(useDJL){
-            return runDJLModel(model, imageData, request);
+            return runDJLModel(model, imageData, request, model.getName().contains("nnUNet"));
         }
         else{
+            if (model.getName().contains("nnUNet")) {
+                Dialogs.showErrorNotification(resources.getString("ui.model-error.window-header"), resources.getString("error.model-issue"));
+                return null;
+            }
             return runOpenCVModel(model, imageData, request);
         }
     }
@@ -142,9 +147,13 @@ public class ModelRunner {
         // Slice out the selected annotation at full resolution
         RegionRequest request = RegionRequest.createInstance(server.getPath(), 1.0, annotation.getROI());
         if(useDJL){
-            return runDJLModel(model, imageData, request);
+            return runDJLModel(model, imageData, request, model.getName().contains("nnUNet"));
         }
         else{
+            if (model.getName().contains("nnUNet")) {
+                Dialogs.showErrorNotification(resources.getString("ui.model-error.window-header"), resources.getString("error.model-issue"));
+                return null;
+            }
             return runOpenCVModel(model, imageData, request);
         }
     }
@@ -173,7 +182,7 @@ public class ModelRunner {
 
         Mat result = dataOp.apply(imageData, request);
 
-        return findSplitROIs(result, request, 2); // final splitter operation
+        return findSplitROIs(result, request, 2, false); // final splitter operation
     }
 
     /**
@@ -187,7 +196,7 @@ public class ModelRunner {
      * @throws MalformedModelException
      * @throws TranslateException
      */
-    private static Collection<PathObject> runDJLModel(GelGenieModel model, ImageData<BufferedImage> imageData, RegionRequest request) throws IOException, ModelNotFoundException, MalformedModelException, TranslateException {
+    private static Collection<PathObject> runDJLModel(GelGenieModel model, ImageData<BufferedImage> imageData, RegionRequest request, Boolean nnunetConfig) throws IOException, ModelNotFoundException, MalformedModelException, TranslateException {
         // TODO: ToTensor() assumes data is between 0 and 255, what to do about 16-bit images?
         // TODO: go through parameters and see if anything needs to be updated
         // TODO: full documentation
@@ -195,11 +204,20 @@ public class ModelRunner {
         Device device = PytorchManager.getDevice();
 
         checkPyTorchLibrary();
-        Translator<Image, CategoryMask> translator = GelSegmentationTranslator.builder()
-                .addTransform(createToTensorTransform(device))
-                .addTransform(new DivisibleSizePad(32))
-                .addTransform(new ChannelSquisher())
-                .build(request.getWidth(), request.getHeight());
+        Translator<Image, CategoryMask> translator;
+        if (nnunetConfig){
+            translator = NnUNetSegmentationTranslator.builder()
+                    .addTransform(createToTensorTransform(device))
+                    .addTransform(new ChannelSquisher())
+                    .build(request.getWidth(), request.getHeight());
+        }
+        else {
+            translator = GelSegmentationTranslator.builder()
+                    .addTransform(createToTensorTransform(device))
+                    .addTransform(new DivisibleSizePad(32))
+                    .addTransform(new ChannelSquisher())
+                    .build(request.getWidth(), request.getHeight());
+        }
 
         ImageFactory factory = ImageFactory.getInstance();
 
@@ -215,9 +233,7 @@ public class ModelRunner {
                 .optTranslator(translator)
                 .optProgress(new ProgressBar()).build();
 
-        ZooModel<Image, CategoryMask> zooModel = criteria.loadModel();
-
-        Predictor<Image, CategoryMask> predictor = zooModel.newPredictor();
+        Predictor<Image, CategoryMask> predictor = criteria.loadModel().newPredictor();
 
         CategoryMask mask = predictor.predict(image);
         int[][] maskOrig = mask.getMask(); // extracts out integer array for downstream processing
@@ -232,10 +248,10 @@ public class ModelRunner {
                 ((FloatIndexer) indexer).put(i, j, maskOrig[i][j]);
             }
         }
-        return findSplitROIs(imMat, request, 1); // final splitter operation
+        return findSplitROIs(imMat, request, 1, nnunetConfig); // final splitter operation
     }
 
-    private static Transform createToTensorTransform(Device device) {
+    public static Transform createToTensorTransform(Device device) {
         logger.debug("Creating ToTensor transform");
         if (PytorchManager.isMPS(device))
             return new MpsSupport.ToTensor32();
@@ -246,7 +262,7 @@ public class ModelRunner {
     /**
      * Attempts to check if PyTorch library is available and if not, downloads it. TODO: improve legibility of this area
      */
-    private static void checkPyTorchLibrary() {
+    public static void checkPyTorchLibrary() {
         try {
             // Ensure PyTorch engine is available
             if (!PytorchManager.hasPyTorchEngine()) {
@@ -265,17 +281,27 @@ public class ModelRunner {
      * whether pixels touch or not.
      * @param maskMat OpenCV Mask found by segmentation models
      * @param request Underlying image pixels corresponding to mask
+     * @param maximumFinderChannel Channel to use for maximum finder (usually 2 for OpenCV, 1 for DJL)
+     * @param nnunetConfig Boolean - set to true if using nnUNet model (has a special pre-computed output)
      * @return List of ROIs that have been split out
      */
-    private static Collection<PathObject> findSplitROIs(Mat maskMat, RegionRequest request, int maximumFinderChannel){
+    public static Collection<PathObject> findSplitROIs(Mat maskMat, RegionRequest request, int maximumFinderChannel, Boolean nnunetConfig){
 
         // Convert to an ImageJ-friendly form for now
         ImagePlus imp = OpenCVTools.matToImagePlus("Result", maskMat);
 
-        // Apply the maximum finder to the second channel
-        ImageProcessor ip = imp.getStack().getProcessor(maximumFinderChannel);
-        ByteProcessor bpDetected = maxFinder.findMaxima(ip, tolerance, threshold, ij.plugin.filter.MaximumFinder.SEGMENTED, excludeOnEdges, isEDM);
-        ImageProcessor ipLabels = RoiLabeling.labelImage(bpDetected, 0.5F, conn8);
+        ImageProcessor ipLabels;
+        if (!nnunetConfig) {
+            // Apply the maximum finder to the selected channel
+            ImageProcessor ip = imp.getStack().getProcessor(maximumFinderChannel);
+            ByteProcessor bpDetected = maxFinder.findMaxima(ip, tolerance, threshold, ij.plugin.filter.MaximumFinder.SEGMENTED, excludeOnEdges, isEDM);
+            ipLabels = RoiLabeling.labelImage(bpDetected, 0.5F, conn8);
+        }
+        else{ // no need to do any processing for nnunet
+            ImageProcessor ip = imp.getProcessor();
+            ipLabels = RoiLabeling.labelImage(ip, 0.5F, conn8);
+        }
+
         Roi[] roisIJ = RoiLabeling.labelsToConnectedROIs(ipLabels, (int) Math.ceil(ipLabels.getStatistics().max));
 
         Collection<PathObject> convertedROIs = Arrays.stream(roisIJ).map(roiIJ -> {

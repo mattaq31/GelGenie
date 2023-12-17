@@ -44,9 +44,11 @@ def segmentation_results_compare(datafolder, datafile):
               help='Path to folder containing input images.')
 @click.option('--output_folder', '-o', default=None,
               help='Path to folder containing output images.')
+@click.option('--multi_augment', is_flag=True,
+              help='Set this flag to run test-time augmentation on input images.')
 @click.option('--run_ref_analysis', is_flag=True,
               help='Set this flag to run analysis on standard reference images.')
-def segmentation_pipeline(model_and_epoch, model_folder, input_folder, output_folder, run_ref_analysis):
+def segmentation_pipeline(model_and_epoch, model_folder, input_folder, output_folder, multi_augment, run_ref_analysis):
 
     from os.path import join
     from gelgenie.segmentation.evaluation.core_functions import segment_and_analyze
@@ -67,7 +69,7 @@ def segmentation_pipeline(model_and_epoch, model_folder, input_folder, output_fo
         raise NotImplementedError('This function needs to be rewritten.')
         # standard_ladder_analysis(model, output_folder)
     else:
-        segment_and_analyze(models, experiment_names, input_folder, output_folder)
+        segment_and_analyze(models, experiment_names, input_folder, output_folder, multi_augment=multi_augment)
 
 
 if __name__ == '__main__':
