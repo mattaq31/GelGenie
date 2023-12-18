@@ -15,8 +15,7 @@
  *
  * Copied from qupath-extension-wsinfer
  */
-// This code was extracted from the WSInfer extension.
-package qupath.ext.gelgenie.models;
+package qupath.ext.gelgenie.djl_processing;
 
 import ai.djl.Device;
 import ai.djl.engine.Engine;
@@ -113,7 +112,7 @@ public class PytorchManager {
      * Get the PyTorch engine, downloading if necessary.
      * @return the engine if available, or null if this failed
      */
-    static Engine getEngineOnline() {
+    public static Engine getEngineOnline() {
         try {
             return callOnline(() -> Engine.getEngine("PyTorch"));
         } catch (Exception e) {

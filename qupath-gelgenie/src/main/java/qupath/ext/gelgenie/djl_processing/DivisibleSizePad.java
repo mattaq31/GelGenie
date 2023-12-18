@@ -4,8 +4,6 @@ import ai.djl.ndarray.NDArray;
 import ai.djl.ndarray.NDManager;
 import ai.djl.ndarray.types.Shape;
 import ai.djl.translate.Transform;
-import qupath.ext.gelgenie.models.PytorchManager;
-import qupath.ext.gelgenie.ui.GelGeniePrefs;
 
 public class DivisibleSizePad implements Transform {
 

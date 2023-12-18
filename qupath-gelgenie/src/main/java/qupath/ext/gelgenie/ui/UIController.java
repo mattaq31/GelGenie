@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 import qupath.ext.gelgenie.graphics.EmbeddedBarChart;
 import qupath.ext.gelgenie.models.GelGenieModel;
 import qupath.ext.gelgenie.models.ModelInterfacing;
-import qupath.ext.gelgenie.models.PytorchManager;
+import qupath.ext.gelgenie.djl_processing.PytorchManager;
 import qupath.ext.gelgenie.tools.BandSorter;
 import qupath.ext.gelgenie.tools.ImageTools;
 import qupath.ext.gelgenie.models.ModelRunner;
@@ -434,7 +434,7 @@ public class UIController {
         ImageData<BufferedImage> imageData = getCurrentImageData();
 
         ForkJoinPool.commonPool().execute(() -> {
-            Collection<PathObject> newBands = null;
+            Collection<PathObject> newBands;
             if (inferencePrefs.runFullImagePref()) { // runs model on entire image
                 try {
                     newBands = ModelRunner.runFullImageInference(modelChoiceBox.getSelectionModel().getSelectedItem(),
@@ -443,6 +443,7 @@ public class UIController {
                             modelChoiceBox.getSelectionModel().getSelectedItem().getName(), useDJLCheckBox.isSelected());
                 } catch (IOException | MalformedModelException | ModelNotFoundException | TranslateException e) {
                     pendingTask.set(null);
+                    runButtonBinding.invalidate(); // fire an update to the binding, so the run button becomes available
                     throw new RuntimeException(e);
                 }
             } else { // runs model on data within selected annotation only
@@ -452,6 +453,7 @@ public class UIController {
 
                 } catch (IOException | MalformedModelException | TranslateException | ModelNotFoundException e) {
                     pendingTask.set(null);
+                    runButtonBinding.invalidate(); // fire an update to the binding, so the run button becomes available
                     throw new RuntimeException(e);
                 }
             }
@@ -473,7 +475,8 @@ public class UIController {
                 return;
             }
             for (PathObject annot : newBands) {
-                annot.setPathClass(PathClass.fromString("Gel Band", 8000));
+                annot.setPathClass(PathClass.fromString("Gel Band", 10709517));
+                // can use this converter to select the integer color from an RGB code: http://www.shodor.org/~efarrow/trunk/html/rgbint.html
             }
             addObjects(newBands);
             BandSorter.LabelBands(newBands);
@@ -554,7 +557,7 @@ public class UIController {
     @FXML
     private void setGlobalBackgroundPatch() {
         PathObject annot = getSelectedObject();
-        PathClass gbClass = PathClass.fromString("Global Background", 80);
+        PathClass gbClass = PathClass.fromString("Global Background", 906200);
         annot.setPathClass(gbClass);
     }
 
