@@ -8,6 +8,8 @@ import javafx.scene.SnapshotParameters;
 import javafx.scene.chart.*;
 import javafx.scene.image.WritableImage;
 import qupath.fx.dialogs.FileChoosers;
+import qupath.lib.common.GeneralTools;
+import qupath.lib.images.servers.ServerTools;
 
 import javax.imageio.ImageIO;
 import java.io.File;
@@ -16,12 +18,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 
+import static qupath.lib.scripting.QP.getCurrentImageData;
+
 /**
- * Main class in charge of embedded bar chart.
+ * Main class in charge of embedded bar charts in main GelGenie window and results table.
  */
 public class EmbeddedBarChart {
-
-
     public static ObservableList<XYChart.Series<String, Number>> plotBars(Collection<double[]> y_data,
                                                                           Collection<String> legendData,
                                                                           String[] labels) {
@@ -110,8 +112,9 @@ public class EmbeddedBarChart {
      * @param Chart: Chart to save
      */
     public static void saveChart(BarChart Chart){
+        String defaultName = GeneralTools.getNameWithoutExtension(new File(ServerTools.getDisplayableImageName(getCurrentImageData().getServer())));
 
-        File fileOutput = FileChoosers.promptToSaveFile("Export Chart", new File("bandChart.png"),
+        File fileOutput = FileChoosers.promptToSaveFile("Export Chart",  new File(defaultName + "_band_chart.png"),
                 FileChoosers.createExtensionFilter("Save as PNG", ".png"));
         if (fileOutput == null)
             return;

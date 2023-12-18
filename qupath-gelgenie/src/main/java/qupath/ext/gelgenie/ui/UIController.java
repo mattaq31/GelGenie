@@ -19,6 +19,8 @@ import javafx.scene.chart.BarChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
+import javafx.scene.web.WebView;
+import org.controlsfx.control.PopOver;
 import org.controlsfx.control.action.Action;
 import org.controlsfx.control.action.ActionUtils;
 import org.slf4j.Logger;
@@ -26,12 +28,13 @@ import org.slf4j.LoggerFactory;
 import qupath.ext.gelgenie.graphics.EmbeddedBarChart;
 import qupath.ext.gelgenie.models.GelGenieModel;
 import qupath.ext.gelgenie.models.ModelInterfacing;
-import qupath.ext.gelgenie.models.PytorchManager;
+import qupath.ext.gelgenie.djl_processing.PytorchManager;
 import qupath.ext.gelgenie.tools.BandSorter;
 import qupath.ext.gelgenie.tools.ImageTools;
 import qupath.ext.gelgenie.models.ModelRunner;
 import qupath.lib.gui.QuPathGUI;
 import qupath.fx.dialogs.Dialogs;
+import qupath.lib.gui.tools.WebViews;
 import qupath.lib.images.ImageData;
 import qupath.lib.images.servers.ImageServer;
 import qupath.lib.objects.PathObject;
@@ -41,9 +44,16 @@ import qupath.lib.objects.hierarchy.PathObjectHierarchy;
 import qupath.lib.plugins.workflow.DefaultScriptableWorkflowStep;
 
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.ForkJoinPool;
+import org.commonmark.parser.Parser;
+import org.commonmark.ext.front.matter.YamlFrontMatterExtension;
+import org.commonmark.ext.front.matter.YamlFrontMatterVisitor;
+import org.commonmark.renderer.html.HtmlRenderer;
+
 
 import static qupath.lib.scripting.QP.*;
 
@@ -63,6 +73,8 @@ public class UIController {
 
     @FXML
     private Button downloadButton;
+    @FXML
+    private Button infoButton;
     @FXML
     private ToggleButton toggleBandNames;
     @FXML
@@ -115,6 +127,10 @@ public class UIController {
 
     private SelectedObjectCounter selectedObjectCounter;
     private BooleanBinding runButtonBinding;
+
+    // these elements are for the info button popups
+    private WebView infoWebView = WebViews.create(true);
+    private PopOver infoPopover = new PopOver(infoWebView);
 
     /*
     This function is the first to run when the GUI window is created.
@@ -318,9 +334,13 @@ public class UIController {
         modelChoiceBox.setConverter(new ModelInterfacing.ModelStringConverter(models));
         modelChoiceBox.getSelectionModel().selectedItemProperty().addListener(
                 (v, o, n) -> downloadButton.setDisable((n == null) || n.isValid()));
+        modelChoiceBox.getSelectionModel().selectedItemProperty().addListener(
+                (v, o, n) -> infoButton.setDisable((n == null) || !n.isValid()|| !checkFileExists(n.getReadmeFile())));
         modelChoiceBox.getSelectionModel().selectFirst();
     }
-
+    private static boolean checkFileExists(File file) {
+        return file != null && file.isFile();
+    }
     /**
      * Updates the live histogram with the distributions of the selected gel bands.
      *
@@ -377,8 +397,68 @@ public class UIController {
             showModelAvailableNotification(model.getName());
             downloadButton.setDisable(true);
             runButtonBinding.invalidate(); // fire an update to the binding, so the run button becomes available
+            infoButton.setDisable(false);
         });
     }
+
+    /**
+     *  Displays the model information in a popup window (edited from the wsinfer extension).
+     */
+    public void presentModelInfo(){
+        if (infoPopover.isShowing()) {
+            infoPopover.hide();
+            return;
+        }
+        GelGenieModel model = modelChoiceBox.getSelectionModel().getSelectedItem();
+        var file = model.getReadmeFile();
+        if (!checkFileExists(file)) {
+            logger.warn("Readme file not available: {}", file);
+            return;
+        }
+        try {
+            var markdown = Files.readString(file.toPath());
+            // Parse the initial markdown only, to extract any YAML front matter
+            var parser = Parser.builder()
+                    .extensions(
+                            Arrays.asList(YamlFrontMatterExtension.create())
+                    ).build();
+            var doc = parser.parse(markdown);
+            var visitor = new YamlFrontMatterVisitor();
+            doc.accept(visitor);
+            var metadata = visitor.getData();
+
+            // If we have YAML metadata, remove from the start (since it renders weirdly) and append at the end
+            if (!metadata.isEmpty()) {
+                doc.getFirstChild().unlink();
+                var sb = new StringBuilder();
+                sb.append("----\n\n");
+                sb.append("### Metadata\n\n");
+                for (var entry : metadata.entrySet()) {
+                    sb.append("\n* **").append(entry.getKey()).append("**: ").append(entry.getValue());
+                }
+                doc.appendChild(parser.parse(sb.toString()));
+            }
+
+            // If the markdown doesn't start with a title, pre-pending the model title & description (if available)
+            if (!markdown.startsWith("#")) {
+                var sb = new StringBuilder();
+                sb.append("## ").append(model.getName()).append("\n\n");
+                var description = model.getDescription();
+                if (description != null && !description.isEmpty()) {
+                    sb.append("_").append(description).append("_").append("\n\n");
+                }
+                sb.append("----\n\n");
+                doc.prependChild(parser.parse(sb.toString()));
+            }
+
+            infoWebView.getEngine().loadContent(
+                    HtmlRenderer.builder().build().render(doc));
+            infoPopover.show(infoButton);
+        } catch (IOException e) {
+            logger.error("Error parsing readme file", e);
+        }
+    }
+
 
     /**
      * Runs when user attempts to download a model that is already available.
@@ -434,7 +514,7 @@ public class UIController {
         ImageData<BufferedImage> imageData = getCurrentImageData();
 
         ForkJoinPool.commonPool().execute(() -> {
-            Collection<PathObject> newBands = null;
+            Collection<PathObject> newBands;
             if (inferencePrefs.runFullImagePref()) { // runs model on entire image
                 try {
                     newBands = ModelRunner.runFullImageInference(modelChoiceBox.getSelectionModel().getSelectedItem(),
@@ -443,6 +523,7 @@ public class UIController {
                             modelChoiceBox.getSelectionModel().getSelectedItem().getName(), useDJLCheckBox.isSelected());
                 } catch (IOException | MalformedModelException | ModelNotFoundException | TranslateException e) {
                     pendingTask.set(null);
+                    runButtonBinding.invalidate(); // fire an update to the binding, so the run button becomes available
                     throw new RuntimeException(e);
                 }
             } else { // runs model on data within selected annotation only
@@ -452,6 +533,7 @@ public class UIController {
 
                 } catch (IOException | MalformedModelException | TranslateException | ModelNotFoundException e) {
                     pendingTask.set(null);
+                    runButtonBinding.invalidate(); // fire an update to the binding, so the run button becomes available
                     throw new RuntimeException(e);
                 }
             }
@@ -473,7 +555,8 @@ public class UIController {
                 return;
             }
             for (PathObject annot : newBands) {
-                annot.setPathClass(PathClass.fromString("Gel Band", 8000));
+                annot.setPathClass(PathClass.fromString("Gel Band", 10709517));
+                // can use this converter to select the integer color from an RGB code: http://www.shodor.org/~efarrow/trunk/html/rgbint.html
             }
             addObjects(newBands);
             BandSorter.LabelBands(newBands);
@@ -554,7 +637,7 @@ public class UIController {
     @FXML
     private void setGlobalBackgroundPatch() {
         PathObject annot = getSelectedObject();
-        PathClass gbClass = PathClass.fromString("Global Background", 80);
+        PathClass gbClass = PathClass.fromString("Global Background", 906200);
         annot.setPathClass(gbClass);
     }
 

@@ -1,11 +1,9 @@
-package qupath.ext.gelgenie.tools;
+package qupath.ext.gelgenie.djl_processing;
 
 import ai.djl.ndarray.NDArray;
 import ai.djl.ndarray.NDManager;
 import ai.djl.ndarray.types.Shape;
 import ai.djl.translate.Transform;
-import qupath.ext.gelgenie.models.PytorchManager;
-import qupath.ext.gelgenie.ui.GelGeniePrefs;
 
 public class DivisibleSizePad implements Transform {
 
@@ -13,6 +11,12 @@ public class DivisibleSizePad implements Transform {
     public DivisibleSizePad(int multiplier){
         this.multiplier = multiplier;
     }
+
+    /**
+     * Pads an image with zeros to match some specific multiplier (e.g. UNet needs images to be divisible by 32)
+     * @param array the {@link NDArray} on which the {@link Transform} is applied
+     * @return The image with padding applied
+     */
     @Override
     public NDArray transform(NDArray array) {
         int currWidth = (int) array.getShape().getShape()[2];

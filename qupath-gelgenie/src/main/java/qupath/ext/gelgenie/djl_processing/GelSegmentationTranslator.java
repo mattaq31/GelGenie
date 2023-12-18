@@ -1,24 +1,22 @@
-package qupath.ext.gelgenie.tools;
+package qupath.ext.gelgenie.djl_processing;
+
 import ai.djl.modality.cv.Image;
 import ai.djl.modality.cv.output.CategoryMask;
 import ai.djl.modality.cv.translator.BaseImageTranslator;
 import ai.djl.ndarray.NDList;
-
 import ai.djl.translate.Translator;
 import ai.djl.translate.TranslatorContext;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+
 /**
  * A {@link Translator} that post-process the {@link Image} into {@link CategoryMask} with output
  * mask representing the class that each pixel in the original image belong to.
- * This has been modified to work with the packaged nnunet torchscript models
- * (which outputs a direct mask rather than probabilities).
  */
-public class NnUNetSegmentationTranslator extends BaseImageTranslator<CategoryMask> {
+public class GelSegmentationTranslator extends BaseImageTranslator<CategoryMask> {
 
     private SynsetLoader synsetLoader;
     public List<String> classes;
@@ -26,7 +24,7 @@ public class NnUNetSegmentationTranslator extends BaseImageTranslator<CategoryMa
     public int imageWidth;
     public int imageHeight;
 
-    public NnUNetSegmentationTranslator(Builder builder, int imageWidth, int imageHeight) {
+    public GelSegmentationTranslator(Builder builder, int imageWidth, int imageHeight) {
 
         super(builder);
         this.synsetLoader = builder.synsetLoader();
@@ -50,15 +48,30 @@ public class NnUNetSegmentationTranslator extends BaseImageTranslator<CategoryMa
 
     @Override
     public CategoryMask processOutput(TranslatorContext ctx, NDList list) {
+        // scores contains the probabilities of each pixel being a certain object
+        // important: the padding applied prior to running the model needs to be removed here
+        float[] scores = list.get(0).get(":,0:" +imageHeight + ",0:" + imageWidth).toFloatArray();
 
-        long[] scores = list.get(0).toLongArray();
         int[][] mask = new int[imageHeight][imageWidth];
 
-        // Build mask array directly from nnunet output
+        int imageSize = imageWidth * imageHeight;
+
+        // Build mask array
+        int numOfClasses = classes.size();
         for (int h = 0; h < imageHeight; h++) {
             for (int w = 0; w < imageWidth; w++) {
                 int index = h * imageWidth + w;
-                mask[h][w] = Math.toIntExact(scores[index]);
+                int maxi = 0;
+                double maxnum = -Double.MAX_VALUE;
+                for (int i = 0; i < numOfClasses; ++i) {
+                    // get score for each i at the h,w pixel of the image
+                    float score = scores[i * imageSize + index];
+                    if (score > maxnum) {
+                        maxnum = score;
+                        maxi = i;
+                    }
+                }
+                mask[h][w] = maxi;
             }
         }
         return new CategoryMask(classes, mask);
@@ -94,9 +107,9 @@ public class NnUNetSegmentationTranslator extends BaseImageTranslator<CategoryMa
             return this;
         }
 
-        public NnUNetSegmentationTranslator build(int imageWidth, int imageHeight) {
+        public GelSegmentationTranslator build(int imageWidth, int imageHeight) {
             validate();
-            return new NnUNetSegmentationTranslator(this, imageWidth, imageHeight);
+            return new GelSegmentationTranslator(this, imageWidth, imageHeight);
         }
 
         public void configPreProcess(Map<String, ?> arguments) {
@@ -108,4 +121,3 @@ public class NnUNetSegmentationTranslator extends BaseImageTranslator<CategoryMa
     }
 
 }
-

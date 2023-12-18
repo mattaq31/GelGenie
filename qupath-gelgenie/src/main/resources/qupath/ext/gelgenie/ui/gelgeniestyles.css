@@ -3,7 +3,7 @@
   -fx-spacing: 7.5;
 }
 
-.download-icon {
+.fa-icon {
     -fx-font-family: FontAwesome;
     -fx-font-size: 14px;
     -fx-fill: -fx-text-base-color;
@@ -18,4 +18,3 @@
 .tab .tab-label {
     -fx-font-weight: bold;
 }
-

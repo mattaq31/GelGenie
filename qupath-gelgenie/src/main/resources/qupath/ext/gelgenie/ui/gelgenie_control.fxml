@@ -44,9 +44,9 @@
                                     <VBox alignment="CENTER">
                                         <children>
                                             <Label styleClass="regular" text="%ui.model" />
-                                            <HBox alignment="CENTER" styleClass="standard-spacing standard-padding">
+                                            <HBox alignment="CENTER" styleClass="standard-spacing, standard-padding">
                                                 <children>
-                                                    <ChoiceBox id="deviceChoices" fx:id="modelChoiceBox" prefHeight="31.0" prefWidth="344.0">
+                                                    <ChoiceBox id="deviceChoices" fx:id="modelChoiceBox" prefHeight="31.0" prefWidth="220.0">
                                                         <tooltip>
                                                             <Tooltip text="%ui.model.tooltip" />
                                                         </tooltip>
@@ -56,7 +56,15 @@
                                                             <Tooltip text="%ui.model.download.tooltip" />
                                                         </tooltip>
                                                         <graphic>
-                                                            <Text styleClass="download-icon"></Text>
+                                                            <Text styleClass="fa-icon"></Text>
+                                                        </graphic>
+                                                    </Button>
+                                                    <Button fx:id="infoButton" mnemonicParsing="false" onAction="#presentModelInfo" prefHeight="31.0" prefWidth="39.0">
+                                                        <tooltip>
+                                                            <Tooltip text="%ui.model.info.tooltip" />
+                                                        </tooltip>
+                                                        <graphic>
+                                                            <Text styleClass="fa-icon"></Text>
                                                         </graphic>
                                                     </Button>
                                                 </children>
@@ -64,7 +72,7 @@
                                         </children>
                                     </VBox>
                                     <!--**********************Run Options**********************-->
-                                    <VBox alignment="CENTER" styleClass="standard-spacing standard-padding">
+                                    <VBox alignment="CENTER">
                                         <HBox alignment="BASELINE_RIGHT" styleClass="standard-spacing">
                                             <children>
                                                 <CheckBox fx:id="runFullImage" mnemonicParsing="false" nodeOrientation="RIGHT_TO_LEFT" selected="true" text="%ui.model.runall" />
@@ -94,7 +102,7 @@
 
                                     </VBox>
                                     <!--**********************Run Button**********************-->
-                                    <VBox alignment="CENTER" styleClass="standard-spacing standard-padding">
+                                    <VBox alignment="CENTER">
                                         <HBox alignment="CENTER" styleClass="standard-spacing">
                                             <children>
                                                 <Button fx:id="runButton" disable="true" onAction="#runBandInference" prefHeight="31.0" prefWidth="252.0" text="%ui.run">
@@ -124,7 +132,7 @@
                     <!--    Processing Pane************************************************************-->
                     <VBox>
                         <TitledPane fx:id="pane2" animated="false" collapsible="false" text="%ui.quantitate.pane">
-                            <VBox alignment="TOP_CENTER" styleClass="standard-spacing standard-padding">
+                            <VBox alignment="TOP_CENTER">
                                 <children>
                                     <VBox alignment="CENTER" styleClass="standard-spacing">
                                         <children>

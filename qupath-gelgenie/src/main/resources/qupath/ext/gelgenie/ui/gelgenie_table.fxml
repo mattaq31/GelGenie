@@ -35,9 +35,11 @@
     <bottom>
         <ButtonBar prefHeight="40.0" prefWidth="200.0" BorderPane.alignment="CENTER">
             <buttons>
-                <Button fx:id="histoButton" mnemonicParsing="false" onAction="#toggleHistogram" text="View Data Histogram" />
+                <Button fx:id="histoButton" mnemonicParsing="false" onAction="#toggleHistogram" text="View Data Histogram"/>
                 <Button fx:id="exportHistoButton" mnemonicParsing="false" onAction="#saveHistogram" text="Export Histogram"/>
                 <Button fx:id="exportButton" mnemonicParsing="false" onAction="#exportData" text="Export Data" />
+                <Button fx:id="laneNormButton" mnemonicParsing="false" onAction="#laneNormalise" text="Normalise by Lane"/>
+                <Button fx:id="globalNormButton" mnemonicParsing="false" onAction="#fullNormalise" text="Global Normalisation"/>
             </buttons>
         </ButtonBar>
     </bottom>

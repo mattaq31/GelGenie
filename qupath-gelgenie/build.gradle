@@ -2,26 +2,22 @@ plugins {
   // Main gradle plugin for building a Java library
   id 'java-library'
   // To create a shadow/fat jar that bundle up all dependencies
-  id 'com.github.johnrengelman.shadow' version '7.1.2'
+  id 'com.github.johnrengelman.shadow' version '8.1.1'
   // Include this plugin to avoid downloading JavaCPP dependencies for all platforms
   id 'org.bytedeco.gradle-javacpp-platform'
 
   id 'org.openjfx.javafxplugin' version '0.1.0'
 }
 
-// TODO: Change the module name
-ext.moduleName = 'io.github.qupath.gelgenie'
+ext.moduleName = 'io.github.qupath.extension.gelgenie'
 
-// TODO: Define the extension version & provide a short description
-version = "0.1.0-SNAPSHOT"
-description = 'TBC'
+version = "0.1.0"
+description = 'QuPath extension to directly run and interface with GelGenie models.'
 
-// TODO: Specify the QuPath version, compatible with the extension.
 // The default 'gradle.ext.qupathVersion' reads this from settings.gradle.
 ext.qupathVersion = gradle.ext.qupathVersion
 
-// TODO: Specify the Java version compatible with the extension
-// Generally 11 for QuPath v0.4.3, but will be 17 for QuPath v0.5.0
+// 17 for QuPath v0.5.0
 ext.qupathJavaVersion = 17
 
 def djlVersion = libs.versions.deepJavaLibrary.get() // gets deep java version from main QuPath
@@ -42,6 +38,7 @@ dependencies {
     // Main QuPath user interface jar.
     // Automatically includes other QuPath jars as subdependencies.
     shadow "io.github.qupath:qupath-gui-fx:${qupathVersion}"
+    implementation libs.bundles.markdown
 
     // For logging - the version comes from QuPath's version catalog at
     // https://github.com/qupath/qupath/blob/main/gradle/libs.versions.toml

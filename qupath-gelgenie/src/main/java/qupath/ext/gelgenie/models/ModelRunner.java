@@ -14,10 +14,7 @@ import org.bytedeco.opencv.opencv_core.Mat;
 import org.opencv.core.CvType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import qupath.ext.gelgenie.tools.ChannelSquisher;
-import qupath.ext.gelgenie.tools.DivisibleSizePad;
-import qupath.ext.gelgenie.tools.GelSegmentationTranslator;
-import qupath.ext.gelgenie.tools.NnUNetSegmentationTranslator;
+import qupath.ext.gelgenie.djl_processing.*;
 import qupath.fx.dialogs.Dialogs;
 import qupath.imagej.processing.RoiLabeling;
 import qupath.imagej.tools.IJTools;
@@ -89,7 +86,7 @@ public class ModelRunner {
         }
         else{
             if (model.getName().contains("nnUNet")) {
-                Dialogs.showErrorNotification(resources.getString("ui.model-error.window-header"), resources.getString("error.model-issue"));
+                Dialogs.showErrorMessage(resources.getString("ui.model-error.window-header"), resources.getString("error.model-issue"));
                 return null;
             }
             return runOpenCVModel(model, imageData, request);
@@ -151,7 +148,7 @@ public class ModelRunner {
         }
         else{
             if (model.getName().contains("nnUNet")) {
-                Dialogs.showErrorNotification(resources.getString("ui.model-error.window-header"), resources.getString("error.model-issue"));
+                Dialogs.showErrorMessage(resources.getString("ui.model-error.window-header"), resources.getString("error.model-issue"));
                 return null;
             }
             return runOpenCVModel(model, imageData, request);
