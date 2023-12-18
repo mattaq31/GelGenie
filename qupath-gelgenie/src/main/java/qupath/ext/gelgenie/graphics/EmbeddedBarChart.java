@@ -17,11 +17,9 @@ import java.util.Collection;
 import java.util.Iterator;
 
 /**
- * Main class in charge of embedded bar chart.
+ * Main class in charge of embedded bar charts in main GelGenie window and results table.
  */
 public class EmbeddedBarChart {
-
-
     public static ObservableList<XYChart.Series<String, Number>> plotBars(Collection<double[]> y_data,
                                                                           Collection<String> legendData,
                                                                           String[] labels) {

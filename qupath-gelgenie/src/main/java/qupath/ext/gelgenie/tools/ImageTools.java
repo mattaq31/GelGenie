@@ -1,9 +1,6 @@
 package qupath.ext.gelgenie.tools;
 
-import ij.ImagePlus;
-import ij.plugin.filter.BackgroundSubtracter;
 import org.bytedeco.opencv.opencv_core.Mat;
-import qupath.imagej.tools.IJTools;
 import qupath.lib.awt.common.BufferedImageTools;
 import qupath.lib.images.servers.ImageServer;
 import qupath.lib.objects.PathObject;
@@ -14,8 +11,6 @@ import qupath.opencv.tools.OpenCVTools;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.ArrayList;
-
-import static qupath.imagej.images.servers.ImageJServer.convertToBufferedImage;
 
 /**
  * This class contains useful functions for dealing with and extracting image pixels

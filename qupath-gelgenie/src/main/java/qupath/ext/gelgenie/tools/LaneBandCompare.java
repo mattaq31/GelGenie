@@ -5,6 +5,12 @@ import qupath.lib.objects.PathObject;
 import java.util.Comparator;
 
 public class LaneBandCompare implements Comparator<PathObject> {
+
+    /**
+     * Compares and sorts gel bands (PathObjects) based on their laneID and bandID.
+     * @param a the first PathObject to be compared.
+     * @param b the second PathObject to be compared.
+     */
     public int compare(PathObject a, PathObject b) {
 
         // defaults just in case lane/band ID are not set
