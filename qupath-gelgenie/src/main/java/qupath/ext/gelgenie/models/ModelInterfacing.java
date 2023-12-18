@@ -21,6 +21,7 @@ package qupath.ext.gelgenie.models;
 import javafx.util.StringConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qupath.lib.gui.UserDirectoryManager;
 import qupath.lib.gui.prefs.PathPrefs;
 import qupath.lib.io.GsonTools;
 
@@ -109,7 +110,7 @@ public class ModelInterfacing {
      * @return the path to the gelgenie directory
      */
     public static String getUserDirectory(){
-        String userPath = String.valueOf(PathPrefs.getDefaultQuPathUserDirectory());
+        String userPath = String.valueOf(UserDirectoryManager.getInstance().getUserPath());
         return Paths.get(userPath, "gelgenie").toString();
     }
 

@@ -86,7 +86,7 @@ public class ModelRunner {
         }
         else{
             if (model.getName().contains("nnUNet")) {
-                Dialogs.showErrorNotification(resources.getString("ui.model-error.window-header"), resources.getString("error.model-issue"));
+                Dialogs.showErrorMessage(resources.getString("ui.model-error.window-header"), resources.getString("error.model-issue"));
                 return null;
             }
             return runOpenCVModel(model, imageData, request);
@@ -148,7 +148,7 @@ public class ModelRunner {
         }
         else{
             if (model.getName().contains("nnUNet")) {
-                Dialogs.showErrorNotification(resources.getString("ui.model-error.window-header"), resources.getString("error.model-issue"));
+                Dialogs.showErrorMessage(resources.getString("ui.model-error.window-header"), resources.getString("error.model-issue"));
                 return null;
             }
             return runOpenCVModel(model, imageData, request);

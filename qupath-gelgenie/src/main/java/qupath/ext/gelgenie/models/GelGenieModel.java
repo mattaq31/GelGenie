@@ -14,8 +14,8 @@
  *  limitations under the License.
  *
  * Copied with attribution from qupath-extension-wsinfer.
+ * Further edits were made to this file for the GelGenie qupath extension, also licensed under Apache 2.0.
  */
-// This was mostly edited from the WSInfer extension - need to check with Pete how to properly attribute
 
 package qupath.ext.gelgenie.models;
 
@@ -70,12 +70,13 @@ public class GelGenieModel {
 
     public String getAbbrvName() {return abbrvName;}
 
+    public String getDescription() {return description;}
     /**
      * Remove the cached model files.
      */
     public synchronized void removeCache() {
         getTSFile().delete();
-        getCFFile().delete();
+        getReadmeFile().delete();
         getOnnxFile().delete();
     }
 
@@ -95,8 +96,8 @@ public class GelGenieModel {
      * Get the configuration file. Note that it is not guaranteed that the model has been downloaded.
      * @return path to model config file in cache dir
      */
-    public File getCFFile() {
-        return getFile("config.toml");
+    public File getReadmeFile() {
+        return getFile("README.md");
     }
 
     /**
@@ -203,7 +204,7 @@ public class GelGenieModel {
             URL urlPt1 = new URL(String.format("https://huggingface.co/%s/raw/%s/onnx_checkpoints/%s", hfRepoId, hfRevision, onnxModel));
             ModelInterfacing.downloadURLToFile(urlPt1, getPointerFileOnnx());
         }
-        downloadFileToCacheDir("config.toml");
+        downloadFileToCacheDir("README.md");
 
         downloadFileToCacheDir(String.format("torchscript_checkpoints/%s", torchscriptModel));
         URL urlPt2 = new URL(String.format("https://huggingface.co/%s/raw/%s/torchscript_checkpoints/%s", hfRepoId, hfRevision, torchscriptModel));
