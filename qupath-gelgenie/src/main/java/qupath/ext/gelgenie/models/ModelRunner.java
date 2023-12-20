@@ -64,7 +64,6 @@ public class ModelRunner {
     private static boolean excludeOnEdges = true;
     private static boolean isEDM = false;
     private static boolean conn8 = true;
-    private static MaximumFinder maxFinder = new MaximumFinder();
 
     private static final ResourceBundle resources = ResourceBundle.getBundle("qupath.ext.gelgenie.ui.strings");
 
@@ -291,7 +290,16 @@ public class ModelRunner {
         if (!nnunetConfig) {
             // Apply the maximum finder to the selected channel
             ImageProcessor ip = imp.getStack().getProcessor(maximumFinderChannel);
-            ByteProcessor bpDetected = maxFinder.findMaxima(ip, tolerance, threshold, ij.plugin.filter.MaximumFinder.SEGMENTED, excludeOnEdges, isEDM);
+            MaximumFinder maxFinder = new MaximumFinder();
+            ByteProcessor bpDetected;
+            try {
+                bpDetected = maxFinder.findMaxima(ip, tolerance, threshold, ij.plugin.filter.MaximumFinder.SEGMENTED, excludeOnEdges, isEDM);
+            }
+            catch (ArrayIndexOutOfBoundsException e){
+                Dialogs.showErrorMessage(resources.getString("ui.model-error.window-header"), resources.getString("error.generic"));
+                logger.error("Error in finding maximum channel after segmentation:" + e.getMessage());
+                return null;
+            }
             ipLabels = RoiLabeling.labelImage(bpDetected, 0.5F, conn8);
         }
         else{ // no need to do any processing for nnunet
