@@ -18,6 +18,7 @@ dir_train_mask = ['/exports/csce/eddie/eng/groups/DunnGroup/matthew/gel_data/lsd
 dir_train_img = ['/exports/csce/eddie/eng/groups/DunnGroup/matthew/gel_data/lsdb_gels/images',
                  '/exports/csce/eddie/eng/groups/DunnGroup/matthew/gel_data/lsdb_gels/val_images']
 dir_val_img = []
+dir_val_mask = []
 split_training_dataset = false
 apply_augmentations = true
 weak_augmentations = false

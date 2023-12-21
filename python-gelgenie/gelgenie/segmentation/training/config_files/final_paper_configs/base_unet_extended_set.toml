@@ -38,6 +38,7 @@ dir_train_img = [
 ]
 
 dir_val_img = []
+dir_val_mask = []
 
 split_training_dataset = false
 apply_augmentations = true
