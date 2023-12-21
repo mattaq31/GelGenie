@@ -7,7 +7,7 @@ import shutil
 
 base_dir = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/maximal_set'
 
-all_datasets = ['lsdb_gels', 'matthew_gels', 'matthew_gels_2', 'nathan_gels', 'neb_ladders']
+all_datasets = ['lsdb_gels', 'matthew_gels', 'matthew_gels_2', 'nathan_gels', 'neb_ladders', 'quantitation_ladder_gels']
 
 val_percent = 0.1
 test_percent = 0.1

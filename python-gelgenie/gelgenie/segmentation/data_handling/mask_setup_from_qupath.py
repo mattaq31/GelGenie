@@ -42,5 +42,3 @@ for index, file in enumerate(extract_image_names_from_folder(mask_path)):
     else:
         os.rename(file, updated_mask)
         shutil.copy2(input_image_file, output_image_path)
-
-

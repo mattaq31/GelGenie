@@ -328,7 +328,12 @@ class TrainingHandler:
         for epoch in range(self.current_epoch, self.max_epochs + 1):
 
             train_metrics = self.train_epoch(epoch)
-            val_metrics, seg_sample_package = self.eval_epoch(epoch)
+            if self.val_loader is None:
+                # if no validation data provided, eval is turned off
+                val_metrics = {}
+                seg_sample_package = {}
+            else:
+                val_metrics, seg_sample_package = self.eval_epoch(epoch)
 
             current_epoch_metrics = {**train_metrics, **val_metrics}  # combines all metrics
 
@@ -341,7 +346,10 @@ class TrainingHandler:
             elif type(self.scheduler).__name__ == 'CosineAnnealingWarmRestarts':
                 self.scheduler.step()
 
-            stat_plotting = [['Training Loss', 'Dice Score'], ['Learning Rate']]
+            if self.val_loader is None:
+                stat_plotting = [['Training Loss'], ['Learning Rate']]
+            else:
+                stat_plotting = [['Training Loss', 'Dice Score'], ['Learning Rate']]
             if 'Dice Loss' in current_epoch_metrics and 'Cross-Entropy Loss' in current_epoch_metrics:
                 stat_plotting += [['Dice Loss', 'Cross-Entropy Loss']]
 
@@ -355,21 +363,29 @@ class TrainingHandler:
                             append=True if epoch > 1 else False)
 
             if self.wandb_track:
-                # log to wandb
-                self.wandb_package.log({
-                    'Learning rate': current_epoch_metrics['Learning Rate'],
-                    'Validation Dice': current_epoch_metrics['Dice Score'],
-                    'Train loss': current_epoch_metrics['Training Loss'],
-                    'Validation sample': {
-                        'Input': wandb.Image(seg_sample_package['image']),
-                        'Segmentation': {
-                            'True': wandb.Image(seg_sample_package['mask_true']),
-                            'Predicted': wandb.Image(seg_sample_package['threshold_mask']),
-                            'Predicted-superimposed': wandb.Image(seg_sample_package['combi_mask']),
+                if self.val_loader is None:
+                    self.wandb_package.log({
+                        'Learning rate': current_epoch_metrics['Learning Rate'],
+                        'Validation Dice': current_epoch_metrics['Dice Score'],
+                        'Train loss': current_epoch_metrics['Training Loss'],
+                        'epoch': epoch,
+                    })
+                else:
+                    # log eval sample to wandb, if available
+                    self.wandb_package.log({
+                        'Learning rate': current_epoch_metrics['Learning Rate'],
+                        'Validation Dice': current_epoch_metrics['Dice Score'],
+                        'Train loss': current_epoch_metrics['Training Loss'],
+                        'Validation sample': {
+                            'Input': wandb.Image(seg_sample_package['image']),
+                            'Segmentation': {
+                                'True': wandb.Image(seg_sample_package['mask_true']),
+                                'Predicted': wandb.Image(seg_sample_package['threshold_mask']),
+                                'Predicted-superimposed': wandb.Image(seg_sample_package['combi_mask']),
+                            },
                         },
-                    },
-                    'epoch': epoch,
-                })
+                        'epoch': epoch,
+                    })
 
             if self.checkpoint_saving and (epoch == self.max_epochs or epoch % self.checkpoint_save_frequency == 0):
                 self.save_checkpoint('checkpoint_epoch_%s.pth' % epoch)
