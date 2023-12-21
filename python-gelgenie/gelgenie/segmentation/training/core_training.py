@@ -366,7 +366,6 @@ class TrainingHandler:
                 if self.val_loader is None:
                     self.wandb_package.log({
                         'Learning rate': current_epoch_metrics['Learning Rate'],
-                        'Validation Dice': current_epoch_metrics['Dice Score'],
                         'Train loss': current_epoch_metrics['Training Loss'],
                         'epoch': epoch,
                     })
