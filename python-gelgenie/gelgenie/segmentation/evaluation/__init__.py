@@ -25,15 +25,6 @@ def model_eval_load(exp_folder, eval_epoch):
     return model
 
 
-@click.command()
-@click.option('--datafolder', '-d', default=None,
-              help='Folder to import/export data.')
-@click.option('--datafile', '-f', default=None,
-              help='Specific csv file to be analyzed.')
-def segmentation_results_compare(datafolder, datafile):
-    from gelgenie.segmentation.evaluation.reference_image_analysis import segmentation_accuracy_comparison
-    segmentation_accuracy_comparison(datafolder, datafile)
-
 
 @click.command()
 @click.option('--model_and_epoch', '-me', multiple=True,
@@ -46,12 +37,15 @@ def segmentation_results_compare(datafolder, datafile):
               help='Path to folder containing output images.')
 @click.option('--multi_augment', is_flag=True,
               help='Set this flag to run test-time augmentation on input images.')
-@click.option('--run_ref_analysis', is_flag=True,
-              help='Set this flag to run analysis on standard reference images.')
-def segmentation_pipeline(model_and_epoch, model_folder, input_folder, output_folder, multi_augment, run_ref_analysis):
+@click.option('--run_quant_analysis', is_flag=True,
+              help='Set this flag to run quantitative analysis comparing output images with target masks.')
+@click.option('--mask_folder', default=None,
+              help='Path to ground truth mask data corresponding to input images.')
+def segmentation_pipeline(model_and_epoch, model_folder, input_folder, output_folder, multi_augment,
+                          run_quant_analysis, mask_folder):
 
     from os.path import join
-    from gelgenie.segmentation.evaluation.core_functions import segment_and_analyze
+    from gelgenie.segmentation.evaluation.core_functions import segment_and_plot, segment_and_quantitate
     from gelgenie.segmentation.helper_functions.general_functions import create_dir_if_empty
 
     experiment_names, eval_epochs = zip(*model_and_epoch)
@@ -65,11 +59,10 @@ def segmentation_pipeline(model_and_epoch, model_folder, input_folder, output_fo
 
     create_dir_if_empty(output_folder)
 
-    if run_ref_analysis:  # TODO: broken, needs a rewrite
-        raise NotImplementedError('This function needs to be rewritten.')
-        # standard_ladder_analysis(model, output_folder)
+    if run_quant_analysis:
+        segment_and_quantitate(models, experiment_names, input_folder, mask_folder, output_folder, multi_augment=multi_augment)
     else:
-        segment_and_analyze(models, experiment_names, input_folder, output_folder, multi_augment=multi_augment)
+        segment_and_plot(models, experiment_names, input_folder, output_folder, multi_augment=multi_augment)
 
 
 if __name__ == '__main__':
