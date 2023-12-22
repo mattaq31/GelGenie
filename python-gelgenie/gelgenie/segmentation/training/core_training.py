@@ -392,7 +392,8 @@ class TrainingHandler:
 
             if self.model_cleanup_frequency > 0 and epoch % self.model_cleanup_frequency == 0:
                 top_epoch_idx = sorted(range(len(total_metrics[self.model_cleanup_metric])),
-                                       key=lambda i: total_metrics[self.model_cleanup_metric][i])[-2:]
+                                       key=lambda i: total_metrics[self.model_cleanup_metric][i],
+                                       reverse=True if 'Loss' in self.model_cleanup_metric else False)[-2:]
                 top_epochs = [total_metrics['Epoch'][i] for i in top_epoch_idx]
                 deleted_epochs = []
                 for epoch_id in total_metrics['Epoch'][:-1]:

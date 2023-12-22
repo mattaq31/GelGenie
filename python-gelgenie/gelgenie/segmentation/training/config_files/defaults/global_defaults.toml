@@ -40,3 +40,4 @@ scheduler_type = false  # No scheduler is used
 save_checkpoint = true # Whether model checkpoints are saved
 checkpoint_frequency = 1 # How often checkpoints are saved (per epoch)
 wandb_track = true # Whether to track training with wandb
+model_cleanup_metric = 'Dice Score' # use validation dice score to clean up by default
