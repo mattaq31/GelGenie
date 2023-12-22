@@ -87,6 +87,7 @@ class TrainingHandler:
         self.checkpoint_saving = training_parameters['save_checkpoint']
         self.checkpoint_save_frequency = training_parameters['checkpoint_frequency']
         self.model_cleanup_frequency = training_parameters['model_cleanup_frequency']
+        self.model_cleanup_metric = training_parameters['model_cleanup_metric']
         self.grad_scaler = torch.cuda.amp.GradScaler(enabled=training_parameters['grad_scaler'])  # CUDA only function
         self.use_amp_scaler = training_parameters['grad_scaler']
 
@@ -390,11 +391,11 @@ class TrainingHandler:
                 self.save_checkpoint('checkpoint_epoch_%s.pth' % epoch)
 
             if self.model_cleanup_frequency > 0 and epoch % self.model_cleanup_frequency == 0:
-                top_epoch_idx = sorted(range(len(total_metrics['Dice Score'])),
-                                       key=lambda i: total_metrics['Dice Score'][i])[-2:]
+                top_epoch_idx = sorted(range(len(total_metrics[self.model_cleanup_metric])),
+                                       key=lambda i: total_metrics[self.model_cleanup_metric][i])[-2:]
                 top_epochs = [total_metrics['Epoch'][i] for i in top_epoch_idx]
                 deleted_epochs = []
-                for epoch_id in total_metrics['Epoch']:
+                for epoch_id in total_metrics['Epoch'][:-1]:
                     if epoch_id not in top_epochs and epoch_id % 100 != 0:
                         model_file = join(self.checkpoints_folder, 'checkpoint_epoch_%s.pth' % epoch_id)
                         if os.path.isfile(model_file):
