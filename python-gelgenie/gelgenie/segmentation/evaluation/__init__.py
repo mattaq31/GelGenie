@@ -41,8 +41,10 @@ def model_eval_load(exp_folder, eval_epoch):
               help='Set this flag to run quantitative analysis comparing output images with target masks.')
 @click.option('--mask_folder', default=None,
               help='Path to ground truth mask data corresponding to input images.')
+@click.option('--classical_analysis', is_flag=True,
+              help='Set this flag to also run classical analyses for comparison purposes.')
 def segmentation_pipeline(model_and_epoch, model_folder, input_folder, output_folder, multi_augment,
-                          run_quant_analysis, mask_folder):
+                          run_quant_analysis, mask_folder, classical_analysis):
 
     from os.path import join
     from gelgenie.segmentation.evaluation.core_functions import segment_and_plot, segment_and_quantitate
@@ -60,9 +62,11 @@ def segmentation_pipeline(model_and_epoch, model_folder, input_folder, output_fo
     create_dir_if_empty(output_folder)
 
     if run_quant_analysis:
-        segment_and_quantitate(models, experiment_names, input_folder, mask_folder, output_folder, multi_augment=multi_augment)
+        segment_and_quantitate(models, list(experiment_names), input_folder, mask_folder, output_folder,
+                               multi_augment=multi_augment, run_classical_techniques=classical_analysis)
     else:
-        segment_and_plot(models, experiment_names, input_folder, output_folder, multi_augment=multi_augment)
+        segment_and_plot(models, list(experiment_names), input_folder, output_folder, multi_augment=multi_augment,
+                         run_classical_techniques=classical_analysis)
 
 
 if __name__ == '__main__':

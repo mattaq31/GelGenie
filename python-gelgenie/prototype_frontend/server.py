@@ -13,7 +13,7 @@ from matplotlib import pyplot as plt
 import pandas as pd
 import numpy as np
 
-from gelgenie.gel_tools import GelAnalysis
+from gelgenie.classical_tools import GelAnalysis
 
 
 # Allows one to run server from any base filepath

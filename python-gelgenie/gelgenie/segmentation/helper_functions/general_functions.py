@@ -116,3 +116,17 @@ def extract_image_names_from_folder(folder, sorted=True, recursive=False):
         # Sort file names in Natural Order so that numbers starting with 1s don't take priority
         filenames.sort(key=lambda s: [int(t) if t.isdigit() else t.lower() for t in re.split(r'(\d+)', s)])
     return filenames
+
+
+def index_converter(ind, images_per_row, double_indexing=True):
+    """
+    Converts a singe digit index into a double digit system, if required.
+    :param ind: The input single index
+    :param images_per_row: The number of images per row in the output figure
+    :param double_indexing: Whether or not double indexing is required
+    :return: Two split indices or a single index if double indexing not necessary
+    """
+    if double_indexing:
+        return int(ind / images_per_row), ind % images_per_row  # converts indices to double
+    else:
+        return ind

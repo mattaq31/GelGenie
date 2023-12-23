@@ -10,8 +10,8 @@ from skimage.color import rgb2gray, label2rgb
 import pandas as pd
 import skimage.util as util
 
-from gelgenie.gel_tools.band_detection import find_bands
-from gelgenie.gel_tools.utils import convert_pil_image_base_64, convert_numpy_image_base_64
+from gelgenie.classical_tools.band_detection import find_bands
+from gelgenie.classical_tools.utils import convert_pil_image_base_64, convert_numpy_image_base_64
 
 
 class GelAnalysis:
