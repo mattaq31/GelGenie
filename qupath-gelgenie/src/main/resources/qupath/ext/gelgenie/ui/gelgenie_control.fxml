@@ -36,8 +36,8 @@
                 </graphic>
                 <content>
                     <!--    Processing Pane************************************************************-->
-                    <VBox prefHeight="80">
-                        <TitledPane fx:id="pane1" animated="false" collapsible="false" text="%ui.processing.pane">
+                    <VBox prefHeight="200">
+                        <TitledPane animated="false" collapsible="false" text="%ui.processing.pane">
                             <VBox alignment="TOP_CENTER" styleClass="standard-spacing ">
                                 <children>
                                     <!-- **********************Models**********************-->
@@ -116,6 +116,83 @@
                                 </children>
                             </VBox>
                         </TitledPane>
+                        <TitledPane animated="false" collapsible="false" text="%ui.editing.pane">
+                            <VBox alignment="TOP_CENTER" styleClass="standard-spacing ">
+                                <children>
+                                    <HBox alignment="CENTER" styleClass="standard-spacing">
+                                        <children>
+                                            <Label styleClass="regular" text="%ui.processing.bandvis" />
+                                            <ToggleButton fx:id="toggleAnnotations" mnemonicParsing="false">
+                                                <tooltip>
+                                                    <Tooltip text="%ui.processing.bandvistooltip" />
+                                                </tooltip>
+                                            </ToggleButton>
+                                            <ToggleButton fx:id="toggleOverlayAnnotations" mnemonicParsing="false">
+                                                <tooltip>
+                                                    <Tooltip text="%ui.processing.bandoverlaytip" />
+                                                </tooltip>
+                                            </ToggleButton>
+                                            <ToggleButton fx:id="toggleBandNames" mnemonicParsing="false">
+                                                <tooltip>
+                                                    <Tooltip text="%ui.processing.bandnametooltip" />
+                                                </tooltip>
+                                            </ToggleButton>
+                                        </children>
+                                    </HBox>
+                                    <HBox alignment="CENTER" styleClass="standard-spacing">
+                                        <children>
+                                            <Label styleClass="regular" text="%ui.processing.bandedit" />
+                                            <ToggleButton fx:id="toggleMove" mnemonicParsing="false">
+                                                <tooltip>
+                                                    <Tooltip text="%ui.processing.movetooltip" />
+                                                </tooltip>
+                                            </ToggleButton>
+                                            <ToggleButton fx:id="toggleBrush" mnemonicParsing="false">
+                                                <tooltip>
+                                                    <Tooltip text="%ui.processing.bandbrushtooltip" />
+                                                </tooltip>
+                                            </ToggleButton>
+                                            <ToggleButton fx:id="toggleSelect" mnemonicParsing="false">
+                                                <tooltip>
+                                                    <Tooltip text="%ui.processing.bandselecttooltip" />
+                                                </tooltip>
+                                            </ToggleButton>
+                                        </children>
+                                    </HBox>
+                                    <HBox alignment="CENTER" styleClass="standard-spacing">
+                                        <children>
+                                            <Label styleClass="regular" text="%ui.processing.selectedlabel" />
+                                            <Button fx:id="classButton" disable="true" onAction="#manualSetClass" prefHeight="31.0" prefWidth="105.0" text="%ui.processing.setclass">
+                                                <tooltip>
+                                                    <Tooltip text="%ui.processing.setclass.tooltip" />
+                                                </tooltip>
+                                            </Button>
+                                            <Button fx:id="labelButton" disable="true" onAction="#manualBandLabel" prefHeight="31.0" prefWidth="105.0" text="%ui.processing.relabel">
+                                                <tooltip>
+                                                    <Tooltip text="%ui.processing.relabel.tooltip" />
+                                                </tooltip>
+                                            </Button>
+                                        </children>
+                                    </HBox>
+                                    <HBox alignment="CENTER" styleClass="standard-spacing">
+                                        <children>
+                                            <Label styleClass="regular" text="%ui.processing.allbandslabel" />
+                                            <Button fx:id="autoClassButton" disable="true" onAction="#classifyFreeAnnotations" prefHeight="31.0" prefWidth="105.0" text="%ui.processing.autoclass">
+                                                <tooltip>
+                                                    <Tooltip text="%ui.processing.autoclass.tooltip" />
+                                                </tooltip>
+                                            </Button>
+                                            <Button fx:id="autoLabelButton" disable="true" onAction="#autoLabelBands" prefHeight="31.0" prefWidth="105.0" text="%ui.processing.autorelabel">
+                                                <tooltip>
+                                                    <Tooltip text="%ui.processing.autorelabel.tooltip" />
+                                                </tooltip>
+                                            </Button>
+                                        </children>
+                                    </HBox>
+                                    <Separator prefWidth="200.0" />
+                                </children>
+                            </VBox>
+                        </TitledPane>
                     </VBox>
                 </content>
             </Tab>
@@ -131,33 +208,11 @@
                 <content>
                     <!--    Processing Pane************************************************************-->
                     <VBox>
-                        <TitledPane fx:id="pane2" animated="false" collapsible="false" text="%ui.quantitate.pane">
+                        <TitledPane animated="false" collapsible="false" text="%ui.quantitate.pane">
                             <VBox alignment="TOP_CENTER">
                                 <children>
                                     <VBox alignment="CENTER" styleClass="standard-spacing">
                                         <children>
-                                            <HBox alignment="CENTER" styleClass="standard-spacing">
-                                                <children>
-                                                    <Label styleClass="regular" text="%ui.processing.bandvis" />
-
-                                                    <ToggleButton fx:id="toggleAnnotations" mnemonicParsing="false">
-                                                        <tooltip>
-                                                            <Tooltip text="%ui.processing.bandvistooltip" />
-                                                        </tooltip>
-                                                    </ToggleButton>
-                                                    <ToggleButton fx:id="toggleBandNames" mnemonicParsing="false">
-                                                        <tooltip>
-                                                            <Tooltip text="%ui.processing.bandnametooltip" />
-                                                        </tooltip>
-                                                    </ToggleButton>
-                                                </children>
-                                            </HBox>
-                                            <Button fx:id="labelButton" disable="true" onAction="#labelBands" prefHeight="31.0" prefWidth="252.0" text="%ui.processing.relabel">
-                                                <tooltip>
-                                                    <Tooltip text="%ui.processing.relabel.tooltip" />
-                                                </tooltip>
-                                            </Button>
-                                            <Separator prefWidth="200.0" />
                                             <Label styleClass="regular" text="%ui.processing.globalbackground">
                                                 <font>
                                                     <Font name="System Bold" size="13.0" />

@@ -15,6 +15,7 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.geometry.Side;
+import javafx.scene.Node;
 import javafx.scene.chart.BarChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
@@ -55,6 +56,7 @@ import org.commonmark.ext.front.matter.YamlFrontMatterVisitor;
 import org.commonmark.renderer.html.HtmlRenderer;
 
 
+import static qupath.lib.gui.tools.GuiTools.promptToSetActiveAnnotationProperties;
 import static qupath.lib.scripting.QP.*;
 
 /**
@@ -80,9 +82,24 @@ public class UIController {
     @FXML
     private ToggleButton toggleAnnotations;
     @FXML
+    private ToggleButton toggleOverlayAnnotations;
+    @FXML
+    private ToggleButton toggleBrush;
+    @FXML
+    private ToggleButton toggleSelect;
+    @FXML
+    private ToggleButton toggleMove;
+
+    @FXML
     private Button globalBackgroundSelector;
     @FXML
     private Button labelButton;
+    @FXML
+    private Button autoLabelButton;
+    @FXML
+    private Button classButton;
+    @FXML
+    private Button autoClassButton;
 
     @FXML
     private CheckBox runFullImage;
@@ -174,7 +191,10 @@ public class UIController {
      */
     private void resizeTabPane(Tab selectedTab) {
         // Assuming that the content of the tab is VBox
-        double newHeight = ((VBox) selectedTab.getContent()).getChildren().get(0).getBoundsInParent().getHeight();
+        double newHeight = 0;
+        for (Node titlePane : ((VBox) selectedTab.getContent()).getChildren()) {
+                newHeight += titlePane.getBoundsInParent().getHeight();
+        }
         mainTabGroup.setPrefHeight(newHeight + 40); // 40 is a buffer for tab headers and padding
     }
 
@@ -288,12 +308,17 @@ public class UIController {
 
     /**
      * Links buttons with their respective graphics from the general QuPath interface.
-     * There are currently only 2 for GelGenie.
      */
     private void configureDisplayToggleButtons() {
         var actions = qupath.getOverlayActions();
+        var editing_actions = qupath.getToolManager();
+
         configureActionToggleButton(actions.SHOW_NAMES, toggleBandNames);
         configureActionToggleButton(actions.SHOW_ANNOTATIONS, toggleAnnotations);
+        configureActionToggleButton(actions.FILL_ANNOTATIONS, toggleOverlayAnnotations);
+        configureActionToggleButton(editing_actions.MOVE_TOOL, toggleMove);
+        configureActionToggleButton(editing_actions.BRUSH_TOOL, toggleBrush);
+        configureActionToggleButton(editing_actions.SELECTION_MODE, toggleSelect);
     }
 
     /**
@@ -320,6 +345,9 @@ public class UIController {
         runButton.disableProperty().bind(runButtonBinding);
         tableButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
         labelButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
+        autoLabelButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
+        classButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
+        autoClassButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
 
         // global background selector button needs to be disabled if no annotation is selected
         globalBackgroundSelector.disableProperty().bind(this.selectedObjectCounter.numSelectedAnnotations.isEqualTo(0));
@@ -565,7 +593,7 @@ public class UIController {
         });
     }
 
-    public void labelBands(){
+    public void autoLabelBands(){
         Collection<PathObject> actionableAnnotations = new ArrayList<>();
         for (PathObject annot : getAnnotationObjects()) {
             if (annot.getPathClass() != null && Objects.equals(annot.getPathClass().getName(), "Gel Band")) {
@@ -573,6 +601,25 @@ public class UIController {
             }
         }
         BandSorter.LabelBands(actionableAnnotations);
+    }
+
+    public void manualBandLabel(){
+        promptToSetActiveAnnotationProperties(getCurrentHierarchy());
+    }
+
+    public void manualSetClass(){
+        PathObject annot = getSelectedObject();
+        PathClass gClass = PathClass.fromString("Gel Band", 10709517);
+        annot.setPathClass(gClass);
+    }
+
+    public void classifyFreeAnnotations(){
+        PathClass gClass = PathClass.fromString("Gel Band", 10709517);
+        for (PathObject annot : getAnnotationObjects()) {
+            if (annot.getPathClass() == null) {
+                annot.setPathClass(gClass);
+            }
+        }
     }
 
     private static void addInferenceToHistoryWorkflow(ImageData<?> imageData, String modelName, boolean useDJL) {
