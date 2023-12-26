@@ -4,7 +4,7 @@ In GelGenie, a gel band is actually defined as a QuPath 'annotation', which are 
 
 The process of creating new bands involves two steps:
 
-1. Create your band by drawing on your gel image - this will create a red 'undefined' annotation.  You can use the brush for a fully manual drawing or use one of the defined shapes in the top right toolbar of QuPath.
+1. Create your band by drawing on your gel image - this will create a red 'undefined' annotation.  You can use the brush for a fully manual drawing or use one of the defined shapes in the top left toolbar of QuPath.
 2. Select your target band, then click the 'Register' button to mark it as a gel band (defined by an orange colour).  Finally, give your band a custom name by clicking on the 'Label' button (or pressing enter on your keyboard) then entering in the name.
 
 With the above steps complete, the band will be automatically included into the table of results generated from the 'Band Measurement' tab.
