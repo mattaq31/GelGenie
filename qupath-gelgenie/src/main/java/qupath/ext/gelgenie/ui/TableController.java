@@ -111,6 +111,10 @@ public class TableController {
 
     private BorderPane histoPane;
     private CheckBox chartNormFlipper;
+    private CheckBox chartRawView;
+    private CheckBox chartGlobalView;
+    private CheckBox chartLocalView;
+    private CheckBox chartRollingView;
     private BarChart<String, Number> displayChart;
 
     public QuPathGUI qupath;
@@ -182,28 +186,6 @@ public class TableController {
 
         ArrayList<PathObject> annots = (ArrayList<PathObject>) getAnnotationObjects();
 
-        // This code block depends on user settings, which are not provided until this runLater() command.
-        Platform.runLater(() -> {
-            calculateGlobalBackground(server);
-            try {
-                rollingBallImage = findRollingBallImage(server, rollingRadius);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-
-            if (!selectedBands.isEmpty()) {
-                selectedBands.sort(new LaneBandCompare());
-                bandData = computeTableColumns(selectedBands, server, globalCorrection, localCorrection, rollingBallCorrection,
-                        localSensitivity, globalMean, rollingBallImage);
-            } else {
-                annots.sort(new LaneBandCompare());
-                bandData = computeTableColumns(annots, server, globalCorrection, localCorrection, rollingBallCorrection,
-                        localSensitivity, globalMean, rollingBallImage);
-            }
-            tableSetup();
-            // toggleHistogram(); Having the histogram pop up by default can be annoying sometimes.
-        });
-
         // permanent chart settings
         final CategoryAxis xAxis = new CategoryAxis();
         final NumberAxis yAxis = new NumberAxis();
@@ -214,20 +196,6 @@ public class TableController {
         displayChart.setAnimated(false);
         xAxis.setLabel("Band");
         yAxis.setLabel("Intensity (A.U.)");
-        histoPane = new BorderPane();
-        histoPane.setCenter(displayChart);
-        chartNormFlipper = new CheckBox(resources.getString("ui.table.histo.norm"));
-        chartNormFlipper.selectedProperty().addListener(new ChangeListener<Boolean>() {
-            @Override
-            public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
-                updateHistogramData(newValue);
-            }
-        }); // chart data always updated when checkbox is toggled
-
-        HBox chartFooter = new HBox(chartNormFlipper);
-        chartFooter.setAlignment(Pos.CENTER);
-        histoPane.setBottom(chartFooter);
-        HBox.setMargin(chartNormFlipper, new javafx.geometry.Insets(0, 0, 10, 0));
 
         // permanent table settings
         mainTable.setPlaceholder(new Label("No gel band data to display"));
@@ -258,13 +226,72 @@ public class TableController {
 
         // the below synchronises selections on the table with selections in QuPath (and the histogram viewer)
         // However, the opposite is currently not implemented (would require more code from SummaryMeasurementTableCommand).
-        mainTable.getSelectionModel().getSelectedItems().addListener(new ListChangeListener<>() {
-            @Override
-            public void onChanged(Change<? extends BandEntry> c) {
-                synchroniseTableSelection(hierarchy, c, mainTable);
-            }
-        });
+        mainTable.getSelectionModel().getSelectedItems().addListener((ListChangeListener<BandEntry>) c -> synchroniseTableSelection(hierarchy, c, mainTable));
 
+        // Core table generation functionality.
+        // This code block depends on user settings, which are not provided until this runLater() command.
+        Platform.runLater(() -> {
+            calculateGlobalBackground(server);
+            try {
+                rollingBallImage = findRollingBallImage(server, rollingRadius);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+
+            if (!selectedBands.isEmpty()) {
+                selectedBands.sort(new LaneBandCompare());
+                bandData = computeTableColumns(selectedBands, server, globalCorrection, localCorrection, rollingBallCorrection,
+                        localSensitivity, globalMean, rollingBallImage);
+            } else {
+                annots.sort(new LaneBandCompare());
+                bandData = computeTableColumns(annots, server, globalCorrection, localCorrection, rollingBallCorrection,
+                        localSensitivity, globalMean, rollingBallImage);
+            }
+            tableSetup();
+
+            // chart frame setup and button config
+            histoPane = new BorderPane();
+            histoPane.setCenter(displayChart);
+            chartNormFlipper = new CheckBox(resources.getString("ui.table.histo.norm"));
+            chartNormFlipper.selectedProperty().addListener((observable, oldValue, newValue) -> updateHistogramData()); // chart data always updated when checkbox is toggled
+
+            chartRawView = new CheckBox(resources.getString("ui.table.histo.raw"));
+            chartRawView.selectedProperty().addListener((observable, oldValue, newValue) -> updateHistogramData()); // chart data always updated when checkbox is toggled
+
+            chartGlobalView = new CheckBox(resources.getString("ui.table.histo.global"));
+            chartGlobalView.selectedProperty().addListener((observable, oldValue, newValue) -> updateHistogramData()); // chart data always updated when checkbox is toggled
+
+            chartRollingView = new CheckBox(resources.getString("ui.table.histo.rolling"));
+            chartRollingView.selectedProperty().addListener((observable, oldValue, newValue) -> updateHistogramData()); // chart data always updated when checkbox is toggled
+
+            chartLocalView = new CheckBox(resources.getString("ui.table.histo.local"));
+            chartLocalView.selectedProperty().addListener((observable, oldValue, newValue) -> updateHistogramData()); // chart data always updated when checkbox is toggled
+
+            HBox chartFooter = new HBox(chartNormFlipper, chartRawView);
+
+            if (globalCorrection) {
+                chartFooter.getChildren().add(chartGlobalView);
+                HBox.setMargin(chartGlobalView, new javafx.geometry.Insets(0, 5, 10, 5));
+
+            }
+            if (localCorrection) {
+                chartFooter.getChildren().add(chartLocalView);
+                HBox.setMargin(chartLocalView, new javafx.geometry.Insets(0, 5, 10, 5));
+
+            }
+            if (rollingBallCorrection) {
+                chartFooter.getChildren().add(chartRollingView);
+                HBox.setMargin(chartRollingView, new javafx.geometry.Insets(0, 0, 10, 5));
+            }
+
+            chartRawView.setSelected(true);
+            chartFooter.setAlignment(Pos.CENTER);
+            histoPane.setBottom(chartFooter);
+            HBox.setMargin(chartNormFlipper, new javafx.geometry.Insets(0, 5, 10, 0));
+            HBox.setMargin(chartRawView, new javafx.geometry.Insets(0, 5, 10, 5));
+
+            // toggleHistogram(); Having the histogram pop up by default can be annoying sometimes.
+        });
     }
 
     /**
@@ -432,14 +459,14 @@ public class TableController {
         mainTable.refresh();
         globalNormButton.setDisable(false);
         laneNormButton.setDisable(true);
-        updateHistogramData(chartNormFlipper.isSelected());
+        updateHistogramData();
     }
     public void fullNormalise() {
         fullNormalise(bandData);
         mainTable.refresh();
         globalNormButton.setDisable(true);
         laneNormButton.setDisable(false);
-        updateHistogramData(chartNormFlipper.isSelected());
+        updateHistogramData();
     }
     /**
      * Normalises all columns to the minimum and maximum values in each lane (lane normalisation).
@@ -467,10 +494,19 @@ public class TableController {
             rawList.clear();
         }
         for (BandEntry entry : bands) {
-            entry.setNormVolume((entry.getRawVolume() - laneDictionary.get(entry.getLaneID())[0][0]) / (laneDictionary.get(entry.getLaneID())[0][1] - laneDictionary.get(entry.getLaneID())[0][0]));
-            entry.setNormGlobal((entry.getGlobalVolume() - laneDictionary.get(entry.getLaneID())[1][0]) / (laneDictionary.get(entry.getLaneID())[1][1] - laneDictionary.get(entry.getLaneID())[1][0]));
-            entry.setNormLocal((entry.getLocalVolume() - laneDictionary.get(entry.getLaneID())[2][0]) / (laneDictionary.get(entry.getLaneID())[2][1] - laneDictionary.get(entry.getLaneID())[2][0]));
-            entry.setNormRolling((entry.getRollingVolume() - laneDictionary.get(entry.getLaneID())[3][0]) / (laneDictionary.get(entry.getLaneID())[3][1] - laneDictionary.get(entry.getLaneID())[3][0]));
+            // this case happens when only one band is available in a lane - just set everything to 1.0
+            if(Objects.equals(laneDictionary.get(entry.getLaneID())[0][0], laneDictionary.get(entry.getLaneID())[0][1])){
+                entry.setNormVolume(1.0);
+                entry.setNormGlobal(1.0);
+                entry.setNormLocal(1.0);
+                entry.setNormRolling(1.0);
+            }
+            else {
+                entry.setNormVolume((entry.getRawVolume() - laneDictionary.get(entry.getLaneID())[0][0]) / (laneDictionary.get(entry.getLaneID())[0][1] - laneDictionary.get(entry.getLaneID())[0][0]));
+                entry.setNormGlobal((entry.getGlobalVolume() - laneDictionary.get(entry.getLaneID())[1][0]) / (laneDictionary.get(entry.getLaneID())[1][1] - laneDictionary.get(entry.getLaneID())[1][0]));
+                entry.setNormLocal((entry.getLocalVolume() - laneDictionary.get(entry.getLaneID())[2][0]) / (laneDictionary.get(entry.getLaneID())[2][1] - laneDictionary.get(entry.getLaneID())[2][0]));
+                entry.setNormRolling((entry.getRollingVolume() - laneDictionary.get(entry.getLaneID())[3][0]) / (laneDictionary.get(entry.getLaneID())[3][1] - laneDictionary.get(entry.getLaneID())[3][0]));
+            }
         }
     }
 
@@ -606,7 +642,7 @@ public class TableController {
             dataTableSplitPane.getItems().remove(1);
             barChartActive = false;
         } else {
-            updateHistogramData(chartNormFlipper.isSelected());
+            updateHistogramData();
             dataTableSplitPane.getItems().add(histoPane);
             barChartActive = true;
         }
@@ -615,9 +651,14 @@ public class TableController {
     /**
      * Collects data from table and prepares histogram.  Currently only presents raw and global corrected volumes.
      */
-    private void updateHistogramData(boolean plotNormalisedValues) {
+    private void updateHistogramData() {
 
-        if (plotNormalisedValues){
+        boolean rawIsValid = chartRawView.isSelected();
+        boolean globalIsValid = this.globalCorrection && chartGlobalView.isSelected();
+        boolean localIsValid = this.localCorrection && chartLocalView.isSelected();
+        boolean rollingIsValid = this.rollingBallCorrection && chartRollingView.isSelected();
+
+        if (chartNormFlipper.isSelected()){
             displayChart.getYAxis().setLabel("Normalised Intensity");
         }else{
             displayChart.getYAxis().setLabel("Intensity (A.U.)");
@@ -638,45 +679,52 @@ public class TableController {
         for (BandEntry band : all_bands) {
             labels[counter] = band.getBandName();
 
-            if (plotNormalisedValues){
-                rawPixels[counter] = band.getNormVolume();
-                if (this.globalCorrection) {
+            if (chartNormFlipper.isSelected()){
+                if (rawIsValid) {
+                    rawPixels[counter] = band.getNormVolume();
+                }
+                if (globalIsValid) {
                     globalCorrVol[counter] = band.getNormGlobal();
                 }
-                if (this.localCorrection) {
+                if (localIsValid) {
                     localCorrVol[counter] = band.getNormLocal();
                 }
-                if (this.rollingBallCorrection) {
+                if (rollingIsValid) {
                     rollingCorrVol[counter] = band.getNormRolling();
                 }
             }
             else {
-                rawPixels[counter] = band.getRawVolume();
-                if (this.globalCorrection) {
+                if (rawIsValid) {
+                    rawPixels[counter] = band.getRawVolume();
+                }
+                if (globalIsValid) {
                     globalCorrVol[counter] = band.getGlobalVolume();
                 }
-                if (this.localCorrection) {
+                if (localIsValid) {
                     localCorrVol[counter] = band.getLocalVolume();
                 }
-                if (this.rollingBallCorrection) {
+                if (rollingIsValid) {
                     rollingCorrVol[counter] = band.getRollingVolume();
                 }
             }
             counter++;
         }
-        dataList.add(rawPixels);
-        legendList.add("Raw Volume");
 
-        if (this.globalCorrection) {
+        if (rawIsValid) {
+            dataList.add(rawPixels);
+            legendList.add("Raw Volume");
+        }
+
+        if (globalIsValid) {
             dataList.add(globalCorrVol);
             legendList.add("Global Corrected Volume");
         }
 
-        if (this.localCorrection) {
+        if (localIsValid) {
             dataList.add(localCorrVol);
             legendList.add("Local Corrected Volume");
         }
-        if (this.rollingBallCorrection) {
+        if (rollingIsValid) {
             dataList.add(rollingCorrVol);
             legendList.add("Rolling Ball Corrected Volume");
         }

@@ -205,7 +205,6 @@
                                             </Button>
                                         </children>
                                     </HBox>
-                                    <Separator prefWidth="200.0" />
                                 </children>
                             </VBox>
                         </TitledPane>
@@ -242,9 +241,17 @@
                                                         </tooltip>
                                                     </Button>
                                                     <CheckBox fx:id="enableGlobalBackground" mnemonicParsing="false" nodeOrientation="RIGHT_TO_LEFT" text="%ui.processing.enableglobal" />
+                                                    <Button fx:id="infoButtonGlobalBg" mnemonicParsing="false" onAction="#presentGlobalBgTooltip" prefHeight="31.0" prefWidth="39.0">
+                                                        <tooltip>
+                                                            <Tooltip text="%ui.processing.generalinfo.tooltip" />
+                                                        </tooltip>
+                                                        <graphic>
+                                                            <Text styleClass="fa-icon"></Text>
+                                                        </graphic>
+                                                    </Button>
                                                 </children>
                                                 <padding>
-                                                    <Insets right="60.0" />
+                                                    <Insets right="30.0" />
                                                 </padding>
                                             </HBox>
                                             <Separator prefWidth="200.0" />
@@ -265,9 +272,17 @@
                                                         </valueFactory>
                                                     </Spinner>
                                                     <CheckBox fx:id="enableRollingBackground" mnemonicParsing="false" nodeOrientation="RIGHT_TO_LEFT" text="%ui.processing.enablerolling" />
+                                                    <Button fx:id="infoButtonRollingBg" mnemonicParsing="false" onAction="#presentRollingBgTooltip" prefHeight="31.0" prefWidth="39.0">
+                                                        <tooltip>
+                                                            <Tooltip text="%ui.processing.generalinfo.tooltip" />
+                                                        </tooltip>
+                                                        <graphic>
+                                                            <Text styleClass="fa-icon"></Text>
+                                                        </graphic>
+                                                    </Button>
                                                 </children>
                                                 <padding>
-                                                    <Insets right="60.0" />
+                                                    <Insets right="30.0" />
                                                 </padding>
                                             </HBox>
                                             <Separator prefWidth="200.0" />
@@ -288,9 +303,17 @@
                                                         </valueFactory>
                                                     </Spinner>
                                                     <CheckBox fx:id="enableLocalBackground" mnemonicParsing="false" nodeOrientation="RIGHT_TO_LEFT" text="%ui.processing.enablelocal" />
+                                                    <Button fx:id="infoButtonLocalBg" mnemonicParsing="false" onAction="#presentLocalBgTooltip" prefHeight="31.0" prefWidth="39.0">
+                                                        <tooltip>
+                                                            <Tooltip text="%ui.processing.generalinfo.tooltip" />
+                                                        </tooltip>
+                                                        <graphic>
+                                                            <Text styleClass="fa-icon"></Text>
+                                                        </graphic>
+                                                    </Button>
                                                 </children>
                                                 <padding>
-                                                    <Insets right="60.0" />
+                                                    <Insets right="30.0" />
                                                 </padding>
                                                 <VBox.margin>
                                                     <Insets />
@@ -301,6 +324,11 @@
                                             <Button fx:id="tableButton" disable="true" onAction="#populateTable" prefHeight="31.0" prefWidth="252.0" text="%ui.processing.viewdata">
                                                 <tooltip>
                                                     <Tooltip text="%ui.processing.viewdatatooltip" />
+                                                </tooltip>
+                                            </Button>
+                                            <Button fx:id="exportMapButton" disable="true" onAction="#exportSegmentationMap" prefHeight="31.0" prefWidth="252.0" text="%ui.processing.exportsegmap">
+                                                <tooltip>
+                                                    <Tooltip text="%ui.processing.exportsegmaptooltip"/>
                                                 </tooltip>
                                             </Button>
                                         </children>

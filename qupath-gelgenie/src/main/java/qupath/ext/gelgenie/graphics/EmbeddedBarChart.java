@@ -27,7 +27,7 @@ public class EmbeddedBarChart {
     public static ObservableList<XYChart.Series<String, Number>> plotBars(Collection<double[]> y_data,
                                                                           Collection<String> legendData,
                                                                           String[] labels) {
-        // TODO: add normalisation option
+
         ObservableList<XYChart.Series<String, Number>> allPlots = FXCollections.observableArrayList();
 
         Iterator<double[]> itY = y_data.iterator();

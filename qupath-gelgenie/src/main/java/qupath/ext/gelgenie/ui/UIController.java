@@ -34,11 +34,17 @@ import qupath.ext.gelgenie.djl_processing.PytorchManager;
 import qupath.ext.gelgenie.tools.BandSorter;
 import qupath.ext.gelgenie.tools.ImageTools;
 import qupath.ext.gelgenie.models.ModelRunner;
+import qupath.ext.gelgenie.tools.SegmentationMap;
+import qupath.fx.dialogs.FileChoosers;
+import qupath.lib.common.ColorTools;
+import qupath.lib.common.GeneralTools;
 import qupath.lib.gui.QuPathGUI;
 import qupath.fx.dialogs.Dialogs;
 import qupath.lib.gui.tools.WebViews;
 import qupath.lib.images.ImageData;
 import qupath.lib.images.servers.ImageServer;
+import qupath.lib.images.servers.LabeledImageServer;
+import qupath.lib.images.servers.ServerTools;
 import qupath.lib.objects.PathObject;
 import qupath.lib.objects.classes.PathClass;
 import qupath.lib.objects.hierarchy.events.PathObjectSelectionListener;
@@ -56,6 +62,7 @@ import org.commonmark.parser.Parser;
 import org.commonmark.ext.front.matter.YamlFrontMatterExtension;
 import org.commonmark.ext.front.matter.YamlFrontMatterVisitor;
 import org.commonmark.renderer.html.HtmlRenderer;
+import qupath.lib.scripting.QP;
 
 
 import static qupath.lib.gui.tools.GuiTools.promptToSetActiveAnnotationProperties;
@@ -70,11 +77,11 @@ public class UIController {
     public QuPathGUI qupath;
 
     // These attributes are all linked to FXML elements in the GUI.
+    // BUTTONS HERE
     @FXML
     private Button runButton;
     @FXML
     private Button tableButton;
-
     @FXML
     private Button downloadButton;
     @FXML
@@ -83,7 +90,26 @@ public class UIController {
     private Button infoButtonLabelEdit;
     @FXML
     private Button infoButtonAutoLabel;
+    @FXML
+    private Button infoButtonGlobalBg;
+    @FXML
+    private Button infoButtonLocalBg;
+    @FXML
+    private Button infoButtonRollingBg;
+    @FXML
+    private Button globalBackgroundSelector;
+    @FXML
+    private Button labelButton;
+    @FXML
+    private Button autoLabelButton;
+    @FXML
+    private Button classButton;
+    @FXML
+    private Button autoClassButton;
+    @FXML
+    private Button exportMapButton;
 
+    // TOGGLE BUTTONS HERE
     @FXML
     private ToggleButton toggleBandNames;
     @FXML
@@ -97,17 +123,7 @@ public class UIController {
     @FXML
     private ToggleButton toggleMove;
 
-    @FXML
-    private Button globalBackgroundSelector;
-    @FXML
-    private Button labelButton;
-    @FXML
-    private Button autoLabelButton;
-    @FXML
-    private Button classButton;
-    @FXML
-    private Button autoClassButton;
-
+    // CHECKBOXES HERE
     @FXML
     private CheckBox runFullImage;
     @FXML
@@ -125,14 +141,29 @@ public class UIController {
     @FXML
     private CheckBox useDJLCheckBox;
 
+    // SPINNERS HERE
     @FXML
     private Spinner<Integer> localSensitivity;
     @FXML
     private Spinner<Integer> maxHistoDisplay;
-
     @FXML
     private Spinner<Integer> rollingRadius;
 
+    // INFO POPUPS HERE
+    private WebView infoWebView = WebViews.create(true);
+    private PopOver infoPopover = new PopOver(infoWebView);
+    private WebView labelInfoWebView = WebViews.create(true);
+    private PopOver labelInfoPopover = new PopOver(labelInfoWebView);
+    private WebView autoLabelInfoWebView = WebViews.create(true);
+    private PopOver autoLabelInfoPopover = new PopOver(autoLabelInfoWebView);
+    private WebView globalInfoWebView = WebViews.create(true);
+    private PopOver globalInfoPopover = new PopOver(globalInfoWebView);
+    private WebView localInfoWebView = WebViews.create(true);
+    private PopOver localInfoPopover = new PopOver(localInfoWebView);
+    private WebView rollingInfoWebView = WebViews.create(true);
+    private PopOver rollingInfoPopover = new PopOver(rollingInfoWebView);
+
+    // MISC HERE
     @FXML
     private BarChart<String, Number> bandChart;
     @FXML
@@ -146,23 +177,16 @@ public class UIController {
 
     private final ObjectProperty<ImageData<BufferedImage>> imageDataProperty = new SimpleObjectProperty<>();
     private final static ResourceBundle resources = ResourceBundle.getBundle("qupath.ext.gelgenie.ui.strings");
-
     private final ObjectProperty<Boolean> pendingTask = new SimpleObjectProperty<>();
-
     private SelectedObjectCounter selectedObjectCounter;
     private BooleanBinding runButtonBinding;
 
-    // these elements are for the info button popups
-    private WebView infoWebView = WebViews.create(true);
-    private PopOver infoPopover = new PopOver(infoWebView);
-    // these elements are for the info button popups
-    private WebView labelInfoWebView = WebViews.create(true);
-    private PopOver labelInfoPopover = new PopOver(labelInfoWebView);
-    // these elements are for the info button popups
-    private WebView autoLabelInfoWebView = WebViews.create(true);
-    private PopOver autoLabelInfoPopover = new PopOver(autoLabelInfoWebView);
+    private static boolean checkFileExists(File file) {
+        return file != null && file.isFile();
+    }
+
     /*
-    This function is the first to run when the GUI window is created.
+    This function is the first to run when the GUI window is created - it prepares the whole interface for use.
      */
     @FXML
     private void initialize() {
@@ -284,14 +308,6 @@ public class UIController {
         bandChart.getYAxis().setLabel("Frequency");
     }
 
-    /*
-    Links additional settings to a persistent state that haven't been covered in other areas.
-     */
-    private void configureAdditionalPersistentSettings(){
-        localSensitivity.getValueFactory().valueProperty().bindBidirectional(GelGeniePrefs.localCorrectionPixels());
-        rollingRadius.getValueFactory().valueProperty().bindBidirectional(GelGeniePrefs.rollingRadius());
-    }
-
     /**
      * Attaches checkboxes to extension persistent settings and links the model checkboxes together so that
      * when one is selected, the other must be off.
@@ -318,8 +334,16 @@ public class UIController {
         });
     }
 
+    /*
+      Links additional settings to a persistent state that haven't been covered in other areas.
+       */
+    private void configureAdditionalPersistentSettings(){
+        localSensitivity.getValueFactory().valueProperty().bindBidirectional(GelGeniePrefs.localCorrectionPixels());
+        rollingRadius.getValueFactory().valueProperty().bindBidirectional(GelGeniePrefs.rollingRadius());
+    }
+
     /**
-     * Links buttons with their respective graphics from the general QuPath interface.
+     * Configures the graphic and functionality of QuPath-linked toggle buttons.
      */
     private void configureDisplayToggleButtons() {
         var actions = qupath.getOverlayActions();
@@ -356,6 +380,7 @@ public class UIController {
         );
         runButton.disableProperty().bind(runButtonBinding);
         tableButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
+        exportMapButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
         labelButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
         autoLabelButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
         classButton.disableProperty().bind(imageDataProperty.isNull().or(pendingTask.isNotNull()));
@@ -377,39 +402,6 @@ public class UIController {
         modelChoiceBox.getSelectionModel().selectedItemProperty().addListener(
                 (v, o, n) -> infoButton.setDisable((n == null) || !n.isValid()|| !checkFileExists(n.getReadmeFile())));
         modelChoiceBox.getSelectionModel().selectFirst();
-    }
-    private static boolean checkFileExists(File file) {
-        return file != null && file.isFile();
-    }
-    /**
-     * Updates the live histogram with the distributions of the selected gel bands.
-     *
-     * @param annotations: Collection of annotations to be processed and displayed.
-     */
-    public void BandHistoDisplay(Collection<PathObject> annotations) {
-
-        ImageData<BufferedImage> imageData = getCurrentImageData();
-        bandChart.getData().clear(); // removes previous data
-
-        Collection<double[]> dataList = new ArrayList<>();
-
-        int index = 0;
-        Collection<String> annotNames = new ArrayList<>();
-        for (PathObject annot : annotations) {
-            ImageServer<BufferedImage> server = imageData.getServer();
-            double[] all_pixels = ImageTools.extractAnnotationPixels(annot, server); // extracts a list of pixels matching the specific selected annotation
-            dataList.add(all_pixels);
-            annotNames.add(annot.getName());
-            index++;
-            if (index >= maxHistoDisplay.getValue()) {
-                break;
-            }
-        }
-
-        ObservableList<XYChart.Series<String, Number>> allPlots = EmbeddedBarChart.plotHistogram(dataList,
-                                                                                            40, annotNames);
-        bandChart.getData().addAll(allPlots); // adds new data
-
     }
 
     /**
@@ -479,12 +471,25 @@ public class UIController {
         popover.show(button);
     }
 
+    // ALL TOOLTIP FUNCTIONS HERE
     public void presentManualLabellingTooltip() throws IOException {
         showInternalToolTip(labelInfoPopover, labelInfoWebView, infoButtonLabelEdit, "band_edit_help.md", 400);
     }
 
     public void presentAutoLabellingTooltip() throws IOException {
-        showInternalToolTip(autoLabelInfoPopover, autoLabelInfoWebView, infoButtonAutoLabel, "auto_band_edit_help.md", 300);
+        showInternalToolTip(autoLabelInfoPopover, autoLabelInfoWebView, infoButtonAutoLabel, "auto_band_edit_help.md", 220);
+    }
+
+    public void presentGlobalBgTooltip() throws IOException {
+        showInternalToolTip(globalInfoPopover, globalInfoWebView, infoButtonGlobalBg, "global_background_help.md", 285);
+    }
+
+    public void presentRollingBgTooltip() throws IOException {
+        showInternalToolTip(rollingInfoPopover, rollingInfoWebView, infoButtonRollingBg, "rolling_background_help.md", 170);
+    }
+
+    public void presentLocalBgTooltip() throws IOException {
+        showInternalToolTip(localInfoPopover, localInfoWebView, infoButtonLocalBg, "local_background_help.md", 205);
     }
 
     /**
@@ -543,41 +548,6 @@ public class UIController {
         } catch (IOException e) {
             logger.error("Error parsing readme file", e);
         }
-    }
-
-
-    /**
-     * Runs when user attempts to download a model that is already available.
-     *
-     * @param modelName: Model keyname
-     */
-    private void showModelAvailableNotification(String modelName) {
-        Dialogs.showPlainNotification(
-                resources.getString("title"),
-                String.format(resources.getString("ui.popup.model-available"), modelName));
-    }
-
-    /**
-     * Runs when model is being downloaded.
-     *
-     * @param modelName: Model keyname
-     */
-    private void showDownloadingModelNotification(String modelName) {
-        Dialogs.showPlainNotification(
-                resources.getString("title"),
-                String.format(resources.getString("ui.popup.model-downloading"), modelName));
-    }
-
-    private void showRunningModelNotification() {
-        Dialogs.showInfoNotification(
-                resources.getString("title"),
-                resources.getString("ui.popup.model-running"));
-    }
-
-    private void showCompleteModelNotification() {
-        Dialogs.showInfoNotification(
-                resources.getString("title"),
-                resources.getString("ui.popup.model-complete"));
     }
 
     /**
@@ -652,19 +622,6 @@ public class UIController {
     }
 
     /**
-     * Automatically labels all gel bands in the image.
-     */
-    public void autoLabelBands(){
-        Collection<PathObject> actionableAnnotations = new ArrayList<>();
-        for (PathObject annot : getAnnotationObjects()) {
-            if (annot.getPathClass() != null && Objects.equals(annot.getPathClass().getName(), "Gel Band")) {
-                actionableAnnotations.add(annot); // histogram should only activate on bands not other objects
-            }
-        }
-        BandSorter.LabelBands(actionableAnnotations);
-    }
-
-    /**
      * Brings up the annotation properties window for the selected annotation.
      */
     public void manualBandLabel(){
@@ -682,6 +639,19 @@ public class UIController {
     }
 
     /**
+     * Automatically labels all gel bands in the image.
+     */
+    public void autoLabelBands(){
+        Collection<PathObject> actionableAnnotations = new ArrayList<>();
+        for (PathObject annot : getAnnotationObjects()) {
+            if (annot.getPathClass() != null && Objects.equals(annot.getPathClass().getName(), "Gel Band")) {
+                actionableAnnotations.add(annot); // histogram should only activate on bands not other objects
+            }
+        }
+        BandSorter.LabelBands(actionableAnnotations);
+    }
+
+    /**
      * Converts all unclassified annotations to gel bands.
      */
     public void classifyFreeAnnotations(){
@@ -691,36 +661,6 @@ public class UIController {
                 annot.setPathClass(gClass);
             }
         }
-    }
-
-    private static void addInferenceToHistoryWorkflow(ImageData<?> imageData, String modelName, boolean useDJL) {
-        imageData.getHistoryWorkflow()
-                .addStep(
-                        new DefaultScriptableWorkflowStep(
-                                resources.getString("workflow.inference"),
-                                ModelRunner.class.getName() + ".runFullImageInferenceAndAddAnnotations(\""+modelName+"\","+useDJL+")"
-                        ));
-    }
-
-    private static void addLabellingToHistoryWorkflow(ImageData<?> imageData) {
-        imageData.getHistoryWorkflow()
-                .addStep(
-                        new DefaultScriptableWorkflowStep(
-                                resources.getString("workflow.labelling"),
-                                BandSorter.class.getName() + ".LabelBands()"
-                        ));
-    }
-
-    private static void addDataComputeAndExportToHistoryWorkflow(ImageData<?> imageData, boolean globalCorrection,
-                                                                 boolean localCorrection, boolean rollingCorrection,
-                                                                 int localSensitivity, int rollingRadius) {
-        imageData.getHistoryWorkflow()
-                .addStep(
-                        new DefaultScriptableWorkflowStep(
-                                resources.getString("workflow.computeandexport"),
-                                TableController.class.getName() +
-                                        ".computeAndExportBandData("+globalCorrection+","+localCorrection+","+rollingCorrection+","+localSensitivity+","+rollingRadius+",\"OUTPUT FOLDER\",\"OUTPUT FILENAME OR NULL\")"
-                        ));
     }
 
     /**
@@ -752,13 +692,134 @@ public class UIController {
     /**
      * Sets selected annotation to be used as the global background for band analysis.
      */
-    @FXML
-    private void setGlobalBackgroundPatch() {
+    public void setGlobalBackgroundPatch() {
         PathObject annot = getSelectedObject();
         PathClass gbClass = PathClass.fromString("Global Background", 906200);
         annot.setPathClass(gbClass);
     }
 
+    /**
+     * Exports annotations in image into a segmentation map which can be used for training models.
+     * @throws IOException
+     */
+    public void exportSegmentationMap() throws IOException {
+
+        // asks user for output filename
+        String defaultName = GeneralTools.getNameWithoutExtension(new File(ServerTools.getDisplayableImageName(getCurrentImageData().getServer())));
+        File fileOutput = FileChoosers.promptToSaveFile("Export Segmentation Map",  new File(defaultName + "_segmap.tif"),
+                FileChoosers.createExtensionFilter("Save as TIF", ".tif"));
+
+        // preps image for export
+        SegmentationMap.exportSegmentationMap(fileOutput.toString());
+
+        // records export command for scripting
+        addSegmentationExportToHistoryWorkflow(QP.getCurrentImageData());
+    }
+
+    // WORKFLOW RECORDERS HERE
+    private static void addSegmentationExportToHistoryWorkflow(ImageData<?> imageData) {
+        imageData.getHistoryWorkflow()
+                .addStep(
+                        new DefaultScriptableWorkflowStep(
+                                resources.getString("workflow.exportsegmentation"),
+                                SegmentationMap.class.getName() + ".exportSegmentationMapToProjectFolder()"
+                        ));
+    }
+
+    private static void addInferenceToHistoryWorkflow(ImageData<?> imageData, String modelName, boolean useDJL) {
+        imageData.getHistoryWorkflow()
+                .addStep(
+                        new DefaultScriptableWorkflowStep(
+                                resources.getString("workflow.inference"),
+                                ModelRunner.class.getName() + ".runFullImageInferenceAndAddAnnotations(\""+modelName+"\","+useDJL+")"
+                        ));
+    }
+
+    private static void addLabellingToHistoryWorkflow(ImageData<?> imageData) {
+        imageData.getHistoryWorkflow()
+                .addStep(
+                        new DefaultScriptableWorkflowStep(
+                                resources.getString("workflow.labelling"),
+                                BandSorter.class.getName() + ".LabelBands()"
+                        ));
+    }
+
+    private static void addDataComputeAndExportToHistoryWorkflow(ImageData<?> imageData, boolean globalCorrection,
+                                                                 boolean localCorrection, boolean rollingCorrection,
+                                                                 int localSensitivity, int rollingRadius) {
+        imageData.getHistoryWorkflow()
+                .addStep(
+                        new DefaultScriptableWorkflowStep(
+                                resources.getString("workflow.computeandexport"),
+                                TableController.class.getName() +
+                                        ".computeAndExportBandData("+globalCorrection+","+localCorrection+","+rollingCorrection+","+localSensitivity+","+rollingRadius+",\"OUTPUT FOLDER\",\"OUTPUT FILENAME OR NULL\")"
+                        ));
+    }
+    // NOTIFICATIONS HERE
+    /**
+     * Runs when user attempts to download a model that is already available.
+     *
+     * @param modelName: Model keyname
+     */
+    private void showModelAvailableNotification(String modelName) {
+        Dialogs.showPlainNotification(
+                resources.getString("title"),
+                String.format(resources.getString("ui.popup.model-available"), modelName));
+    }
+
+    /**
+     * Runs when model is being downloaded.
+     *
+     * @param modelName: Model keyname
+     */
+    private void showDownloadingModelNotification(String modelName) {
+        Dialogs.showPlainNotification(
+                resources.getString("title"),
+                String.format(resources.getString("ui.popup.model-downloading"), modelName));
+    }
+
+    private void showRunningModelNotification() {
+        Dialogs.showInfoNotification(
+                resources.getString("title"),
+                resources.getString("ui.popup.model-running"));
+    }
+
+    private void showCompleteModelNotification() {
+        Dialogs.showInfoNotification(
+                resources.getString("title"),
+                resources.getString("ui.popup.model-complete"));
+    }
+
+    /**
+     * Updates the live histogram with the distributions of the selected gel bands.
+     *
+     * @param annotations: Collection of annotations to be processed and displayed.
+     */
+    public void BandHistoDisplay(Collection<PathObject> annotations) {
+
+        ImageData<BufferedImage> imageData = getCurrentImageData();
+        bandChart.getData().clear(); // removes previous data
+
+        Collection<double[]> dataList = new ArrayList<>();
+
+        int index = 0;
+        Collection<String> annotNames = new ArrayList<>();
+        for (PathObject annot : annotations) {
+            ImageServer<BufferedImage> server = imageData.getServer();
+            double[] all_pixels = ImageTools.extractAnnotationPixels(annot, server); // extracts a list of pixels matching the specific selected annotation
+            dataList.add(all_pixels);
+            annotNames.add(annot.getName());
+            index++;
+            if (index >= maxHistoDisplay.getValue()) {
+                break;
+            }
+        }
+
+        ObservableList<XYChart.Series<String, Number>> allPlots = EmbeddedBarChart.plotHistogram(dataList,
+                40, annotNames);
+        bandChart.getData().addAll(allPlots); // adds new data
+
+    }
 
     /**
      * Helper class for maintaining a count of selected annotations and detections,
