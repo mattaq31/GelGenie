@@ -172,6 +172,14 @@
                                                     <Tooltip text="%ui.processing.relabel.tooltip" />
                                                 </tooltip>
                                             </Button>
+                                            <Button fx:id="infoButtonLabelEdit" mnemonicParsing="false" onAction="#presentManualLabellingTooltip" prefHeight="31.0" prefWidth="39.0">
+                                                <tooltip>
+                                                    <Tooltip text="%ui.processing.generalinfo.tooltip" />
+                                                </tooltip>
+                                                <graphic>
+                                                    <Text styleClass="fa-icon"></Text>
+                                                </graphic>
+                                            </Button>
                                         </children>
                                     </HBox>
                                     <HBox alignment="CENTER" styleClass="standard-spacing">
@@ -186,6 +194,14 @@
                                                 <tooltip>
                                                     <Tooltip text="%ui.processing.autorelabel.tooltip" />
                                                 </tooltip>
+                                            </Button>
+                                            <Button fx:id="infoButtonAutoLabel" mnemonicParsing="false" onAction="#presentAutoLabellingTooltip" prefHeight="31.0" prefWidth="39.0">
+                                                <tooltip>
+                                                    <Tooltip text="%ui.processing.generalinfo.tooltip" />
+                                                </tooltip>
+                                                <graphic>
+                                                    <Text styleClass="fa-icon"></Text>
+                                                </graphic>
                                             </Button>
                                         </children>
                                     </HBox>

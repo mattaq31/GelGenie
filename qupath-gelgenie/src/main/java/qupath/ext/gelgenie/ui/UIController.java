@@ -16,6 +16,7 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.geometry.Side;
 import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.chart.BarChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
@@ -45,11 +46,12 @@ import qupath.lib.objects.hierarchy.PathObjectHierarchy;
 import qupath.lib.plugins.workflow.DefaultScriptableWorkflowStep;
 
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.ForkJoinPool;
+import java.util.stream.Collectors;
+
 import org.commonmark.parser.Parser;
 import org.commonmark.ext.front.matter.YamlFrontMatterExtension;
 import org.commonmark.ext.front.matter.YamlFrontMatterVisitor;
@@ -77,6 +79,11 @@ public class UIController {
     private Button downloadButton;
     @FXML
     private Button infoButton;
+    @FXML
+    private Button infoButtonLabelEdit;
+    @FXML
+    private Button infoButtonAutoLabel;
+
     @FXML
     private ToggleButton toggleBandNames;
     @FXML
@@ -148,7 +155,12 @@ public class UIController {
     // these elements are for the info button popups
     private WebView infoWebView = WebViews.create(true);
     private PopOver infoPopover = new PopOver(infoWebView);
-
+    // these elements are for the info button popups
+    private WebView labelInfoWebView = WebViews.create(true);
+    private PopOver labelInfoPopover = new PopOver(labelInfoWebView);
+    // these elements are for the info button popups
+    private WebView autoLabelInfoWebView = WebViews.create(true);
+    private PopOver autoLabelInfoPopover = new PopOver(autoLabelInfoWebView);
     /*
     This function is the first to run when the GUI window is created.
      */
@@ -430,6 +442,52 @@ public class UIController {
     }
 
     /**
+     * Reads a markdown file from the internal resources folder.  Based on this stackoverflow question:
+     * https://stackoverflow.com/questions/6068197/read-resource-text-file-to-string-in-java
+     * @param fileName: Name of the markdown file to be read.
+     * @return File converted into a string.
+     * @throws IOException
+     */
+    private String getResourceFileAsString(String fileName) throws IOException {
+        try (InputStream is = getClass().getResourceAsStream(fileName)) {
+            if (is == null) return null;
+            try (InputStreamReader isr = new InputStreamReader(is);
+                 BufferedReader reader = new BufferedReader(isr)) {
+                return reader.lines().collect(Collectors.joining(System.lineSeparator()));
+            }
+        }
+    }
+
+    /**
+     * Shows an info pop-up from a markdown file read from the resources folder.
+     * @param popover: Popover object that controls the pop-up window.
+     * @param webView: WebView object that displays the markdown file.
+     * @param button: Button object that triggers the pop-up window.
+     * @param fileName: Name of the markdown file to be displayed.
+     * @param height: The max height of the webview popup.
+     * @throws IOException
+     */
+    private void showInternalToolTip(PopOver popover, WebView webView, Button button, String fileName, int height) throws IOException {
+        if (popover.isShowing()) {
+            popover.hide();
+            return;
+        }
+        var parser = Parser.builder().build();
+        var doc = parser.parse(getResourceFileAsString(fileName));
+        webView.getEngine().loadContent(HtmlRenderer.builder().build().render(doc));
+        webView.setPrefHeight(height);
+        popover.show(button);
+    }
+
+    public void presentManualLabellingTooltip() throws IOException {
+        showInternalToolTip(labelInfoPopover, labelInfoWebView, infoButtonLabelEdit, "band_edit_help.md", 400);
+    }
+
+    public void presentAutoLabellingTooltip() throws IOException {
+        showInternalToolTip(autoLabelInfoPopover, autoLabelInfoWebView, infoButtonAutoLabel, "auto_band_edit_help.md", 300);
+    }
+
+    /**
      *  Displays the model information in a popup window (edited from the wsinfer extension).
      */
     public void presentModelInfo(){
@@ -593,6 +651,9 @@ public class UIController {
         });
     }
 
+    /**
+     * Automatically labels all gel bands in the image.
+     */
     public void autoLabelBands(){
         Collection<PathObject> actionableAnnotations = new ArrayList<>();
         for (PathObject annot : getAnnotationObjects()) {
@@ -603,16 +664,26 @@ public class UIController {
         BandSorter.LabelBands(actionableAnnotations);
     }
 
+    /**
+     * Brings up the annotation properties window for the selected annotation.
+     */
     public void manualBandLabel(){
         promptToSetActiveAnnotationProperties(getCurrentHierarchy());
     }
 
+    /**
+     * Marks the selected annotations as a gel band.
+     */
     public void manualSetClass(){
-        PathObject annot = getSelectedObject();
         PathClass gClass = PathClass.fromString("Gel Band", 10709517);
-        annot.setPathClass(gClass);
+        for (PathObject annot : getSelectedObjects()) {
+            annot.setPathClass(gClass);
+        }
     }
 
+    /**
+     * Converts all unclassified annotations to gel bands.
+     */
     public void classifyFreeAnnotations(){
         PathClass gClass = PathClass.fromString("Gel Band", 10709517);
         for (PathObject annot : getAnnotationObjects()) {

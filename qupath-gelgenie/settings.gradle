@@ -8,13 +8,11 @@ pluginManagement {
     }
 }
 
-// TODO: Name your QuPath extension here!
 rootProject.name = 'GelGenie'
 
-// TODO: Define the QuPath version compatible with the extension
 // Note that the QuPath API isn't stable; something designed for
 // 0.X.a should work with 0.X.b, but not necessarily with 0.Y.a.
-gradle.ext.qupathVersion = "0.5.0-SNAPSHOT"
+gradle.ext.qupathVersion = "0.5.0"
 
 dependencyResolutionManagement {
 
