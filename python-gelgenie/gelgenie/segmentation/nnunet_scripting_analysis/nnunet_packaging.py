@@ -148,12 +148,12 @@ def compute_gaussian(tile_size: Union[Tuple[int, ...], List[int]], sigma_scale: 
 
 if __name__ == '__main__':
 
-    input_image = '/Users/matt/Desktop/nnunet_comp/input_data/GELTEST_0040_0000.tif'  # replace with your own images
-    output_image = '/Users/matt/Desktop/nn_trial_package_all_combined_large.png'
+    input_image = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models/December 2023/nnunet_final/test_inference/input_data/GELTEST_0045_0000.tif'  # replace with your own images
+    output_image = '/Users/matt/Desktop/nn_trial_package_all_combined.png'
     output_model = '/Users/matt/Desktop/gaussian_tta_packaged_nnunet.pt'
 
     ######################### - requires model to be pre-traced, can download from huggingface
-    nnunet_trace = torch.jit.load('/Users/matt/Desktop/torchscript_checkpoints/nnunet_model.pt')
+    nnunet_trace = torch.jit.load('/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models/December 2023/nnunet_final/fold_all/torchscript_checkpoints/nnunet_model.pt')
     #########################
 
     image_float = io.imread(input_image).astype(np.float32)

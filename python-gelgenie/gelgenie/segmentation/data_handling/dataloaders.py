@@ -135,6 +135,7 @@ class ImageDataset(Dataset):
         img_file = self.image_names[idx]
 
         img_array = self.load_image(filename=img_file)
+        orig_height, orig_width = img_array.shape[0], img_array.shape[1]
 
         if self.augmentations:
             sample = self.augmentations(image=img_array)  # Apply augmentations
@@ -152,6 +153,8 @@ class ImageDataset(Dataset):
         return {
             'image': img_tensor,
             'image_name': os.path.basename(img_file).split('.')[0],
+            'image_height': orig_height,
+            'image_width': orig_width
         }
 
 
@@ -257,6 +260,7 @@ class ImageMaskDataset(ImageDataset):
 
         img_array = self.load_image(filename=img_file)
         mask_array = self.load_mask(mask_file)
+        orig_height, orig_width = img_array.shape[0], img_array.shape[1]
 
         assert img_array.shape == mask_array.shape, \
             f'Image and mask should be the same size, but are {img_array.shape} and {mask_array.shape}'
@@ -280,6 +284,8 @@ class ImageMaskDataset(ImageDataset):
         return {
             'image': img_tensor,
             'image_name': os.path.basename(img_file).split('.')[0],
-            'mask': mask_tensor.int()
+            'mask': mask_tensor.int(),
+            'image_height': orig_height,
+            'image_width': orig_width
         }
 

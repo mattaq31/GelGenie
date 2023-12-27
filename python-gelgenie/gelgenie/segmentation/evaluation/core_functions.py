@@ -17,6 +17,8 @@ import numpy as np
 import itertools
 from collections import defaultdict
 import pandas as pd
+from sklearn.metrics import confusion_matrix
+from PIL import Image
 
 # location of reference data, to be imported if required in other files
 ref_data_folder = os.path.join(os.path.abspath(os.path.join(__file__, os.path.pardir, os.path.pardir, os.path.pardir)),
@@ -70,8 +72,29 @@ def save_model_output(output_folder, model_name, image_name, labelled_image):
     :param labelled_image: Image with RGB segmentation labels painted on top
     :return: N/A
     """
-    imageio.v2.imwrite(os.path.join(output_folder, model_name, '%s.png' % image_name),
-                       (labelled_image * 255).astype(np.uint8))
+    imageio.v2.imwrite(os.path.join(output_folder, model_name, '%s.png' % image_name), (labelled_image * 255).astype(np.uint8))
+
+
+def save_segmentation_map(output_folder, model_name, image_name, segmentation_map, positive_pixel_colour=(163, 106, 13)):
+
+    if len(segmentation_map.shape) == 3:
+        segmentation_map = segmentation_map.argmax(axis=0)
+
+    rgba_array = np.ones((segmentation_map.shape[0], segmentation_map.shape[1], 4), dtype=np.uint8)*255
+
+    # negative pixels should have no alpha and no colour
+    alpha_channel = np.where(segmentation_map > 0, 255, 0)
+    rgba_array[:, :, 3] = alpha_channel
+
+    # Set RGB channels for positive data
+    rgba_array[:, :, :3] = np.where(segmentation_map[..., None] > 0, positive_pixel_colour, 0)
+
+    # Create PIL Image from RGBA array
+    image = Image.fromarray(rgba_array, 'RGBA')
+
+    image.save(os.path.join(output_folder, model_name, '%s_map_only.png' % image_name))
+
+    return image
 
 
 def plot_model_comparison(model_outputs, model_names, image_name, raw_image, output_folder, images_per_row,
@@ -120,7 +143,7 @@ def plot_model_comparison(model_outputs, model_names, image_name, raw_image, out
     plt.setp(plt.gcf().get_axes(), xticks=[], yticks=[])
     plt.suptitle('Segmentation result for image %s' % image_name)
     plt.tight_layout()
-    plt.savefig(os.path.join(output_folder, '%s method comparison.png' % image_name), dpi=300)
+    plt.savefig(os.path.join(output_folder, 'method_comparison', '%s method comparison.png' % image_name), dpi=300)
     plt.close(fig)
 
 
@@ -163,8 +186,19 @@ def run_multiotsu(image, image_name, output_otsu):
     return torch_mask, otsu_labels
 
 
+def read_nnunet_inference_from_file(nfile):
+    # get image name, then convert into nnunet-compatible name
+    # read image from file, convert to 1 channel segmentation format
+    # pass on for dice score calculation and RGB labelling
+    n_im = imageio.v2.imread(nfile)
+    torch_mask = F.one_hot(torch.tensor(n_im).long().unsqueeze(0), 2).permute(0, 3, 1, 2).float()
+
+    return torch_mask, n_im
+
+
 def segment_and_quantitate(models, model_names, input_folder, mask_folder, output_folder,
-                           minmax_norm=False, multi_augment=False, images_per_row=3, run_classical_techniques=False):
+                           minmax_norm=False, multi_augment=False, images_per_row=3,
+                           run_classical_techniques=False, nnunet_models_and_folders=None):
     """
 
     Segments images in input_folder using the selected models and computes their Dice score versus the ground truth labels.
@@ -177,39 +211,60 @@ def segment_and_quantitate(models, model_names, input_folder, mask_folder, outpu
     :param multi_augment: Set to true to perform test-time augmentation
     :param images_per_row: Number of images to plot per row in the output comparison figure
     :param run_classical_techniques: Set to true to also run watershed and multiotsu segmentation apart from selected models
+    :param nnunet_models_and_folders: List of tuples containing (model name, folder location) for pre-computed nnunet results on the same dataset
     :return: N/A (all outputs saved to file)
     """
     dataset = ImageMaskDataset(input_folder, mask_folder, 1, padding=False, individual_padding=True,
                                minmax_norm=minmax_norm)
     dataloader = DataLoader(dataset, shuffle=False, batch_size=1, num_workers=0, pin_memory=True)
 
+    if run_classical_techniques:
+        models.extend(['watershed', 'multiotsu'])
+        model_names.extend(['watershed', 'multiotsu'])
+
+    if nnunet_models_and_folders:
+        nnunet_model_names, nnunet_eval_outputs = zip(*nnunet_models_and_folders)
+        models.extend(nnunet_eval_outputs)
+        model_names.extend(nnunet_model_names)
+    else:
+        nnunet_model_names = []
+
     for mname in model_names:
         create_dir_if_empty(os.path.join(output_folder, mname))
 
-    if run_classical_techniques:
-        create_dir_if_empty(os.path.join(output_folder, 'watershed'))
-        create_dir_if_empty(os.path.join(output_folder, 'multiotsu'))
-        models.extend(['watershed', 'multiotsu'])
-        model_names.extend(['watershed', 'multiotsu'])
+    create_dir_if_empty(os.path.join(output_folder, 'method_comparison'))
+    create_dir_if_empty(os.path.join(output_folder, 'metrics'))
+
 
     double_indexing = True  # axes will have two indices rather than one
     if math.ceil((len(model_names) + 2) / images_per_row) == 1:  # axes will only have one index rather than 2
         double_indexing = False
 
-    dice_score_dict = defaultdict(list)
-    multi_class_dice_dict = defaultdict(list)
+    metrics_dict = {}
+    metrics = ['Dice Score', 'MultiClass Dice Score', 'True Negatives', 'False Positives', 'False Negatives', 'True Positives']
+
+    for metric in metrics:
+        metrics_dict[metric] = defaultdict(list)
 
     # preparing model outputs, including separation of different bands and labelling
     for im_index, batch in tqdm(enumerate(dataloader), total=len(dataloader)):
 
+        orig_image_height, orig_image_width = int(batch['image_height'][0]), int(batch['image_width'][0])
         np_image = batch['image'].detach().squeeze().cpu().numpy()
-        gt_mask = batch['mask']
+
+        pad_h1 = (np_image.shape[0] - orig_image_height) // 2
+        pad_w1 = (np_image.shape[1] - orig_image_width) // 2
+        pad_h2 = (np_image.shape[0] - orig_image_height) - pad_h1
+        pad_w2 = (np_image.shape[1] - orig_image_width) - pad_w1
+
+        np_image = np_image[pad_h1:-pad_h2, pad_w1:-pad_w2]  # unpads the image for loss computation and display
+
+        gt_mask = batch['mask'][:, pad_h1:-pad_h2, pad_w1:-pad_w2]
         image_name = batch['image_name'][0]
 
         all_model_outputs = []
-        all_dice_scores = []
-        all_multiclass_dice_scores = []
         display_dice_scores = []
+
         gt_one_hot = F.one_hot(gt_mask.long(), 2).permute(0, 3, 1, 2).float()
 
         for model, mname in zip(models, model_names):
@@ -219,12 +274,17 @@ def segment_and_quantitate(models, model_names, input_folder, mask_folder, outpu
                 torch_one_hot, mask = run_watershed(np_image, image_name, os.path.join(output_folder, mname))
             elif mname == 'multiotsu':
                 torch_one_hot, mask = run_multiotsu(np_image, image_name, os.path.join(output_folder, mname))
+            elif mname in nnunet_model_names:  # nnunet results are pre-computed
+                torch_one_hot, mask = read_nnunet_inference_from_file(os.path.join(model, image_name + '.tif'))
             else:  # standard ML models
                 if multi_augment:
                     torch_mask, mask = model_multi_augment_predict_and_process(model, batch['image'])
                 else:
                     torch_mask, mask = model_predict_and_process(model, batch['image'])
                 torch_one_hot = F.one_hot(torch_mask.argmax(dim=1), 2).permute(0, 3, 1, 2).float()
+
+                torch_one_hot = torch_one_hot[:, :, pad_h1:-pad_h2, pad_w1:-pad_w2]  # unpads model outputs
+                mask = mask[:, pad_h1:-pad_h2, pad_w1:-pad_w2]
 
             # dice score calculation
             dice_score = multiclass_dice_coeff(torch_one_hot[:, 1:, ...],
@@ -234,15 +294,25 @@ def segment_and_quantitate(models, model_names, input_folder, mask_folder, outpu
             dice_score_multi = multiclass_dice_coeff(torch_one_hot,
                                                      gt_one_hot,
                                                      reduce_batch_first=False).cpu().numpy()
-
-            all_multiclass_dice_scores.append(dice_score_multi)
-            all_dice_scores.append(dice_score)
             display_dice_scores.append('Dice Score: %.3f' % dice_score)
+
+            # confusion matrix calculation
+            if mname == 'watershed':
+                c_mask = mask.flatten()
+                c_mask[c_mask > 0] = 1
+            elif mname == 'multiotsu' or mname in nnunet_model_names:
+                c_mask = mask.flatten()
+            else:
+                c_mask = mask.argmax(axis=0).flatten()
+            tn, fp, fn, tp = confusion_matrix(c_mask, gt_mask.numpy().squeeze().flatten()).ravel()
+
+            for metric, value in zip(metrics, [dice_score, dice_score_multi, tn, fp, fn, tp]):
+                metrics_dict[metric][image_name].append(value)
 
             # direct model plotting
             if mname == 'watershed':
                 labels = mask
-            elif mname == 'multiotsu':
+            elif mname == 'multiotsu' or mname in nnunet_model_names:
                 labels, _ = ndi.label(mask)
             else:
                 labels, _ = ndi.label(mask.argmax(axis=0))
@@ -251,36 +321,26 @@ def segment_and_quantitate(models, model_names, input_folder, mask_folder, outpu
 
             all_model_outputs.append(rgb_labels)
             save_model_output(output_folder, mname, image_name, rgb_labels)
+            save_segmentation_map(output_folder, mname, image_name, mask)
 
         gt_labels, _ = ndi.label(gt_one_hot.numpy().squeeze().argmax(axis=0))
         gt_rgb_labels = label2rgb(gt_labels, image=np_image)
 
-        dice_score_dict[image_name].extend(all_dice_scores)
-        multi_class_dice_dict[image_name].extend(all_multiclass_dice_scores)
         # comparison plotting
         plot_model_comparison([gt_rgb_labels] + all_model_outputs, ['Ground Truth'] + model_names,
                               image_name, np_image, output_folder,
                               images_per_row, double_indexing, comments=[''] + display_dice_scores)
 
     # combines and saves final dice score data into a table
-    pd_data = pd.DataFrame.from_dict(dice_score_dict, orient='index')
-    pd_data.columns = model_names
-    pd_data.loc['mean'] = pd_data.mean()
-
-    pd_data.to_csv(os.path.join(output_folder, 'dice_scores.csv'), mode='w', header=True, index=True,
-                   index_label='Image')
-
-    # combines and saves final dice score data into a table
-    pd_data = pd.DataFrame.from_dict(multi_class_dice_dict, orient='index')
-    pd_data.columns = model_names
-    pd_data.loc['mean'] = pd_data.mean()
-
-    pd_data.to_csv(os.path.join(output_folder, 'multiclass_dice_scores.csv'), mode='w', header=True, index=True,
-                   index_label='Image')
+    for key, value in metrics_dict.items():
+        pd_data = pd.DataFrame.from_dict(value, orient='index')
+        pd_data.columns = model_names
+        pd_data.loc['mean'] = pd_data.mean()
+        pd_data.to_csv(os.path.join(output_folder, 'metrics', '%s.csv' % key), mode='w', header=True, index=True, index_label='Image')
 
 
 def segment_and_plot(models, model_names, input_folder, output_folder, minmax_norm=False, multi_augment=False,
-                     images_per_row=2, run_classical_techniques=False):
+                     images_per_row=2, run_classical_techniques=False, nnunet_models_and_folders=None):
     """
     Segments images in input_folder using models and saves the output image and a quick comparison to the output folder.
     :param models: Pre-loaded pytorch segmentation models
@@ -291,6 +351,7 @@ def segment_and_plot(models, model_names, input_folder, output_folder, minmax_no
     :param multi_augment: Set to true to perform test-time augmentation
     :param images_per_row: Number of images to plot per row in the output comparison figure
     :param run_classical_techniques: Set to true to also run watershed and multiotsu segmentation apart from selected models
+    :param nnunet_models_and_folders: List of tuples containing (model name, folder location) for pre-computed nnunet results on the same dataset
     :return: N/A (all outputs saved to file)
     """
 
@@ -298,10 +359,15 @@ def segment_and_plot(models, model_names, input_folder, output_folder, minmax_no
     dataloader = DataLoader(dataset, shuffle=False, batch_size=1, num_workers=0, pin_memory=True)
 
     if run_classical_techniques:
-        create_dir_if_empty(os.path.join(output_folder, 'watershed'))
-        create_dir_if_empty(os.path.join(output_folder, 'multiotsu'))
         models.extend(['watershed', 'multiotsu'])
         model_names.extend(['watershed', 'multiotsu'])
+
+    if nnunet_models_and_folders:
+        nnunet_model_names, nnunet_eval_outputs = zip(*nnunet_models_and_folders)
+        models.extend(nnunet_eval_outputs)
+        model_names.extend(nnunet_model_names)
+    else:
+        nnunet_model_names = []
 
     double_indexing = True  # axes will have two indices rather than one
     if math.ceil((len(model_names) + 1) / images_per_row) == 1:  # axes will only have one index rather than 2
@@ -310,28 +376,43 @@ def segment_and_plot(models, model_names, input_folder, output_folder, minmax_no
     for mname in model_names:
         create_dir_if_empty(os.path.join(output_folder, mname))
 
+    create_dir_if_empty(os.path.join(output_folder, 'method_comparison'))
+
     # preparing model outputs, including separation of different bands and labelling
     for im_index, batch in tqdm(enumerate(dataloader), total=len(dataloader)):
 
+        orig_image_height, orig_image_width = int(batch['image_height'][0]), int(batch['image_width'][0])
         np_image = batch['image'].detach().squeeze().cpu().numpy()
+
+        pad_h1 = (np_image.shape[0] - orig_image_height) // 2
+        pad_w1 = (np_image.shape[1] - orig_image_width) // 2
+        pad_h2 = (np_image.shape[0] - orig_image_height) - pad_h1
+        pad_w2 = (np_image.shape[1] - orig_image_width) - pad_w1
+
+        np_image = np_image[pad_h1:-pad_h2, pad_w1:-pad_w2] # unpads the image for loss computation and display
+
         image_name = batch['image_name'][0]
         all_model_outputs = []
+
         for model, mname in zip(models, model_names):
             # classical methods
             if mname == 'watershed':
                 _, mask = run_watershed(np_image, image_name, None)
             elif mname == 'multiotsu':
                 _, mask = run_multiotsu(np_image, image_name, None)
+            elif mname in nnunet_model_names:  # nnunet results are pre-computed
+                _, mask = read_nnunet_inference_from_file(os.path.join(model, image_name + '.tif'))
             else:
                 if multi_augment:
                     _, mask = model_multi_augment_predict_and_process(model, batch['image'])
                 else:
                     _, mask = model_predict_and_process(model, batch['image'])
+                mask = mask[:, pad_h1:-pad_h2, pad_w1:-pad_w2]
 
             # direct model plotting
             if mname == 'watershed':
                 labels = mask
-            elif mname == 'multiotsu':
+            elif mname == 'multiotsu' or mname in nnunet_model_names:
                 labels, _ = ndi.label(mask)
             else:
                 labels, _ = ndi.label(mask.argmax(axis=0))
@@ -339,6 +420,7 @@ def segment_and_plot(models, model_names, input_folder, output_folder, minmax_no
             rgb_labels = label2rgb(labels, image=np_image)
             all_model_outputs.append(rgb_labels)
             save_model_output(output_folder, mname, '%s.png' % image_name, rgb_labels)
+            save_segmentation_map(output_folder, mname, image_name, mask)
 
         plot_model_comparison(all_model_outputs, model_names, image_name, np_image, output_folder,
                               images_per_row, double_indexing)
