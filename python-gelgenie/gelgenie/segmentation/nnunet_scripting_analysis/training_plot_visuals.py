@@ -5,10 +5,11 @@ import seaborn as sns
 
 
 out_folder = '/Users/matt/Desktop'
-model_folder = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models/December 2023'
-model = 'unet_dec_21'
+model_folder = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models/December 2023/nnunet_final'
 
-df = pd.read_csv(os.path.join(model_folder, model, 'training_logs', 'training_stats.csv'))
+model = 'fold_all'
+
+df = pd.read_csv(os.path.join(model_folder, model, 'combined_training_stats.csv'))
 
 c1 = 'tab:red'
 c2 = 'tab:blue'
@@ -24,19 +25,19 @@ plt.rcParams.update({'font.sans-serif': 'Helvetica'})
 plt.rcParams['font.family'] = 'Helvetica'
 
 fig = plt.figure(figsize=(20, 10))
-ax = sns.lineplot(x='Epoch', y='Training Loss', data=df, color=c1, linewidth=line_width, label='Training Loss')
+ax = sns.lineplot(x='Epoch', y='Train Loss', data=df, color=c1, linewidth=line_width, label='Training Loss')
 ax2 = ax.twinx()
 
 [x.set_linewidth(2.5) for x in ax.spines.values()]
 
-sns.lineplot(x='Epoch', y='Dice Score', data=df, label='Actual Trace', linestyle='dashed',
+sns.lineplot(x='Epoch', y='Pseudo-Dice Score', data=df, label='Actual Trace', linestyle='dashed',
              color=c2, linewidth=2, ax=ax2)
 
 # adds more lines for component loss values
 # sns.lineplot(ax=ax, x='Epoch', y='Dice Loss', data=df, color=c3, linewidth=line_width, label='Dice Loss')
 # sns.lineplot(ax=ax, x='Epoch', y='Cross-Entropy Loss', data=df, color=c4, linewidth=line_width, label='Cross-Entropy Loss')
 
-running_average = df['Dice Score'].rolling(window=10).mean()
+running_average = df['Pseudo-Dice Score'].rolling(window=10).mean()
 
 sns.lineplot(x=df['Epoch'], y=running_average, color=c2, linewidth=line_width,
              label='Running Average', ax=ax2)
@@ -50,7 +51,7 @@ ax.set_xlabel('Epoch', fontsize=label_size, weight="bold")
 ax.tick_params(axis='y', labelcolor=c1, labelsize=tick_size)
 ax.tick_params(axis='x', labelsize=tick_size)
 
-ax2.set_ylabel('Validation Dice Score', color=c2, fontsize=label_size, weight="bold")
+ax2.set_ylabel('Validation Pseudo-Dice Score', color=c2, fontsize=label_size, weight="bold")
 ax2.tick_params(axis='y', labelcolor=c2, labelsize=tick_size)
 
 ax.legend([], [], frameon=False)

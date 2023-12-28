@@ -45,7 +45,10 @@ class ImageDataset(Dataset):
         if not self.image_names:
             raise RuntimeError(f'No images found in {images_dir}, make sure you put your images there.')
 
-        rprint(f'[bold blue]Created dataset with {len(self.image_names)} images.[/bold blue]')
+        if len(self.image_names) == 1:
+            rprint(f'[bold blue]Created dataset with {len(self.image_names)} image.[/bold blue]')
+        else:
+            rprint(f'[bold blue]Created dataset with {len(self.image_names)} images.[/bold blue]')
 
     def image_finding_logic(self, image_names):
         if image_names is not None:

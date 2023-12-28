@@ -198,7 +198,8 @@ def read_nnunet_inference_from_file(nfile):
 
 def segment_and_quantitate(models, model_names, input_folder, mask_folder, output_folder,
                            minmax_norm=False, multi_augment=False, images_per_row=3,
-                           run_classical_techniques=False, nnunet_models_and_folders=None):
+                           run_classical_techniques=False, nnunet_models_and_folders=None,
+                           map_pixel_colour=(163, 106, 13)):
     """
 
     Segments images in input_folder using the selected models and computes their Dice score versus the ground truth labels.
@@ -212,6 +213,7 @@ def segment_and_quantitate(models, model_names, input_folder, mask_folder, outpu
     :param images_per_row: Number of images to plot per row in the output comparison figure
     :param run_classical_techniques: Set to true to also run watershed and multiotsu segmentation apart from selected models
     :param nnunet_models_and_folders: List of tuples containing (model name, folder location) for pre-computed nnunet results on the same dataset
+    :param map_pixel_colour: Colour to use for positive pixels in the output segmentation map (tuple, RGB)
     :return: N/A (all outputs saved to file)
     """
     dataset = ImageMaskDataset(input_folder, mask_folder, 1, padding=False, individual_padding=True,
@@ -321,7 +323,7 @@ def segment_and_quantitate(models, model_names, input_folder, mask_folder, outpu
 
             all_model_outputs.append(rgb_labels)
             save_model_output(output_folder, mname, image_name, rgb_labels)
-            save_segmentation_map(output_folder, mname, image_name, mask)
+            save_segmentation_map(output_folder, mname, image_name, mask, positive_pixel_colour=map_pixel_colour)
 
         gt_labels, _ = ndi.label(gt_one_hot.numpy().squeeze().argmax(axis=0))
         gt_rgb_labels = label2rgb(gt_labels, image=np_image)
@@ -340,7 +342,8 @@ def segment_and_quantitate(models, model_names, input_folder, mask_folder, outpu
 
 
 def segment_and_plot(models, model_names, input_folder, output_folder, minmax_norm=False, multi_augment=False,
-                     images_per_row=2, run_classical_techniques=False, nnunet_models_and_folders=None):
+                     images_per_row=2, run_classical_techniques=False, nnunet_models_and_folders=None,
+                     map_pixel_colour=(163, 106, 13)):
     """
     Segments images in input_folder using models and saves the output image and a quick comparison to the output folder.
     :param models: Pre-loaded pytorch segmentation models
@@ -352,6 +355,7 @@ def segment_and_plot(models, model_names, input_folder, output_folder, minmax_no
     :param images_per_row: Number of images to plot per row in the output comparison figure
     :param run_classical_techniques: Set to true to also run watershed and multiotsu segmentation apart from selected models
     :param nnunet_models_and_folders: List of tuples containing (model name, folder location) for pre-computed nnunet results on the same dataset
+    :param map_pixel_colour: Colour to use for positive pixels in the output segmentation map (tuple, RGB)
     :return: N/A (all outputs saved to file)
     """
 
@@ -419,8 +423,8 @@ def segment_and_plot(models, model_names, input_folder, output_folder, minmax_no
 
             rgb_labels = label2rgb(labels, image=np_image)
             all_model_outputs.append(rgb_labels)
-            save_model_output(output_folder, mname, '%s.png' % image_name, rgb_labels)
-            save_segmentation_map(output_folder, mname, image_name, mask)
+            save_model_output(output_folder, mname, image_name, rgb_labels)
+            save_segmentation_map(output_folder, mname, image_name, mask,positive_pixel_colour=map_pixel_colour)
 
         plot_model_comparison(all_model_outputs, model_names, image_name, np_image, output_folder,
                               images_per_row, double_indexing)

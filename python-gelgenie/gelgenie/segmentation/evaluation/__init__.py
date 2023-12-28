@@ -43,8 +43,14 @@ def model_eval_load(exp_folder, eval_epoch):
               help='Path to ground truth mask data corresponding to input images.')
 @click.option('--classical_analysis', is_flag=True,
               help='Set this flag to also run classical analyses for comparison purposes.')
+@click.option('--map_colour', default=None, type=(int, int, int),
+              help='Colour to use for output segmentation map.  Default is a brown/golden colour.')
+@click.option('--add_map_from_file', default=None, type=(str, str), multiple=True,
+              help='Tuple with 1) the name of a pre-computed model and 2) path to its precomputed segmentation maps '
+                   'for the dataset in question. These maps will be added to the output '
+                   'images and quantified as normal.')
 def segmentation_pipeline(model_and_epoch, model_folder, input_folder, output_folder, multi_augment,
-                          run_quant_analysis, mask_folder, classical_analysis):
+                          run_quant_analysis, mask_folder, classical_analysis, map_colour, add_map_from_file):
 
     from os.path import join
     from gelgenie.segmentation.evaluation.core_functions import segment_and_plot, segment_and_quantitate
@@ -61,12 +67,17 @@ def segmentation_pipeline(model_and_epoch, model_folder, input_folder, output_fo
 
     create_dir_if_empty(output_folder)
 
+    if map_colour is None:
+        map_colour = (163, 106, 13)
+
     if run_quant_analysis:
         segment_and_quantitate(models, list(experiment_names), input_folder, mask_folder, output_folder,
-                               multi_augment=multi_augment, run_classical_techniques=classical_analysis)
+                               multi_augment=multi_augment, run_classical_techniques=classical_analysis,
+                               map_pixel_colour=map_colour, nnunet_models_and_folders=add_map_from_file)
     else:
         segment_and_plot(models, list(experiment_names), input_folder, output_folder, multi_augment=multi_augment,
-                         run_classical_techniques=classical_analysis)
+                         run_classical_techniques=classical_analysis, map_pixel_colour=map_colour,
+                         nnunet_models_and_folders=add_map_from_file)
 
 
 if __name__ == '__main__':

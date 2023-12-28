@@ -174,7 +174,7 @@ def watershed_analysis(input_image, image_name=None, intermediate_plot_folder=No
     if intermediate_plot_folder:
         fig, ax = plt.subplots(len(working_image_dict.keys()), 5, figsize=(15, 10))
         index_conversion = True if repetitions > 1 else False
-        ipr = 5 # images per row
+        ipr = 5  # images per row
         for i in range(len(working_image_dict.keys())):
             ax[index_converter((i*ipr) + 0, ipr, index_conversion)].axis('off')
             ax[index_converter((i*ipr) + 1, ipr, index_conversion)].axis('off')
@@ -195,7 +195,8 @@ def watershed_analysis(input_image, image_name=None, intermediate_plot_folder=No
             ax[index_converter((i*ipr) + 4, ipr, index_conversion)].set_title('New Working Image')
 
         plt.tight_layout()
-        plt.savefig(os.path.join(intermediate_plot_folder, f'{image_name}_watershed_intermediates.png'), dpi=300)
+        plt.savefig(os.path.join(intermediate_plot_folder, f'{image_name}_watershed_intermediates.png'),
+                    pad_inches=0, bbox_inches='tight', transparent=True, dpi=300)
         plt.close()
 
     return final_overlay, segmentation_map
@@ -218,7 +219,7 @@ def multiotsu_analysis(input_image, image_name=None, intermediate_plot_folder=No
         plt.figure(figsize=(10, 10))
         plt.imshow(regions)
         plt.axis('off')
-        plt.savefig(os.path.join(intermediate_plot_folder, f'{image_name}_multiotsu_intermediate.png'), dpi=300)
+        plt.savefig(os.path.join(intermediate_plot_folder, f'{image_name}_multiotsu_intermediate.png'),pad_inches=0, bbox_inches='tight', transparent=True, dpi=300)
         plt.close()
 
     regions[regions < len(thresholds)] = 0  # retain only the highest threshold (foreground)
