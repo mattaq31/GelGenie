@@ -18,7 +18,10 @@
                       <TableColumn fx:id="laneCol" prefWidth="75.0" style="-fx-alignment: CENTER;" text="Lane ID" />
                       <TableColumn fx:id="nameCol" prefWidth="75.0" style="-fx-alignment: CENTER;" text="Band Name" />
                       <TableColumn fx:id="pixelCol" prefWidth="75.0" style="-fx-alignment: CENTER;" text="# Pixels" />
+                      <TableColumn fx:id="widthCol" prefWidth="75.0" style="-fx-alignment: CENTER;" text="Width" />
+                      <TableColumn fx:id="heightCol" prefWidth="75.0" style="-fx-alignment: CENTER;" text="Height" />
                       <TableColumn fx:id="meanCol" prefWidth="100.0" style="-fx-alignment: CENTER;" text="Mean Intensity" />
+                      <TableColumn fx:id="stdCol" prefWidth="100.0" style="-fx-alignment: CENTER;" text="Intensity SD." />
                       <TableColumn fx:id="rawCol" prefWidth="90.0" style="-fx-alignment: CENTER;" text="Raw Volume" />
                       <TableColumn fx:id="normVolCol" prefWidth="120.0" style="-fx-alignment: CENTER;" text="Norm. Volume" />
                       <TableColumn fx:id="localVolCol" prefWidth="170.0" style="-fx-alignment: CENTER;" text="Local Corrected Volume" />

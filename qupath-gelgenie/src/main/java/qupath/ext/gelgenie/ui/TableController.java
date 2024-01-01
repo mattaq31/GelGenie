@@ -77,7 +77,13 @@ public class TableController {
     @FXML
     private TableColumn<BandEntry, Double> pixelCol;
     @FXML
+    private TableColumn<BandEntry, Double> widthCol;
+    @FXML
+    private TableColumn<BandEntry, Double> heightCol;
+    @FXML
     private TableColumn<BandEntry, Double> meanCol;
+    @FXML
+    private TableColumn<BandEntry, Double> stdCol;
     @FXML
     private TableColumn<BandEntry, Double> rawCol;
     @FXML
@@ -144,7 +150,10 @@ public class TableController {
         laneCol.setCellValueFactory(new PropertyValueFactory<>("laneID"));
         nameCol.setCellValueFactory(new PropertyValueFactory<>("bandName"));
         pixelCol.setCellValueFactory(new PropertyValueFactory<>("pixelCount"));
+        widthCol.setCellValueFactory(new PropertyValueFactory<>("width"));
+        heightCol.setCellValueFactory(new PropertyValueFactory<>("height"));
         meanCol.setCellValueFactory(new PropertyValueFactory<>("averageIntensity"));
+        stdCol.setCellValueFactory(new PropertyValueFactory<>("stdIntensity"));
         rawCol.setCellValueFactory(new PropertyValueFactory<>("rawVolume"));
         localVolCol.setCellValueFactory(new PropertyValueFactory<>("localVolume"));
         globalVolCol.setCellValueFactory(new PropertyValueFactory<>("globalVolume"));
@@ -156,7 +165,10 @@ public class TableController {
         thumbnailCol.setCellValueFactory(new PropertyValueFactory<>("parentAnnotation"));
 
         // formatting for double columns
+        widthCol.setCellFactory(TableController::getTableFormattedDouble);
+        heightCol.setCellFactory(TableController::getTableFormattedDouble);
         meanCol.setCellFactory(TableController::getTableFormattedDouble);
+        stdCol.setCellFactory(TableController::getTableFormattedDouble);
         localVolCol.setCellFactory(TableController::getTableFormattedDouble);
         globalVolCol.setCellFactory(TableController::getTableFormattedDouble);
         rollingVolCol.setCellFactory(TableController::getTableFormattedDouble);
@@ -407,13 +419,22 @@ public class TableController {
             if (annot.getPathClass() != null && Objects.equals(annot.getPathClass().getName(), "Gel Band")) {
                 double[] all_pixels = ImageTools.extractAnnotationPixels(annot, server); // extracts a list of pixels matching the specific selected annotation
 
-                // computes intensity volumes
+                // computes intensity average
                 double pixel_average = Arrays.stream(all_pixels).average().getAsDouble();
+                // Calculate the sum of squared differences
+                double sumOfSquaredDifferences = Arrays.stream(all_pixels).map(num -> Math.pow(num - pixel_average, 2)).sum();
+                // Calculate the standard deviation
+                double pixel_std = Math.sqrt(sumOfSquaredDifferences / all_pixels.length);
+
+                // raw band volume is simply a sum of all pixels
                 double raw_volume = Arrays.stream(all_pixels).sum();
 
                 // todo: does it make sense to mask all bands rather than just the selected one?
                 double[] localBackgroundPixels = extractLocalBackgroundPixels(annot, server, localSensitivity);
                 double localMean = Arrays.stream(localBackgroundPixels).average().getAsDouble();
+
+                double width = annot.getROI().getBoundsWidth();
+                double height = annot.getROI().getBoundsHeight();
 
                 double globalVolume = 0;
                 double localVolume = 0;
@@ -445,7 +466,8 @@ public class TableController {
                 }
 
                 BandEntry curr_band = new BandEntry(bandID, laneID, annot.getName(), all_pixels.length,
-                        pixel_average, raw_volume, globalVolume, localVolume, rollingBallVolume, annot);
+                        width, height, pixel_average, pixel_std, raw_volume, globalVolume, localVolume,
+                        rollingBallVolume, annot);
                 all_bands.add(curr_band);
             }
         }
@@ -598,7 +620,7 @@ public class TableController {
     public static void exportData(ObservableList<BandEntry> bandData, File filename, boolean globalCorrection, boolean localCorrection, boolean rollingBallCorrection) throws IOException {
 
         BufferedWriter br = new BufferedWriter(new FileWriter(filename));
-        String headerString = "Lane ID,Band ID,Pixel Count,Average Intensity,Raw Volume,Norm. Raw Volume";
+        String headerString = "Lane ID,Band ID,Pixel Count,Width,Height,Average Intensity,Intensity SD,Raw Volume,Norm. Raw Volume";
         if (localCorrection) {
             headerString = headerString + ",Local Corrected Volume,Norm. Local Volume";
         }
@@ -612,8 +634,9 @@ public class TableController {
         br.write(headerString);
 
         for (BandEntry band : bandData) {
-            String sb = band.getLaneID() + "," + band.getBandID() + "," + band.getPixelCount()
-                    + "," + band.getAverageIntensity() + "," + band.getRawVolume() + "," + band.getNormVolume();
+            String sb = band.getLaneID() + "," + band.getBandID() + "," + band.getPixelCount() + "," + band.getWidth()
+                    + "," + band.getHeight() + "," + band.getAverageIntensity() + "," + band.getStdIntensity()
+                    + "," + band.getRawVolume() + "," + band.getNormVolume();
             if (localCorrection) {
                 sb = sb + "," + band.getLocalVolume() + "," + band.getNormLocal();
             }
