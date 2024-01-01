@@ -241,11 +241,11 @@ public class TableController {
             if (!selectedBands.isEmpty()) {
                 selectedBands.sort(new LaneBandCompare());
                 bandData = computeTableColumns(selectedBands, server, globalCorrection, localCorrection, rollingBallCorrection,
-                        localSensitivity, globalMean, rollingBallImage);
+                        localSensitivity, globalMean, rollingBallImage, "Global");
             } else {
                 annots.sort(new LaneBandCompare());
                 bandData = computeTableColumns(annots, server, globalCorrection, localCorrection, rollingBallCorrection,
-                        localSensitivity, globalMean, rollingBallImage);
+                        localSensitivity, globalMean, rollingBallImage, "Global");
             }
             tableSetup();
 
@@ -398,7 +398,7 @@ public class TableController {
      */
     private static ObservableList<BandEntry> computeTableColumns(Collection<PathObject> annots, ImageServer<BufferedImage> server,
                                                                  boolean globalCorrection, boolean localCorrection, boolean rollingBallCorrection,
-                                                                 int localSensitivity, double globalMean, Mat rollingBallImage) {
+                                                                 int localSensitivity, double globalMean, Mat rollingBallImage, String normType) {
 
         ObservableList<BandEntry> all_bands = FXCollections.observableArrayList();
 
@@ -449,7 +449,17 @@ public class TableController {
                 all_bands.add(curr_band);
             }
         }
-        fullNormalise(all_bands); // default is to normalise globally (for all bands in image) TODO: make this user-changeable for scripting purposes
+        if (normType.equals("Global")){
+            fullNormalise(all_bands); // normalise globally (for all bands in image)
+        }
+        else if (normType.equals("Lane")){
+            laneNormalise(all_bands); // normalise by lane
+        }
+        else{
+            // some form of spelling mistake by user
+            Dialogs.showWarningNotification(resources.getString("title"), resources.getString("error.wrong-norm"));
+            return FXCollections.observableArrayList();
+        }
 
         return all_bands;
     }
@@ -776,7 +786,9 @@ public class TableController {
      * @param filename: Specific filename to use or null to use default filename
      * @throws Exception
      */
-    public static void computeAndExportBandData(boolean globalCorrection, boolean localCorrection, boolean rollingBallCorrection, int localSensitivity, int rollingRadius, String folder, String filename) throws Exception {
+    public static void computeAndExportBandData(boolean globalCorrection, boolean localCorrection, boolean rollingBallCorrection,
+                                                String normType,
+                                                int localSensitivity, int rollingRadius, String folder, String filename) throws Exception {
 
         ImageServer<BufferedImage> server = getCurrentImageData().getServer();
         double globalMean = calculateGlobalBackgroundAverage(server);
@@ -785,7 +797,7 @@ public class TableController {
         ArrayList<PathObject> annots = (ArrayList<PathObject>) getAnnotationObjects(); // sorts annotations by lane/band ID since this sorting is lost after reloading an image
         annots.sort(new LaneBandCompare());
 
-        ObservableList<BandEntry> bandData = computeTableColumns(annots, server, globalCorrection, localCorrection, rollingBallCorrection, localSensitivity, globalMean, rollingBallImage);
+        ObservableList<BandEntry> bandData = computeTableColumns(annots, server, globalCorrection, localCorrection, rollingBallCorrection, localSensitivity, globalMean, rollingBallImage, normType);
         exportDataToFolder(bandData, folder, filename, globalCorrection, localCorrection, rollingBallCorrection);
     }
 

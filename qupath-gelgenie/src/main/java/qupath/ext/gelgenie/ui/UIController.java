@@ -752,7 +752,7 @@ public class UIController {
                         new DefaultScriptableWorkflowStep(
                                 resources.getString("workflow.computeandexport"),
                                 TableController.class.getName() +
-                                        ".computeAndExportBandData("+globalCorrection+","+localCorrection+","+rollingCorrection+","+localSensitivity+","+rollingRadius+",\"OUTPUT FOLDER\",\"OUTPUT FILENAME OR NULL\")"
+                                        ".computeAndExportBandData("+globalCorrection+","+localCorrection+","+rollingCorrection+",\"Global\","+localSensitivity+","+rollingRadius+",\"OUTPUT FOLDER\",\"OUTPUT FILENAME OR NULL\")"
                         ));
     }
     // NOTIFICATIONS HERE
