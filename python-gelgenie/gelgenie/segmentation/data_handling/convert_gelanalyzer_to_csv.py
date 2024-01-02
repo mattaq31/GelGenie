@@ -4,7 +4,7 @@ import pandas as pd
 
 base_folder = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/quantitative_results/gelanalyzer'
 
-for i in range(31):
+for i in range(34):
     analysis = join(base_folder, str(i))
     if os.path.isdir(analysis):
         full_data = []
