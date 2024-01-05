@@ -620,7 +620,7 @@ public class TableController {
     public static void exportData(ObservableList<BandEntry> bandData, File filename, boolean globalCorrection, boolean localCorrection, boolean rollingBallCorrection) throws IOException {
 
         BufferedWriter br = new BufferedWriter(new FileWriter(filename));
-        String headerString = "Lane ID,Band ID,Pixel Count,Width,Height,Average Intensity,Intensity SD,Raw Volume,Norm. Raw Volume";
+        String headerString = "Name,Lane ID,Band ID,Pixel Count,Width,Height,Average Intensity,Intensity SD,Raw Volume,Norm. Raw Volume";
         if (localCorrection) {
             headerString = headerString + ",Local Corrected Volume,Norm. Local Volume";
         }
@@ -634,7 +634,7 @@ public class TableController {
         br.write(headerString);
 
         for (BandEntry band : bandData) {
-            String sb = band.getLaneID() + "," + band.getBandID() + "," + band.getPixelCount() + "," + band.getWidth()
+            String sb = band.getBandName() + "," + band.getLaneID() + "," + band.getBandID() + "," + band.getPixelCount() + "," + band.getWidth()
                     + "," + band.getHeight() + "," + band.getAverageIntensity() + "," + band.getStdIntensity()
                     + "," + band.getRawVolume() + "," + band.getNormVolume();
             if (localCorrection) {
