@@ -20,6 +20,9 @@ import javafx.scene.chart.BarChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
+import javafx.scene.text.Text;
+import javafx.scene.text.TextAlignment;
+import javafx.scene.text.TextFlow;
 import javafx.scene.web.WebView;
 import org.controlsfx.control.PopOver;
 import org.controlsfx.control.action.Action;
@@ -38,6 +41,7 @@ import qupath.fx.dialogs.FileChoosers;
 import qupath.lib.common.GeneralTools;
 import qupath.lib.gui.QuPathGUI;
 import qupath.fx.dialogs.Dialogs;
+import qupath.lib.gui.Urls;
 import qupath.lib.gui.tools.WebViews;
 import qupath.lib.images.ImageData;
 import qupath.lib.images.servers.ImageServer;
@@ -243,7 +247,27 @@ public class UIController {
         useDJLCheckBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue) {
                 if (!PytorchManager.hasPyTorchEngine()) {
-                    Dialogs.showErrorMessage(resources.getString("title"), resources.getString("error.download-pytorch"));
+
+                    // constructs an error message dialog which links to the QuPath DJL extension page
+                    // to allow users to download the PyTorch engine if this is not available already
+                    var linkDJL = new Hyperlink();
+                    linkDJL.setText(resources.getString("error.download-pytorch-link"));
+                    linkDJL.setOnAction(e -> QuPathGUI.openInBrowser(resources.getString("error.download-pytorch-link")));
+                    var dialogText = new TextFlow( // mix of strings and a hyperlink
+                            new Text(resources.getString("error.download-pytorch-1")),
+                            linkDJL,
+                            new Text(System.lineSeparator()),
+                            new Text(resources.getString("error.download-pytorch-2"))
+                    );
+                    dialogText.setPrefWidth(500); // to accommodate the length of the link
+                    dialogText.setTextAlignment(TextAlignment.CENTER);
+
+                    new Dialogs.Builder()
+                            .alertType(Alert.AlertType.ERROR)
+                            .title(resources.getString("title"))
+                            .content(dialogText)
+                            .show();
+
                     useDJLCheckBox.setSelected(false);
                 }
             }
@@ -653,6 +677,7 @@ public class UIController {
      * Converts all unclassified annotations to gel bands.
      */
     public void classifyFreeAnnotations(){
+
         PathClass gClass = PathClass.fromString("Gel Band", 10709517);
         for (PathObject annot : getAnnotationObjects()) {
             if (annot.getPathClass() == null) {
