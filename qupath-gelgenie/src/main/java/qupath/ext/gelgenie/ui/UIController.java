@@ -16,7 +16,6 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.geometry.Side;
 import javafx.scene.Node;
-import javafx.scene.Scene;
 import javafx.scene.chart.BarChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
@@ -36,14 +35,12 @@ import qupath.ext.gelgenie.tools.ImageTools;
 import qupath.ext.gelgenie.models.ModelRunner;
 import qupath.ext.gelgenie.tools.SegmentationMap;
 import qupath.fx.dialogs.FileChoosers;
-import qupath.lib.common.ColorTools;
 import qupath.lib.common.GeneralTools;
 import qupath.lib.gui.QuPathGUI;
 import qupath.fx.dialogs.Dialogs;
 import qupath.lib.gui.tools.WebViews;
 import qupath.lib.images.ImageData;
 import qupath.lib.images.servers.ImageServer;
-import qupath.lib.images.servers.LabeledImageServer;
 import qupath.lib.images.servers.ServerTools;
 import qupath.lib.objects.PathObject;
 import qupath.lib.objects.classes.PathClass;
@@ -649,6 +646,7 @@ public class UIController {
             }
         }
         BandSorter.LabelBands(actionableAnnotations);
+        fireHierarchyUpdate();
     }
 
     /**
@@ -661,6 +659,7 @@ public class UIController {
                 annot.setPathClass(gClass);
             }
         }
+        fireHierarchyUpdate();
     }
 
     /**
