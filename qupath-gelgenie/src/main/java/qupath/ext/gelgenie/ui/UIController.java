@@ -41,7 +41,6 @@ import qupath.fx.dialogs.FileChoosers;
 import qupath.lib.common.GeneralTools;
 import qupath.lib.gui.QuPathGUI;
 import qupath.fx.dialogs.Dialogs;
-import qupath.lib.gui.Urls;
 import qupath.lib.gui.tools.WebViews;
 import qupath.lib.images.ImageData;
 import qupath.lib.images.servers.ImageServer;
@@ -249,7 +248,7 @@ public class UIController {
                 if (!PytorchManager.hasPyTorchEngine()) {
 
                     // constructs an error message dialog which links to the QuPath DJL extension page
-                    // to allow users to download the PyTorch engine if this is not available already
+                    // to allow users to download the PyTorch engine if this is not already available
                     var linkDJL = new Hyperlink();
                     linkDJL.setText(resources.getString("error.download-pytorch-link"));
                     linkDJL.setOnAction(e -> QuPathGUI.openInBrowser(resources.getString("error.download-pytorch-link")));
