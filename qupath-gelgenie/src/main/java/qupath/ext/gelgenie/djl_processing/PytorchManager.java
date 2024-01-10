@@ -15,6 +15,7 @@
  *
  * Copied from qupath-extension-wsinfer
  */
+
 package qupath.ext.gelgenie.djl_processing;
 
 import ai.djl.Device;

@@ -1,3 +1,19 @@
+/**
+ * Copyright 2024 University of Edinburgh
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package qupath.ext.gelgenie.ui;
 
 import ij.ImagePlus;
@@ -5,8 +21,6 @@ import ij.plugin.filter.BackgroundSubtracter;
 
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -24,7 +38,6 @@ import javafx.scene.layout.HBox;
 import org.bytedeco.opencv.opencv_core.Mat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import qupath.ext.gelgenie.djl_processing.PytorchManager;
 import qupath.ext.gelgenie.graphics.EmbeddedBarChart;
 import qupath.ext.gelgenie.tools.ImageTools;
 import qupath.ext.gelgenie.tools.LaneBandCompare;
@@ -46,13 +59,11 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
-import java.util.function.Consumer;
 
 import qupath.fx.dialogs.FileChoosers;
 import qupath.lib.objects.hierarchy.PathObjectHierarchy;
 import qupath.lib.objects.hierarchy.events.PathObjectSelectionModel;
 import qupath.lib.regions.RegionRequest;
-import qupath.lib.scripting.QP;
 import qupath.opencv.tools.OpenCVTools;
 
 import static qupath.ext.gelgenie.graphics.EmbeddedBarChart.saveChart;

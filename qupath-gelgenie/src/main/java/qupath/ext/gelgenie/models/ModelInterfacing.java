@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 University of Edinburgh
+ * Copyright 2023/24 University of Edinburgh
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -14,8 +14,9 @@
  *  limitations under the License.
  *
  * Copied with attribution from qupath-extension-wsinfer.
+ * Further edits were made to this file for the GelGenie qupath extension, also licensed under Apache 2.0.
  */
-// Most of this was edited from the WSInfer extension - need to check with Pete how to properly attribute.
+
 package qupath.ext.gelgenie.models;
 
 import javafx.util.StringConverter;
