@@ -39,13 +39,21 @@ public class GelSegmentationTranslator extends BaseImageTranslator<CategoryMask>
 
     public int imageWidth;
     public int imageHeight;
+    public int topPad;
+    public int bottomPad;
+    public int leftPad;
+    public int rightPad;
 
-    public GelSegmentationTranslator(Builder builder, int imageWidth, int imageHeight) {
+    public GelSegmentationTranslator(Builder builder, int imageWidth, int imageHeight, int topPad, int bottomPad, int leftPad, int rightPad) {
 
         super(builder);
         this.synsetLoader = builder.synsetLoader();
         this.imageHeight = imageHeight;
         this.imageWidth = imageWidth;
+        this.topPad = topPad;
+        this.bottomPad = bottomPad;
+        this.leftPad = leftPad;
+        this.rightPad = rightPad;
     }
 
     @Override
@@ -66,8 +74,7 @@ public class GelSegmentationTranslator extends BaseImageTranslator<CategoryMask>
     public CategoryMask processOutput(TranslatorContext ctx, NDList list) {
         // scores contains the probabilities of each pixel being a certain object
         // important: the padding applied prior to running the model needs to be removed here
-        float[] scores = list.get(0).get(":,0:" +imageHeight + ",0:" + imageWidth).toFloatArray();
-
+        float[] scores = list.get(0).get(":," + topPad + ":" + (imageHeight+topPad) + "," + leftPad  + ":" + (imageWidth+leftPad)).toFloatArray();
         int[][] mask = new int[imageHeight][imageWidth];
 
         int imageSize = imageWidth * imageHeight;
@@ -123,9 +130,9 @@ public class GelSegmentationTranslator extends BaseImageTranslator<CategoryMask>
             return this;
         }
 
-        public GelSegmentationTranslator build(int imageWidth, int imageHeight) {
+        public GelSegmentationTranslator build(int imageWidth, int imageHeight, int topPad, int bottomPad, int leftPad, int rightPad) {
             validate();
-            return new GelSegmentationTranslator(this, imageWidth, imageHeight);
+            return new GelSegmentationTranslator(this, imageWidth, imageHeight, topPad, bottomPad, leftPad, rightPad);
         }
 
         public void configPreProcess(Map<String, ?> arguments) {

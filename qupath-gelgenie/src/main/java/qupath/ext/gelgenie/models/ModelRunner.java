@@ -24,7 +24,9 @@ import ij.process.ImageProcessor;
 import javafx.application.Platform;
 import org.bytedeco.javacpp.indexer.FloatIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
+import org.bytedeco.opencv.global.opencv_core;
 import org.bytedeco.opencv.opencv_core.Mat;
+import org.bytedeco.opencv.opencv_core.Scalar;
 import org.opencv.core.CvType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,14 +72,7 @@ import static qupath.lib.scripting.QP.addObjects;
  */
 public class ModelRunner {
     private static final Logger logger = LoggerFactory.getLogger(ModelRunner.class);
-
-    // TODO: many of these settings could be adjustable or user-adjustable
     private static final double downsample = 1.0;
-    private static final Padding paddingMode = Padding.empty();
-    private static double threshold = 0.5;
-    private static double tolerance = 0.1;
-    private static boolean excludeOnEdges = true;
-    private static boolean isEDM = false;
     private static boolean conn8 = true;
 
     private static final ResourceBundle resources = ResourceBundle.getBundle("qupath.ext.gelgenie.ui.strings");
@@ -178,44 +173,61 @@ public class ModelRunner {
      */
     private static Collection<PathObject> runOpenCVModel(GelGenieModel model, ImageData<BufferedImage> imageData, RegionRequest request) throws IOException {
 
-        int inputWidth = (int) (Math.ceil((double) request.getWidth() / 32) * 32);
-        int inputHeight = (int) (Math.ceil((double) request.getHeight() / 32) * 32);
+        int[] fullPadding = getPadding(request.getHeight(), request.getWidth(), 32); //gets padding to be added to get the image pixels as a multiple of 32
 
-        OpenCVDnn dnnModel = DnnTools.builder(model.getOnnxFile().toString()).size(inputWidth, inputHeight).build();
+        OpenCVDnn dnnModel = DnnTools.builder(model.getOnnxFile().toString()).size( // creates opencv model from ONNX file
+                request.getWidth() + fullPadding[0] + fullPadding[1],
+                request.getHeight() + fullPadding[2] + fullPadding[3]).build();
 
-        // Inference pipeline, which reduces images to a single channel and normalises
-        ImageDataOp dataOp = ImageOps.buildImageDataOp().appendOps(
-                ImageOps.Core.ensureType(PixelType.FLOAT32), // converts to a float to allow for division to 0-1
-                ImageOps.Core.divide((Integer) imageData.getServer().getPixelType().getUpperBound()), // normalises
-                ImageOps.Channels.mean(), // removes multiple channels if present
-                ImageOps.ML.dnn(dnnModel, inputWidth, inputHeight, paddingMode) // runs model
-        );
-        Mat result = dataOp.apply(imageData, request);
+        // Create required intermediate Mat images
+        Mat paddedImage = new Mat();
+        Mat originalImage = OpenCVTools.imageToMat(imageData.getServer().readRegion(request));
+        Mat predImage = new Mat();
+
+        // if an RGB image provided, average channels into a single channel
+        if (originalImage.channels() > 1){
+            var temp = originalImage.reshape(1, originalImage.rows()*originalImage.cols());
+            opencv_core.reduce(temp, temp, 1, opencv_core.REDUCE_AVG);
+            originalImage = temp.reshape(1, originalImage.rows());
+        }
+
+        // applies zero padding here
+        opencv_core.copyMakeBorder(originalImage, paddedImage, fullPadding[2], fullPadding[3], fullPadding[0], fullPadding[1], opencv_core.BORDER_CONSTANT, new Scalar(0.0));
+
+        //converts to float and normalises to 0-1
+        paddedImage.convertTo(paddedImage, CvType.CV_32F);
+        opencv_core.dividePut(paddedImage, imageData.getServer().getPixelType().getUpperBound().doubleValue());
+
+        // runs model
+        var output = dnnModel.predict(Map.of("input", paddedImage));
+        predImage.put(output.values().iterator().next());
 
         // The below processes the two outputs from the openCV model into a single segmentation map
 
         // first, the output is split into two different channels
-        List<Mat> splitchannels = OpenCVTools.splitChannels(result);
+        List<Mat> splitchannels = OpenCVTools.splitChannels(predImage);
 
         // indexers and a new output image are created
         Mat segmentedMat = new Mat(request.getHeight(), request.getWidth(), CvType.CV_32F);
+
         Indexer backgroundIndexer = splitchannels.get(0).createIndexer();
         Indexer foregroundIndexer = splitchannels.get(1).createIndexer();
         Indexer newIndexer = segmentedMat.createIndexer();
 
         // the split channels are compared - the output pixel is a positive if the foreground channel is larger than the background channel
-        for (int i=0; i<request.getHeight(); i++){
-            for (int j=0; j<request.getWidth(); j++) {
+        // the zero-padding is also removed through the indexing operations
+        for (int i=fullPadding[2]; i<request.getHeight() + fullPadding[2]; i++){
+            for (int j=fullPadding[0]; j<request.getWidth() + fullPadding[0]; j++) {
                 int classSelection = 0;
                 if (foregroundIndexer.getDouble(i,j) >= backgroundIndexer.getDouble(i,j)){
                     classSelection = 1;
                 }
-                ((FloatIndexer) newIndexer).put(i, j, classSelection);
+                ((FloatIndexer) newIndexer).put(i-fullPadding[2], j-fullPadding[0], classSelection);
             }
         }
 
         // final labelling occurs on the segmented image
-        return findSplitROIs(segmentedMat, request); // final splitter operation
+        return findSplitROIs(segmentedMat, request);
     }
 
     /**
@@ -232,24 +244,31 @@ public class ModelRunner {
      * @throws TranslateException
      */
     private static Collection<PathObject> runDJLModel(GelGenieModel model, ImageData<BufferedImage> imageData, RegionRequest request, Boolean nnunetConfig) throws IOException, ModelNotFoundException, MalformedModelException, TranslateException {
-        // TODO: move image height/width finding in the input processing function, so that model doesn't need to be generated from scratch each time
+
         Device device = PytorchManager.getDevice();
+        int imageWidth = request.getWidth();
+        int imageHeight = request.getHeight();
 
         // TODO: this should probably now be removed since DJL loading has been moved entirely to the DJL extension.  Should still check for PyTorch though.
         checkPyTorchLibrary();
+
         Translator<Image, CategoryMask> translator;
+
         if (nnunetConfig){
             translator = NnUNetSegmentationTranslator.builder()
                     .addTransform(createToTensorTransform(device))
                     .addTransform(new ChannelSquisher())
-                    .build(request.getWidth(), request.getHeight());
+                    .build(imageWidth, imageHeight);
         }
         else {
+
+            int[] fullPadding = getPadding(imageHeight, imageWidth, 32);
+
             translator = GelSegmentationTranslator.builder()
                     .addTransform(createToTensorTransform(device))
-                    .addTransform(new DivisibleSizePad(32))
+                    .addTransform(new DivisibleSizePad(fullPadding[0], fullPadding[1], fullPadding[2], fullPadding[3]))
                     .addTransform(new ChannelSquisher())
-                    .build(request.getWidth(), request.getHeight());
+                    .build(request.getWidth(), request.getHeight(), fullPadding[2], fullPadding[3], fullPadding[0], fullPadding[1]);
         }
 
         ImageFactory factory = ImageFactory.getInstance();
@@ -266,16 +285,17 @@ public class ModelRunner {
                 .optTranslator(translator)
                 .optProgress(new ProgressBar()).build();
 
-        Predictor<Image, CategoryMask> predictor = criteria.loadModel().newPredictor();
-
-        CategoryMask mask = predictor.predict(image);
-        int[][] maskOrig = mask.getMask(); // extracts out integer array for downstream processing
+        int[][] maskOrig; // predicts masks from image, making sure to autoclose the model and predictor when complete
+        try(ZooModel<Image, CategoryMask> modelConstruct = criteria.loadModel()) {
+            try (Predictor<Image, CategoryMask> predictor = modelConstruct.newPredictor()) {
+                CategoryMask mask = predictor.predict(image);
+                maskOrig = mask.getMask(); // extracts out integer array for downstream processing
+            }
+        }
 
         // The below converts the integer array into openCV Mat.  Unsure if there is a more elegant way to do this.
         Mat imMat = new Mat(request.getHeight(), request.getWidth(), CvType.CV_32F);
-
         Indexer indexer = imMat.createIndexer();
-
         for (int i=0; i<request.getHeight(); i++){
             for (int j=0; j<request.getWidth(); j++) {
                 ((FloatIndexer) indexer).put(i, j, maskOrig[i][j]);
@@ -335,5 +355,25 @@ public class ModelRunner {
         }).collect(Collectors.toList());
 
         return convertedROIs;
+    }
+
+    /**
+     * Gets the padding required to make the image divisible by 32.  This is a direct copy of the function used in python.
+     * @param imageHeight: Original image height
+     * @param imageWidth: Original image width
+     * @param multiplier: Multiplier (in this case always 32)
+     * @return: Array of padding values to be applied to image (left, right, top, bottom)
+     */
+    private static int[] getPadding(int imageHeight, int imageWidth, int multiplier){
+        // 32-divisible padding occurs evenly around an image, identical to the way it is done in python
+        int newVert = multiplier * (imageHeight / multiplier + 1);
+        int newHoriz = multiplier * (imageWidth / multiplier + 1);
+
+        int topPad = (newVert - imageHeight) / 2;
+        int bottomPad = newVert - imageHeight - topPad;
+        int leftPad = (newHoriz - imageWidth) / 2;
+        int rightPad = newHoriz - imageWidth - leftPad;
+
+        return new int[]{leftPad, rightPad, topPad, bottomPad};
     }
 }

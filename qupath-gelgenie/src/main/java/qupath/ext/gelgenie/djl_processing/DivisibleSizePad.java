@@ -17,15 +17,21 @@
 package qupath.ext.gelgenie.djl_processing;
 
 import ai.djl.ndarray.NDArray;
-import ai.djl.ndarray.NDManager;
 import ai.djl.ndarray.types.Shape;
 import ai.djl.translate.Transform;
 
 public class DivisibleSizePad implements Transform {
 
-    int multiplier;
-    public DivisibleSizePad(int multiplier){
-        this.multiplier = multiplier;
+    int leftPad;
+    int rightPad;
+    int topPad;
+    int bottomPad;
+
+    public DivisibleSizePad(int leftPad, int rightPad, int topPad, int bottomPad){
+        this.leftPad = leftPad;
+        this.rightPad = rightPad;
+        this.topPad = topPad;
+        this.bottomPad = bottomPad;
     }
 
     /**
@@ -37,15 +43,12 @@ public class DivisibleSizePad implements Transform {
     public NDArray transform(NDArray array) {
         int currWidth = (int) array.getShape().getShape()[2];
         int currHeight = (int) array.getShape().getShape()[1];
-        int padWidth = (int) (Math.ceil((double) currWidth / multiplier) * multiplier);
-        int padHeight = (int) (Math.ceil((double) currHeight / multiplier) * multiplier);
-        NDArray fin;
-        try (NDManager manager = NDManager.newBaseManager(PytorchManager.getDevice())) {
-            NDArray x = manager.zeros(new Shape(array.getShape().getShape()[0], currHeight, padWidth-currWidth));
-            NDArray y = manager.zeros(new Shape(array.getShape().getShape()[0], padHeight-currHeight, padWidth));
-            fin = array.concat(x, 2).concat(y, 1);
-        }
 
-        return fin;
+        NDArray xLeft = array.getManager().zeros(new Shape(array.getShape().getShape()[0], currHeight, leftPad));
+        NDArray xRight = array.getManager().zeros(new Shape(array.getShape().getShape()[0], currHeight, rightPad));
+        NDArray yTop = array.getManager().zeros(new Shape(array.getShape().getShape()[0], topPad, currWidth + leftPad + rightPad));
+        NDArray yBottom = array.getManager().zeros(new Shape(array.getShape().getShape()[0], bottomPad, currWidth + leftPad + rightPad));
+
+        return yTop.concat(xLeft.concat(array, 2).concat(xRight, 2), 1).concat(yBottom, 1); // padding effect is achieved by combining the original array and all the zero arrays
     }
 }
