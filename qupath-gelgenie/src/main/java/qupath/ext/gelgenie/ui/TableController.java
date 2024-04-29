@@ -143,6 +143,7 @@ public class TableController {
     private boolean rollingBallCorrection = false;
     private int localSensitivity = 5;
     private int rollingRadius = 50;
+    private boolean invertImage = false;
     private final ArrayList<PathObject> selectedBands = new ArrayList<>();
     private Mat rollingBallImage;
 
@@ -256,7 +257,7 @@ public class TableController {
         Platform.runLater(() -> {
             calculateGlobalBackground(server);
             try {
-                rollingBallImage = findRollingBallImage(server, rollingRadius);
+                rollingBallImage = findRollingBallImage(server, rollingRadius, invertImage);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -264,11 +265,11 @@ public class TableController {
             if (!selectedBands.isEmpty()) {
                 selectedBands.sort(new LaneBandCompare());
                 bandData = computeTableColumns(selectedBands, server, globalCorrection, localCorrection, rollingBallCorrection,
-                        localSensitivity, globalMean, rollingBallImage, "Global");
+                        localSensitivity, globalMean, invertImage, rollingBallImage, "Global");
             } else {
                 annots.sort(new LaneBandCompare());
                 bandData = computeTableColumns(annots, server, globalCorrection, localCorrection, rollingBallCorrection,
-                        localSensitivity, globalMean, rollingBallImage, "Global");
+                        localSensitivity, globalMean, invertImage, rollingBallImage, "Global");
             }
             tableSetup();
 
@@ -359,7 +360,7 @@ public class TableController {
     private void calculateGlobalBackground(ImageServer<BufferedImage> server) {
         if (globalCorrection) {
             try {
-                globalMean = calculateGlobalBackgroundAverage(server);
+                globalMean = calculateGlobalBackgroundAverage(server, this.invertImage);
             } catch (Exception e) {
                 globalCorrection = false;
                 Dialogs.showInfoNotification(
@@ -372,15 +373,16 @@ public class TableController {
      * Computes the average pixel value of global background patches.
      *
      * @param server: Server corresponding to current image
+     * @param invertImage: Image needs to be inverted before computing any results.
      * @return Computed global mean.
      * @throws Exception
      */
-    private static double calculateGlobalBackgroundAverage(ImageServer<BufferedImage> server) throws Exception {
+    private static double calculateGlobalBackgroundAverage(ImageServer<BufferedImage> server, boolean invertImage) throws Exception {
         double global_mean = 0.0;
         Collection<PathObject> annots = getAnnotationObjects();
         for (PathObject annot : annots) {
             if (annot.getPathClass() != null && Objects.equals(annot.getPathClass().getName(), "Global Background")) {
-                double[] all_pixels = ImageTools.extractAnnotationPixels(annot, server);
+                double[] all_pixels = ImageTools.extractAnnotationPixels(annot, server, invertImage);
                 global_mean = global_mean + Arrays.stream(all_pixels).average().getAsDouble();
             }
         }
@@ -394,10 +396,12 @@ public class TableController {
      * Passes the rolling ball filter over the entire input image and stores it for downstream processing.
      *
      * @param server: Main image server
+     * @param rollingRadius: Radius of rolling ball filter
+     * @param invertImage: Set to true to indicate image is inverted (will pass lightBackground True to ImageJ)
      * @throws IOException
      * @return: Rolling ball filtered image
      */
-    private static Mat findRollingBallImage(ImageServer<BufferedImage> server, int rollingRadius) throws IOException {
+    private static Mat findRollingBallImage(ImageServer<BufferedImage> server, int rollingRadius, boolean invertImage) throws IOException {
 
         RegionRequest request = RegionRequest.createInstance(server, 1.0); // generates full image request
 
@@ -406,7 +410,7 @@ public class TableController {
         BackgroundSubtracter bs = new BackgroundSubtracter(); // creates background subtracter
 
         // all default settings used except for rollingRadius, which can be user-defined
-        bs.rollingBallBackground(imp.getProcessor(), rollingRadius, false, false, false, false, false);
+        bs.rollingBallBackground(imp.getProcessor(), rollingRadius, false, invertImage, false, false, false);
 
         // converts to OpenCV image for downstream processing
         BufferedImage subtractedImage = convertToBufferedImage(imp, 0, 0, null);
@@ -421,14 +425,14 @@ public class TableController {
      */
     private static ObservableList<BandEntry> computeTableColumns(Collection<PathObject> annots, ImageServer<BufferedImage> server,
                                                                  boolean globalCorrection, boolean localCorrection, boolean rollingBallCorrection,
-                                                                 int localSensitivity, double globalMean, Mat rollingBallImage, String normType) {
+                                                                 int localSensitivity, double globalMean, boolean invertImage, Mat rollingBallImage, String normType) {
 
         ObservableList<BandEntry> all_bands = FXCollections.observableArrayList();
 
         for (PathObject annot : annots) {
             //  only act on annotations marked as bands
             if (annot.getPathClass() != null && Objects.equals(annot.getPathClass().getName(), "Gel Band")) {
-                double[] all_pixels = ImageTools.extractAnnotationPixels(annot, server); // extracts a list of pixels matching the specific selected annotation
+                double[] all_pixels = ImageTools.extractAnnotationPixels(annot, server, invertImage); // extracts a list of pixels matching the specific selected annotation
 
                 // computes intensity average
                 double pixel_average = Arrays.stream(all_pixels).average().getAsDouble();
@@ -441,7 +445,7 @@ public class TableController {
                 double raw_volume = Arrays.stream(all_pixels).sum();
 
                 // todo: does it make sense to mask all bands rather than just the selected one?
-                double[] localBackgroundPixels = extractLocalBackgroundPixels(annot, server, localSensitivity);
+                double[] localBackgroundPixels = extractLocalBackgroundPixels(annot, server, localSensitivity, invertImage);
                 double localMean = Arrays.stream(localBackgroundPixels).average().getAsDouble();
 
                 double width = annot.getROI().getBoundsWidth();
@@ -458,7 +462,7 @@ public class TableController {
                     localVolume = raw_volume - (localMean * all_pixels.length);
                 }
                 if (rollingBallCorrection) { // rolling ball values need to be computed on its specific image
-                    double[] rbPixels = ImageTools.extractAnnotationPixelsFromMat(annot, rollingBallImage);
+                    double[] rbPixels = ImageTools.extractAnnotationPixelsFromMat(annot, rollingBallImage, invertImage, server.getPixelType().getUpperBound().doubleValue());
                     rollingBallVolume = Arrays.stream(rbPixels).sum();
                 }
 
@@ -794,15 +798,17 @@ public class TableController {
      * @param rollingBallCorrection: Enable rolling ball background calculation
      * @param localSensitivity:      Pixel sensitivity for local background calculation
      * @param rollingRadius:         The radius used for the rolling ball background subtraction
+     * @param invertImage:           Image needs to be inverted before calculations are made
      * @param selectedBands:         List of selected bands on which to compute data
      */
     public void setPreferences(boolean globalCorrection, boolean localCorrection, boolean rollingBallCorrection,
-                               int localSensitivity, int rollingRadius, Collection<PathObject> selectedBands) {
+                               int localSensitivity, int rollingRadius, boolean invertImage, Collection<PathObject> selectedBands) {
         this.localCorrection = localCorrection;
         this.globalCorrection = globalCorrection;
         this.rollingBallCorrection = rollingBallCorrection;
         this.localSensitivity = localSensitivity;
         this.rollingRadius = rollingRadius;
+        this.invertImage = invertImage;
 
         if (!selectedBands.isEmpty()) {
             this.selectedBands.addAll(selectedBands);
@@ -814,24 +820,33 @@ public class TableController {
      * @param globalCorrection:      Enable global background calculation
      * @param localCorrection:       Enable local background calculation
      * @param rollingBallCorrection: Enable rolling ball background calculation
+     * @param normType:             Type of normalisation to apply (Global or Lane)
      * @param localSensitivity:      Pixel sensitivity for local background calculation
      * @param rollingRadius:         The radius used for the rolling ball background subtraction
+     * @param invertImage:           Image needs to be inverted before calculations are made
      * @param folder: Folder to save data to
      * @param filename: Specific filename to use or null to use default filename
      * @throws Exception
      */
     public static void computeAndExportBandData(boolean globalCorrection, boolean localCorrection, boolean rollingBallCorrection,
                                                 String normType,
-                                                int localSensitivity, int rollingRadius, String folder, String filename) throws Exception {
+                                                int localSensitivity, int rollingRadius, boolean invertImage,
+                                                String folder, String filename) throws Exception {
 
         ImageServer<BufferedImage> server = getCurrentImageData().getServer();
-        double globalMean = calculateGlobalBackgroundAverage(server);
-        Mat rollingBallImage = findRollingBallImage(server, rollingRadius);
+        double globalMean;
+        if (globalCorrection) {
+            globalMean = calculateGlobalBackgroundAverage(server, invertImage);
+        }
+        else{
+            globalMean = 0.0;
+        }
+        Mat rollingBallImage = findRollingBallImage(server, rollingRadius, invertImage);
 
         ArrayList<PathObject> annots = (ArrayList<PathObject>) getAnnotationObjects(); // sorts annotations by lane/band ID since this sorting is lost after reloading an image
         annots.sort(new LaneBandCompare());
 
-        ObservableList<BandEntry> bandData = computeTableColumns(annots, server, globalCorrection, localCorrection, rollingBallCorrection, localSensitivity, globalMean, rollingBallImage, normType);
+        ObservableList<BandEntry> bandData = computeTableColumns(annots, server, globalCorrection, localCorrection, rollingBallCorrection, localSensitivity, globalMean, invertImage, rollingBallImage, normType);
         exportDataToFolder(bandData, folder, filename, globalCorrection, localCorrection, rollingBallCorrection);
     }
 

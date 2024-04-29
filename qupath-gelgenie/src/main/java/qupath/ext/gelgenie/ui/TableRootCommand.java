@@ -52,12 +52,14 @@ public class TableRootCommand implements Runnable {
     private final boolean rollingCorrection;
     private final int localSensitivity;
     private final int rollingRadius;
+    private final boolean invertImage;
 
     private final Collection<PathObject> selectedBands = new ArrayList<>();
 
     public TableRootCommand(QuPathGUI qupath, String ui_name, String panel_name, Boolean resizable,
                             boolean globalCorrection, boolean localCorrection, boolean rollingCorrection,
-                            int localSensitivity, int rollingRadius, Collection<PathObject> selectedBands) { // Constructor
+                            int localSensitivity, int rollingRadius, boolean invertImage,
+                            Collection<PathObject> selectedBands) { // Constructor
         this.qupath = qupath;
         this.panel_name = panel_name;
         this.resizable = resizable;
@@ -71,6 +73,7 @@ public class TableRootCommand implements Runnable {
         this.rollingCorrection = rollingCorrection;
         this.localSensitivity = localSensitivity;
         this.rollingRadius = rollingRadius;
+        this.invertImage = invertImage;
 
         if (!selectedBands.isEmpty()){
             this.selectedBands.addAll(selectedBands);
@@ -95,7 +98,7 @@ public class TableRootCommand implements Runnable {
         stage = new Stage();
         TableController controller = rootFXML.getController();
         controller.setPreferences(globalCorrection, localCorrection, rollingCorrection, localSensitivity,
-                rollingRadius, selectedBands);
+                rollingRadius, invertImage, selectedBands);
 
         Scene scene = new Scene(pane);
         stage.initOwner(qupath.getStage());

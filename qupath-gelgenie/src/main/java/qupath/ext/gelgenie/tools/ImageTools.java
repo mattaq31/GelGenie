@@ -16,7 +16,9 @@
 
 package qupath.ext.gelgenie.tools;
 
+import org.bytedeco.opencv.global.opencv_core;
 import org.bytedeco.opencv.opencv_core.Mat;
+
 import qupath.lib.awt.common.BufferedImageTools;
 import qupath.lib.images.servers.ImageServer;
 import qupath.lib.objects.PathObject;
@@ -38,8 +40,9 @@ public class ImageTools {
      *
      * @param annotation: Specific annotation containing data of interest
      * @param server:     Object containing image data pixels
+     * @param invertImage: Set to true to invert image before extracting pixels
      */
-    public static double[] extractAnnotationPixels(PathObject annotation, ImageServer<BufferedImage> server) {
+    public static double[] extractAnnotationPixels(PathObject annotation, ImageServer<BufferedImage> server, boolean invertImage) {
 
         // creates a mask of the correct shape within the rectangular region bordering an annotation
         BufferedImage im_mask = BufferedImageTools.createROIMask((int) Math.ceil(annotation.getROI().getBoundsWidth()),
@@ -56,15 +59,18 @@ public class ImageTools {
         }
 
         // selects pixels which are in the mask and not the outer edges of the rectangular region
-        return extractPixelsfromMask(OpenCVTools.imageToMat(img), OpenCVTools.imageToMat(im_mask), false);
+        return extractPixelsfromMask(OpenCVTools.imageToMat(img), OpenCVTools.imageToMat(im_mask),
+                false, invertImage, server.getPixelType().getUpperBound().doubleValue());
     }
     /**
      * Extracts pixels from a selected annotation, with an OpenCV image provided instead of an ImageServer.
      *
      * @param annotation: Specific annotation containing data of interest
      * @param fullImage: OpenCV Mat containing full image of interest
+     * @param invertImage: Set to true to invert image before extracting pixels
+     * @param invertMax:  Need to pre-calculate max value for inversion as the value is more difficult to extract from a Mat
      */
-    public static double[] extractAnnotationPixelsFromMat(PathObject annotation, Mat fullImage) {
+    public static double[] extractAnnotationPixelsFromMat(PathObject annotation, Mat fullImage, Boolean invertImage, double invertMax) {
 
         // creates a mask of the correct shape within the image
         BufferedImage im_mask = BufferedImageTools.createROIMask((int) Math.ceil(annotation.getROI().getBoundsWidth()),
@@ -79,7 +85,8 @@ public class ImageTools {
                 (int) annotation.getROI().getBoundsHeight());
 
         // extracts masked pixels as normal
-        return extractPixelsfromMask(croppedImage, OpenCVTools.imageToMat(im_mask), false);
+        return extractPixelsfromMask(croppedImage, OpenCVTools.imageToMat(im_mask), false,
+                invertImage, invertMax);
     }
 
     /**
@@ -87,9 +94,11 @@ public class ImageTools {
      * @param annotation: Annotation around which to extract pixels
      * @param server: Server corresponding to open image
      * @param pixelBorder: Width of border around annotation
+     * @param invertImage: Set to true to invert image before extracting pixels
      * @return Array of pixels from border surrounding annotation
      */
-    public static double[] extractLocalBackgroundPixels(PathObject annotation, ImageServer<BufferedImage> server, int pixelBorder) {
+    public static double[] extractLocalBackgroundPixels(PathObject annotation, ImageServer<BufferedImage> server, int pixelBorder,
+                                                        boolean invertImage) {
 
         // creates rectangular region bordering annotation
         ImageRegion extendedLocalRegion = createAnnotationImageFrame(annotation, pixelBorder);
@@ -105,7 +114,8 @@ public class ImageTools {
         BufferedImage im_mask = BufferedImageTools.createROIMask(request.getWidth(),
                 request.getHeight(), annotation.getROI(), request.getX(), request.getY(), 1.0);
 
-        return extractPixelsfromMask(OpenCVTools.imageToMat(img), OpenCVTools.imageToMat(im_mask), true);
+        return extractPixelsfromMask(OpenCVTools.imageToMat(img), OpenCVTools.imageToMat(im_mask), true, invertImage,
+                server.getPixelType().getUpperBound().doubleValue());
     }
 
     /**
@@ -114,12 +124,21 @@ public class ImageTools {
      * @param rectangular_mat: Rectangular frame of image
      * @param mat_mask: Mask containing irregular shape within rectangular frame
      * @param ExtractNotMaskedPixels: Set to true to extract pixels outside of mask rather than within
+     * @param invertImage: Set to true to invert image before extracting pixels
+     * @param invertMax: The max pixel value for the particular image in use (required to be able to invert)
      * @return Array of pixels that are present within the mask
      */
-    public static double[] extractPixelsfromMask(Mat rectangular_mat, Mat mat_mask, Boolean ExtractNotMaskedPixels) {
+    public static double[] extractPixelsfromMask(Mat rectangular_mat, Mat mat_mask, Boolean ExtractNotMaskedPixels, Boolean invertImage, double invertMax) {
 
         double[] mask_pixels = OpenCVTools.extractDoubles(mat_mask);
-        double[] main_pixels = OpenCVTools.extractDoubles(rectangular_mat);
+        double[] main_pixels;
+        if (invertImage) {
+            Mat subtractor = Mat.ones(rectangular_mat.size(), rectangular_mat.type()).asMat();
+            opencv_core.multiplyPut(subtractor, invertMax);
+            opencv_core.subtract(subtractor, rectangular_mat, rectangular_mat);
+        }
+        main_pixels = OpenCVTools.extractDoubles(rectangular_mat);
+
         ArrayList<Double> final_pixels = new ArrayList<Double>();
 
         double targetValue = 255.0;

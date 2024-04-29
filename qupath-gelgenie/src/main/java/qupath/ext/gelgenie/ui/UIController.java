@@ -19,7 +19,10 @@ package qupath.ext.gelgenie.ui;
 import ai.djl.MalformedModelException;
 import ai.djl.repository.zoo.ModelNotFoundException;
 import ai.djl.translate.TranslateException;
+import ij.ImagePlus;
+import ij.process.ImageProcessor;
 import javafx.application.Platform;
+import javafx.beans.InvalidationListener;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.*;
@@ -54,11 +57,13 @@ import qupath.ext.gelgenie.tools.ImageTools;
 import qupath.ext.gelgenie.models.ModelRunner;
 import qupath.ext.gelgenie.tools.SegmentationMap;
 import qupath.fx.dialogs.FileChoosers;
+import qupath.imagej.tools.IJTools;
 import qupath.lib.common.GeneralTools;
 import qupath.lib.gui.QuPathGUI;
 import qupath.fx.dialogs.Dialogs;
 import qupath.lib.gui.tools.WebViews;
 import qupath.lib.images.ImageData;
+import qupath.lib.images.PathImage;
 import qupath.lib.images.servers.ImageServer;
 import qupath.lib.images.servers.ServerTools;
 import qupath.lib.objects.PathObject;
@@ -78,6 +83,7 @@ import org.commonmark.parser.Parser;
 import org.commonmark.ext.front.matter.YamlFrontMatterExtension;
 import org.commonmark.ext.front.matter.YamlFrontMatterVisitor;
 import org.commonmark.renderer.html.HtmlRenderer;
+import qupath.lib.regions.RegionRequest;
 import qupath.lib.scripting.QP;
 
 
@@ -147,6 +153,8 @@ public class UIController {
     @FXML
     private CheckBox deletePreviousBands;
     @FXML
+    private CheckBox imageInversion;
+    @FXML
     private CheckBox enableGlobalBackground;
     @FXML
     private CheckBox enableLocalBackground;
@@ -205,7 +213,7 @@ public class UIController {
     This function is the first to run when the GUI window is created - it prepares the whole interface for use.
      */
     @FXML
-    private void initialize() {
+    private void initialize() throws IOException {
         logger.info("Initializing GelGenie GUI");
 
         this.qupath = QuPathGUI.getInstance(); // linking to QuPath Instance
@@ -221,6 +229,10 @@ public class UIController {
         configureDevicesList(); // sets up hardware devices for computational speed-up
         configureAdditionalPersistentSettings(); // sets up miscellaneous persistent settings
         configureTabGroup(); // sets up tab pane
+
+        if(qupath.getImageData() != null){
+            imageInversion.setSelected(!checkGelImageInversion());
+        }
 
         logger.info("GelGenie GUI loaded without errors");
     }
@@ -368,6 +380,17 @@ public class UIController {
                 runFullImage.setSelected(!newValue);
             }
         });
+
+        // checks the image to see if it's a dark or light background and then sets GUI checkbox accordingly.
+        // The checkbox can be manually adjusted by the user TODO: can this value be retained and associated with the specific image that's open?
+        qupath.imageDataProperty().addListener((observable, oldValue, newValue) -> {
+            try {
+                imageInversion.setSelected(!checkGelImageInversion());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
     }
 
     /*
@@ -587,11 +610,40 @@ public class UIController {
     }
 
     /**
+     * Checks the image and attempts to automatically determine if the image is inverted (dark bands on light background).  Can make mistakes in some cases if difference not so obvious.
+     * @return True if the image is inverted, false if not.
+     * @throws IOException
+     */
+    public boolean checkGelImageInversion() throws IOException {
+        ImageServer<BufferedImage> server = getCurrentImageData().getServer();
+        double max_val = getCurrentImageData().getServer().getPixelType().getUpperBound().doubleValue();
+        // Use the entire image at full resolution
+        RegionRequest request = RegionRequest.createInstance(server, 1.0);
+        PathImage pathImage = IJTools.convertToImagePlus(server, request);
+        ImagePlus imagePlus = (ImagePlus) pathImage.getImage();// Convert PathImage into ImagePlus
+        ImageProcessor ip = imagePlus.getProcessor(); // Get ImageProcessor from ImagePlus
+        ip.setAutoThreshold("Otsu"); // get estimated background threshold from image using Otsu's method
+        double thresholdValue = ip.getMaxThreshold();
+
+        if (thresholdValue > max_val/2) {
+            // not very intelligent,
+            // but if threshold reported by Otsu's method is
+            // higher than half the dynamic range, this is generally an inverted image.
+            // User can manually change this value if incorrect.
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
      * Helper class for storing user preferences for model inference.
      * @param runFullImagePref: Whether to run the model on the entire image or just the selected annotation.
      * @param deletePreviousBandsPref: Whether to delete all previous annotations after generating new ones.
+     * @param invertedImage: Whether the image is inverted (i.e. dark bands on light background) or not.
      */
-    private record ModelInferencePreferences(boolean runFullImagePref, boolean deletePreviousBandsPref) { }
+    private record ModelInferencePreferences(boolean runFullImagePref, boolean deletePreviousBandsPref,
+                                             boolean invertedImage) { }
 
     /**
      * Runs the segmentation model on the provided image or within the selected annotation,
@@ -599,7 +651,8 @@ public class UIController {
      */
     public void runBandInference() {
 
-        ModelInferencePreferences inferencePrefs = new ModelInferencePreferences(runFullImage.isSelected(), deletePreviousBands.isSelected());
+        ModelInferencePreferences inferencePrefs = new ModelInferencePreferences(runFullImage.isSelected(),
+                deletePreviousBands.isSelected(), !imageInversion.isSelected());
 
         showRunningModelNotification();
         pendingTask.set(true);
@@ -610,9 +663,9 @@ public class UIController {
             if (inferencePrefs.runFullImagePref()) { // runs model on entire image
                 try {
                     newBands = ModelRunner.runFullImageInference(modelChoiceBox.getSelectionModel().getSelectedItem(),
-                            useDJLCheckBox.isSelected(), imageData);
+                            useDJLCheckBox.isSelected(), inferencePrefs.invertedImage(), imageData);
                     addInferenceToHistoryWorkflow(imageData,
-                            modelChoiceBox.getSelectionModel().getSelectedItem().getName(), useDJLCheckBox.isSelected());
+                            modelChoiceBox.getSelectionModel().getSelectedItem().getName(), useDJLCheckBox.isSelected(), inferencePrefs.invertedImage());
                 } catch (IOException | MalformedModelException | ModelNotFoundException | TranslateException e) {
                     pendingTask.set(null);
                     runButtonBinding.invalidate(); // fire an update to the binding, so the run button becomes available
@@ -621,7 +674,7 @@ public class UIController {
             } else { // runs model on data within selected annotation only
                 try {
                     newBands = ModelRunner.runAnnotationInference(modelChoiceBox.getSelectionModel().getSelectedItem(),
-                            useDJLCheckBox.isSelected(), imageData, getSelectedObject());
+                            useDJLCheckBox.isSelected(), inferencePrefs.invertedImage(), imageData, getSelectedObject());
 
                 } catch (IOException | MalformedModelException | TranslateException | ModelNotFoundException e) {
                     pendingTask.set(null);
@@ -719,13 +772,13 @@ public class UIController {
         TableRootCommand tableCommand = new TableRootCommand(qupath, "gelgenie_table",
                 "Data Table", true, enableGlobalBackground.isSelected(),
                 enableLocalBackground.isSelected(), enableRollingBackground.isSelected(),
-                localSensitivity.getValue(), rollingRadius.getValue(), selectedBands);
+                localSensitivity.getValue(), rollingRadius.getValue(), !imageInversion.isSelected(), selectedBands);
         tableCommand.run();
 
         // adds scriptable command for later execution
         addDataComputeAndExportToHistoryWorkflow(getCurrentImageData(), enableGlobalBackground.isSelected(),
                                                 enableLocalBackground.isSelected(), enableRollingBackground.isSelected(),
-                                                localSensitivity.getValue(), rollingRadius.getValue());
+                                                localSensitivity.getValue(), rollingRadius.getValue(), !imageInversion.isSelected());
     }
 
     /**
@@ -765,12 +818,12 @@ public class UIController {
                         ));
     }
 
-    private static void addInferenceToHistoryWorkflow(ImageData<?> imageData, String modelName, boolean useDJL) {
+    private static void addInferenceToHistoryWorkflow(ImageData<?> imageData, String modelName, boolean useDJL, boolean invertImage) {
         imageData.getHistoryWorkflow()
                 .addStep(
                         new DefaultScriptableWorkflowStep(
                                 resources.getString("workflow.inference"),
-                                ModelRunner.class.getName() + ".runFullImageInferenceAndAddAnnotations(\""+modelName+"\","+useDJL+")"
+                                ModelRunner.class.getName() + ".runFullImageInferenceAndAddAnnotations(\""+modelName+"\","+useDJL+","+invertImage+")"
                         ));
     }
 
@@ -785,15 +838,16 @@ public class UIController {
 
     private static void addDataComputeAndExportToHistoryWorkflow(ImageData<?> imageData, boolean globalCorrection,
                                                                  boolean localCorrection, boolean rollingCorrection,
-                                                                 int localSensitivity, int rollingRadius) {
+                                                                 int localSensitivity, int rollingRadius, boolean invertImage) {
         imageData.getHistoryWorkflow()
                 .addStep(
                         new DefaultScriptableWorkflowStep(
                                 resources.getString("workflow.computeandexport"),
                                 TableController.class.getName() +
-                                        ".computeAndExportBandData("+globalCorrection+","+localCorrection+","+rollingCorrection+",\"Global\","+localSensitivity+","+rollingRadius+",\"OUTPUT FOLDER\",\"OUTPUT FILENAME OR NULL\")"
+                                        ".computeAndExportBandData("+globalCorrection+","+localCorrection+","+rollingCorrection+",\"Global\","+localSensitivity+","+rollingRadius+","+invertImage+",\"OUTPUT FOLDER\",\"OUTPUT FILENAME OR NULL\")"
                         ));
     }
+
     // NOTIFICATIONS HERE
     /**
      * Runs when user attempts to download a model that is already available.
@@ -845,7 +899,7 @@ public class UIController {
         Collection<String> annotNames = new ArrayList<>();
         for (PathObject annot : annotations) {
             ImageServer<BufferedImage> server = imageData.getServer();
-            double[] all_pixels = ImageTools.extractAnnotationPixels(annot, server); // extracts a list of pixels matching the specific selected annotation
+            double[] all_pixels = ImageTools.extractAnnotationPixels(annot, server, !imageInversion.isSelected()); // extracts a list of pixels matching the specific selected annotation
             dataList.add(all_pixels);
             annotNames.add(annot.getName());
             index++;
@@ -900,6 +954,7 @@ public class UIController {
                 oldValue.getSelectionModel().removePathObjectSelectionListener(selectionListener);
             if (newValue != null)
                 newValue.getSelectionModel().addPathObjectSelectionListener(selectionListener);
+
             updateSelectedObjectCounts();
         }
 

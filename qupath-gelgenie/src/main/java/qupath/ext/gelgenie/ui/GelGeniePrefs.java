@@ -60,4 +60,5 @@ public class GelGeniePrefs {
     public static Property<Integer> rollingRadius() {
         return rollingRadius;
     }
+
 }

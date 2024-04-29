@@ -26,6 +26,7 @@ import org.bytedeco.javacpp.indexer.FloatIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.bytedeco.opencv.global.opencv_core;
 import org.bytedeco.opencv.opencv_core.Mat;
+import org.bytedeco.opencv.opencv_core.MatExpr;
 import org.bytedeco.opencv.opencv_core.Scalar;
 import org.opencv.core.CvType;
 import org.slf4j.Logger;
@@ -35,6 +36,7 @@ import qupath.fx.dialogs.Dialogs;
 import qupath.imagej.processing.RoiLabeling;
 import qupath.imagej.tools.IJTools;
 import qupath.lib.images.ImageData;
+import qupath.lib.images.PathImage;
 import qupath.lib.images.servers.ImageServer;
 import qupath.lib.images.servers.PixelType;
 import qupath.lib.objects.PathObject;
@@ -80,25 +82,28 @@ public class ModelRunner {
     /**
      * Runs segmentation on a full image.
      *
-     * @param imageData: Image containing gel bands to be segmented
+     * @param model:     Model to be used for segmentation.
+     * @param useDJL:    Boolean - set to true to use DJL, set to false to use OpenCV.
+     * @param invertImage: Boolean - set to true to invert image before running model.
+     * @param imageData: Image containing gel bands to be segmented     .
      * @return Collection of individual gel bands found in image
      * @throws IOException
      */
-    public static Collection<PathObject> runFullImageInference(GelGenieModel model, boolean useDJL, ImageData<BufferedImage> imageData) throws IOException, TranslateException, ModelNotFoundException, MalformedModelException {
+    public static Collection<PathObject> runFullImageInference(GelGenieModel model, boolean useDJL, boolean invertImage, ImageData<BufferedImage> imageData) throws IOException, TranslateException, ModelNotFoundException, MalformedModelException {
 
         ImageServer<BufferedImage> server = imageData.getServer();
         // Use the entire image at full resolution
         RegionRequest request = RegionRequest.createInstance(server, downsample);
 
         if(useDJL){
-            return runDJLModel(model, imageData, request, model.getName().contains("nnUNet"));
+            return runDJLModel(model, imageData, request, model.getName().contains("nnUNet"), invertImage);
         }
         else{
             if (model.getName().contains("nnUNet")) {
                 Dialogs.showErrorMessage(resources.getString("ui.model-error.window-header"), resources.getString("error.model-issue"));
                 return null;
             }
-            return runOpenCVModel(model, imageData, request);
+            return runOpenCVModel(model, imageData, request, invertImage);
         }
     }
 
@@ -106,29 +111,31 @@ public class ModelRunner {
      * Runs segmentation on a full image, in a scripting-friendly format.
      * @param model: String-name of model to be used (must be available in model collection)
      * @param useDJL: Boolean - set to true to use DJL, set to false to use OpenCV.
+     * @param invertImage: Boolean - set to true to invert image before running model.
      * @return Collection of individual gel bands found in image.
      * @throws IOException
      * @throws TranslateException
      * @throws ModelNotFoundException
      * @throws MalformedModelException
      */
-    public static Collection<PathObject> runFullImageInference(String model, Boolean useDJL) throws IOException, TranslateException, ModelNotFoundException, MalformedModelException {
+    public static Collection<PathObject> runFullImageInference(String model, Boolean useDJL, Boolean invertImage) throws IOException, TranslateException, ModelNotFoundException, MalformedModelException {
         GelGenieModel selectedModel = ModelInterfacing.loadModel(model);
-        return runFullImageInference(selectedModel, useDJL, QP.getCurrentImageData());
+        return runFullImageInference(selectedModel, useDJL, invertImage, QP.getCurrentImageData());
     }
 
     /**
      * Runs segmentation on a full image, in a scripting-friendly format.  Additionally, automatically adds found annotations to QuPath's viewer.
      * @param model: String-name of model to be used (must be available in model collection)
      * @param useDJL: Boolean - set to true to use DJL, set to false to use OpenCV.
+     * @param invertImage: Boolean - set to true to invert image before running model.
      * @return Collection of individual gel bands found in image.
      * @throws IOException
      * @throws TranslateException
      * @throws ModelNotFoundException
      * @throws MalformedModelException
      */
-    public static Collection<PathObject> runFullImageInferenceAndAddAnnotations(String model, Boolean useDJL) throws TranslateException, ModelNotFoundException, MalformedModelException, IOException {
-        Collection<PathObject> annotations = runFullImageInference(model, useDJL);
+    public static Collection<PathObject> runFullImageInferenceAndAddAnnotations(String model, Boolean useDJL, Boolean invertImage) throws TranslateException, ModelNotFoundException, MalformedModelException, IOException {
+        Collection<PathObject> annotations = runFullImageInference(model, useDJL, invertImage);
         for (PathObject annot : annotations) {
             annot.setPathClass(PathClass.fromString("Gel Band", 8000));
         }
@@ -144,7 +151,7 @@ public class ModelRunner {
      * @return Collection of individual gel bands found in annotation area
      * @throws IOException
      */
-    public static Collection<PathObject> runAnnotationInference(GelGenieModel model, boolean useDJL,
+    public static Collection<PathObject> runAnnotationInference(GelGenieModel model, boolean useDJL, boolean invertImage,
                                                                 ImageData<BufferedImage> imageData,
                                                                 PathObject annotation) throws IOException, TranslateException, ModelNotFoundException, MalformedModelException {
 
@@ -153,14 +160,14 @@ public class ModelRunner {
         // Slice out the selected annotation at full resolution
         RegionRequest request = RegionRequest.createInstance(server.getPath(), 1.0, annotation.getROI());
         if(useDJL){
-            return runDJLModel(model, imageData, request, model.getName().contains("nnUNet"));
+            return runDJLModel(model, imageData, request, model.getName().contains("nnUNet"), invertImage);
         }
         else{
             if (model.getName().contains("nnUNet")) {
                 Dialogs.showErrorMessage(resources.getString("ui.model-error.window-header"), resources.getString("error.model-issue"));
                 return null;
             }
-            return runOpenCVModel(model, imageData, request);
+            return runOpenCVModel(model, imageData, request, invertImage);
         }
     }
 
@@ -171,7 +178,7 @@ public class ModelRunner {
      * @return Collection of annotations containing segmented gel bands
      * @throws IOException
      */
-    private static Collection<PathObject> runOpenCVModel(GelGenieModel model, ImageData<BufferedImage> imageData, RegionRequest request) throws IOException {
+    private static Collection<PathObject> runOpenCVModel(GelGenieModel model, ImageData<BufferedImage> imageData, RegionRequest request, Boolean invertImage) throws IOException {
 
         int[] fullPadding = getPadding(request.getHeight(), request.getWidth(), 32); //gets padding to be added to get the image pixels as a multiple of 32
 
@@ -198,6 +205,10 @@ public class ModelRunner {
         paddedImage.convertTo(paddedImage, CvType.CV_32F);
         opencv_core.dividePut(paddedImage, imageData.getServer().getPixelType().getUpperBound().doubleValue());
 
+        // inverts image if requested
+        if (invertImage) {
+            opencv_core.subtract(Mat.ones(paddedImage.size(), paddedImage.type()).asMat(), paddedImage, paddedImage);
+        }
         // runs model
         var output = dnnModel.predict(Map.of("input", paddedImage));
         predImage.put(output.values().iterator().next());
@@ -243,7 +254,7 @@ public class ModelRunner {
      * @throws MalformedModelException
      * @throws TranslateException
      */
-    private static Collection<PathObject> runDJLModel(GelGenieModel model, ImageData<BufferedImage> imageData, RegionRequest request, Boolean nnunetConfig) throws IOException, ModelNotFoundException, MalformedModelException, TranslateException {
+    private static Collection<PathObject> runDJLModel(GelGenieModel model, ImageData<BufferedImage> imageData, RegionRequest request, Boolean nnunetConfig, Boolean invertImage) throws IOException, ModelNotFoundException, MalformedModelException, TranslateException {
 
         Device device = PytorchManager.getDevice();
         int imageWidth = request.getWidth();
@@ -255,20 +266,39 @@ public class ModelRunner {
         Translator<Image, CategoryMask> translator;
 
         if (nnunetConfig){
-            translator = NnUNetSegmentationTranslator.builder()
-                    .addTransform(createToTensorTransform(device))
-                    .addTransform(new ChannelSquisher())
-                    .build(imageWidth, imageHeight);
+            if (invertImage){
+                translator = NnUNetSegmentationTranslator.builder()
+                        .addTransform(createToTensorTransform(device))
+                        .addTransform(new ChannelSquisher())
+                        .addTransform(new ImageInvert())
+                        .build(imageWidth, imageHeight);
+            }
+            else {
+                translator = NnUNetSegmentationTranslator.builder()
+                        .addTransform(createToTensorTransform(device))
+                        .addTransform(new ChannelSquisher())
+                        .build(imageWidth, imageHeight);
+            }
         }
         else {
 
             int[] fullPadding = getPadding(imageHeight, imageWidth, 32);
 
-            translator = GelSegmentationTranslator.builder()
-                    .addTransform(createToTensorTransform(device))
-                    .addTransform(new DivisibleSizePad(fullPadding[0], fullPadding[1], fullPadding[2], fullPadding[3]))
-                    .addTransform(new ChannelSquisher())
-                    .build(request.getWidth(), request.getHeight(), fullPadding[2], fullPadding[3], fullPadding[0], fullPadding[1]);
+            if (invertImage){  // inverts image (only if requested)
+                translator = GelSegmentationTranslator.builder()
+                        .addTransform(createToTensorTransform(device))
+                        .addTransform(new DivisibleSizePad(fullPadding[0], fullPadding[1], fullPadding[2], fullPadding[3]))
+                        .addTransform(new ChannelSquisher())
+                        .addTransform(new ImageInvert())
+                        .build(request.getWidth(), request.getHeight(), fullPadding[2], fullPadding[3], fullPadding[0], fullPadding[1]);
+            }
+            else {
+                translator = GelSegmentationTranslator.builder()
+                        .addTransform(createToTensorTransform(device))
+                        .addTransform(new DivisibleSizePad(fullPadding[0], fullPadding[1], fullPadding[2], fullPadding[3]))
+                        .addTransform(new ChannelSquisher())
+                        .build(request.getWidth(), request.getHeight(), fullPadding[2], fullPadding[3], fullPadding[0], fullPadding[1]);
+            }
         }
 
         ImageFactory factory = ImageFactory.getInstance();
