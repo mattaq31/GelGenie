@@ -1,12 +1,12 @@
 /**
  * Copyright 2024 University of Edinburgh
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,6 +21,7 @@ import ij.plugin.filter.BackgroundSubtracter;
 
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
+import javafx.beans.property.BooleanProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -111,12 +112,18 @@ public class TableController {
     private TableColumn<BandEntry, Double> normGlobalVolCol;
     @FXML
     private TableColumn<BandEntry, Double> normRollingVolCol;
+
+    // all adjustable table columns bundled for convenience
+    private Map<String, TableColumn> columnMap = new HashMap<>();
+
     @FXML
     private SplitPane dataTableSplitPane;
     @FXML
     private Button histoButton;
     @FXML
     private Button exportButton;
+    @FXML
+    private Button dataPrefButton;
     @FXML
     private Button exportHistoButton;
     @FXML
@@ -151,8 +158,11 @@ public class TableController {
     private final static ResourceBundle resources = ResourceBundle.getBundle("qupath.ext.gelgenie.ui.strings");
 
 
+    private GUIRootCommand dataPrefsCommand;
+
     public TableController() {
         this.qupath = QuPathGUI.getInstance();
+        this.dataPrefsCommand = new GUIRootCommand(this.qupath, "table_preferences", "Data Preferences", false);
     }
 
     @FXML
@@ -175,6 +185,24 @@ public class TableController {
         normGlobalVolCol.setCellValueFactory(new PropertyValueFactory<>("normGlobal"));
         normRollingVolCol.setCellValueFactory(new PropertyValueFactory<>("normRolling"));
         thumbnailCol.setCellValueFactory(new PropertyValueFactory<>("parentAnnotation"));
+
+        // bundles all table columns into hash map here
+        columnMap.put("gelgenie.data.band", bandCol);
+        columnMap.put("gelgenie.data.lane", laneCol);
+        columnMap.put("gelgenie.data.name", nameCol);
+        columnMap.put("gelgenie.data.pixelcount", pixelCol);
+        columnMap.put("gelgenie.data.width", widthCol);
+        columnMap.put("gelgenie.data.height", heightCol);
+        columnMap.put("gelgenie.data.averagepixel", meanCol);
+        columnMap.put("gelgenie.data.sdpixel", stdCol);
+        columnMap.put("gelgenie.data.rawvol", rawCol);
+        columnMap.put("gelgenie.data.localvol", localVolCol);
+        columnMap.put("gelgenie.data.globalvol", globalVolCol);
+        columnMap.put("gelgenie.data.rbvol", rollingVolCol);
+        columnMap.put("gelgenie.data.normrawvol", normVolCol);
+        columnMap.put("gelgenie.data.normlocalvol", normLocalVolCol);
+        columnMap.put("gelgenie.data.normglobalvol", normGlobalVolCol);
+        columnMap.put("gelgenie.data.normrbvol", normRollingVolCol);
 
         // formatting for double columns
         widthCol.setCellFactory(TableController::getTableFormattedDouble);
@@ -227,6 +255,7 @@ public class TableController {
         selectionModel.setSelectionMode(SelectionMode.MULTIPLE);
         ButtonBar.setButtonData(histoButton, ButtonBar.ButtonData.RIGHT);
         ButtonBar.setButtonData(exportButton, ButtonBar.ButtonData.RIGHT);
+        ButtonBar.setButtonData(dataPrefButton, ButtonBar.ButtonData.RIGHT);
         ButtonBar.setButtonData(exportHistoButton, ButtonBar.ButtonData.RIGHT);
         ButtonBar.setButtonData(laneNormButton, ButtonBar.ButtonData.LEFT);
         ButtonBar.setButtonData(globalNormButton, ButtonBar.ButtonData.LEFT);
@@ -369,10 +398,11 @@ public class TableController {
             }
         }
     }
+
     /**
      * Computes the average pixel value of global background patches.
      *
-     * @param server: Server corresponding to current image
+     * @param server:      Server corresponding to current image
      * @param invertImage: Image needs to be inverted before computing any results.
      * @return Computed global mean.
      * @throws Exception
@@ -395,9 +425,9 @@ public class TableController {
     /**
      * Passes the rolling ball filter over the entire input image and stores it for downstream processing.
      *
-     * @param server: Main image server
+     * @param server:        Main image server
      * @param rollingRadius: Radius of rolling ball filter
-     * @param invertImage: Set to true to indicate image is inverted (will pass lightBackground True to ImageJ)
+     * @param invertImage:   Set to true to indicate image is inverted (will pass lightBackground True to ImageJ)
      * @throws IOException
      * @return: Rolling ball filtered image
      */
@@ -486,13 +516,11 @@ public class TableController {
                 all_bands.add(curr_band);
             }
         }
-        if (normType.equals("Global")){
+        if (normType.equals("Global")) {
             fullNormalise(all_bands); // normalise globally (for all bands in image)
-        }
-        else if (normType.equals("Lane")){
+        } else if (normType.equals("Lane")) {
             laneNormalise(all_bands); // normalise by lane
-        }
-        else{
+        } else {
             // some form of spelling mistake by user
             Dialogs.showWarningNotification(resources.getString("title"), resources.getString("error.wrong-norm"));
             return FXCollections.observableArrayList();
@@ -501,13 +529,14 @@ public class TableController {
         return all_bands;
     }
 
-    public void laneNormalise(){
+    public void laneNormalise() {
         laneNormalise(bandData);
         mainTable.refresh();
         globalNormButton.setDisable(false);
         laneNormButton.setDisable(true);
         updateHistogramData();
     }
+
     public void fullNormalise() {
         fullNormalise(bandData);
         mainTable.refresh();
@@ -515,17 +544,19 @@ public class TableController {
         laneNormButton.setDisable(false);
         updateHistogramData();
     }
+
     /**
      * Normalises all columns to the minimum and maximum values in each lane (lane normalisation).
+     *
      * @param bands: List of bands to be normalised.
      */
-    private static void laneNormalise(ObservableList<BandEntry> bands){
+    private static void laneNormalise(ObservableList<BandEntry> bands) {
         double inf = Double.POSITIVE_INFINITY;
         Map<Integer, Double[][]> laneDictionary = new HashMap<>();
         List<Double> rawList = new ArrayList<>();
 
         for (BandEntry entry : bands) {
-            if (!laneDictionary.containsKey(entry.getLaneID())){
+            if (!laneDictionary.containsKey(entry.getLaneID())) {
                 laneDictionary.put(entry.getLaneID(), new Double[][]{{inf, -inf}, {inf, -inf}, {inf, -inf}, {inf, -inf}});
             }
             rawList.add(entry.getRawVolume());
@@ -533,7 +564,7 @@ public class TableController {
             rawList.add(entry.getLocalVolume());
             rawList.add(entry.getRollingVolume());
             int position = 0;
-            for (double value: rawList){
+            for (double value : rawList) {
                 laneDictionary.get(entry.getLaneID())[position][0] = Math.min(laneDictionary.get(entry.getLaneID())[position][0], value);
                 laneDictionary.get(entry.getLaneID())[position][1] = Math.max(laneDictionary.get(entry.getLaneID())[position][1], value);
                 position++;
@@ -542,13 +573,12 @@ public class TableController {
         }
         for (BandEntry entry : bands) {
             // this case happens when only one band is available in a lane - just set everything to 1.0
-            if(Objects.equals(laneDictionary.get(entry.getLaneID())[0][0], laneDictionary.get(entry.getLaneID())[0][1])){
+            if (Objects.equals(laneDictionary.get(entry.getLaneID())[0][0], laneDictionary.get(entry.getLaneID())[0][1])) {
                 entry.setNormVolume(1.0);
                 entry.setNormGlobal(1.0);
                 entry.setNormLocal(1.0);
                 entry.setNormRolling(1.0);
-            }
-            else {
+            } else {
                 entry.setNormVolume((entry.getRawVolume() - laneDictionary.get(entry.getLaneID())[0][0]) / (laneDictionary.get(entry.getLaneID())[0][1] - laneDictionary.get(entry.getLaneID())[0][0]));
                 entry.setNormGlobal((entry.getGlobalVolume() - laneDictionary.get(entry.getLaneID())[1][0]) / (laneDictionary.get(entry.getLaneID())[1][1] - laneDictionary.get(entry.getLaneID())[1][0]));
                 entry.setNormLocal((entry.getLocalVolume() - laneDictionary.get(entry.getLaneID())[2][0]) / (laneDictionary.get(entry.getLaneID())[2][1] - laneDictionary.get(entry.getLaneID())[2][0]));
@@ -559,9 +589,10 @@ public class TableController {
 
     /**
      * Normalises all columns to the minimum and maximum values in the table (global normalisation).
+     *
      * @param bands: List of bands to be normalised.
      */
-    private static void fullNormalise(ObservableList<BandEntry> bands){
+    private static void fullNormalise(ObservableList<BandEntry> bands) {
         double inf = Double.POSITIVE_INFINITY;
         double[] minMax = {inf, -inf};
         double[] globalMinMax = {inf, -inf};
@@ -592,6 +623,8 @@ public class TableController {
      */
     private void tableSetup() {
         mainTable.setItems(bandData);
+
+        // turns on/off columns according to whether these types of background correction were called or not
         if (!localCorrection) {
             localVolCol.setVisible(false);
             normLocalVolCol.setVisible(false);
@@ -604,12 +637,28 @@ public class TableController {
             rollingVolCol.setVisible(false);
             normRollingVolCol.setVisible(false);
         }
+        // turns on/off columns according to user preference (set from data prefs window)
+        for (BooleanProperty pref : GelGeniePrefs.dataBoolPreferences()) {
+            // prevents property binding if these values are completely unavailable
+            if (!localCorrection && (pref.getName().equals("gelgenie.data.localvol") || pref.getName().equals("gelgenie.data.normlocalvol"))) {
+                continue;
+            }
+            if (!globalCorrection && (pref.getName().equals("gelgenie.data.globalvol") || pref.getName().equals("gelgenie.data.normglobalvol"))) {
+                continue;
+            }
+            if (!rollingBallCorrection && (pref.getName().equals("gelgenie.data.rbvol") || pref.getName().equals("gelgenie.data.normrbvol"))) {
+                continue;
+            }
+            columnMap.get(pref.getName()).visibleProperty().bind(pref);
+        }
+
     }
 
     /**
      * Exports salient table columns to CSV.
+     *
      * @param bandData: List of bandEntry datapoints
-     * @param folder: Folder to save data to with default or specified filename
+     * @param folder:   Folder to save data to with default or specified filename
      * @throws IOException
      */
     public static void exportDataToFolder(ObservableList<BandEntry> bandData, String folder, String filename,
@@ -617,10 +666,9 @@ public class TableController {
                                           boolean rollingBallCorrection) throws IOException {
         String defaultName = GeneralTools.getNameWithoutExtension(new File(ServerTools.getDisplayableImageName(getCurrentImageData().getServer())));
         File fileOutput;
-        if (filename == null){
+        if (filename == null) {
             fileOutput = new File(folder + "/" + defaultName + "_band_data.csv");
-        }
-        else {
+        } else {
             fileOutput = new File(folder + "/" + filename);
         }
         exportData(bandData, fileOutput, globalCorrection, localCorrection, rollingBallCorrection);
@@ -628,6 +676,7 @@ public class TableController {
 
     /**
      * Exports salient table columns to CSV.
+     *
      * @param bandData: List of bandEntry datapoints
      * @param filename: Filename to save data to
      * @throws IOException
@@ -635,37 +684,111 @@ public class TableController {
     public static void exportData(ObservableList<BandEntry> bandData, File filename, boolean globalCorrection, boolean localCorrection, boolean rollingBallCorrection) throws IOException {
 
         BufferedWriter br = new BufferedWriter(new FileWriter(filename));
-        String headerString = "Name,Lane ID,Band ID,Pixel Count,Width,Height,Average Intensity,Intensity SD,Raw Volume,Norm. Raw Volume";
-        if (localCorrection) {
-            headerString = headerString + ",Local Corrected Volume,Norm. Local Volume";
+
+        // TODO: should this be moved somewhere else?
+        Map<String, String> columnNameMap = new HashMap<>();
+        columnNameMap.put("gelgenie.data.band", "Name");
+        columnNameMap.put("gelgenie.data.lane", "Lane ID");
+        columnNameMap.put("gelgenie.data.name", "Band ID");
+        columnNameMap.put("gelgenie.data.pixelcount", "Pixel Count");
+        columnNameMap.put("gelgenie.data.width", "Width");
+        columnNameMap.put("gelgenie.data.height", "Height");
+        columnNameMap.put("gelgenie.data.averagepixel", "Average Intensity");
+        columnNameMap.put("gelgenie.data.sdpixel", "Intensity SD");
+        columnNameMap.put("gelgenie.data.rawvol", "Raw Volume");
+        columnNameMap.put("gelgenie.data.localvol", "Local Corrected Volume");
+        columnNameMap.put("gelgenie.data.globalvol", "Global Corrected Volume");
+        columnNameMap.put("gelgenie.data.rbvol", "Rolling Ball Corrected Volume");
+        columnNameMap.put("gelgenie.data.normrawvol", "Norm. Raw Volume");
+        columnNameMap.put("gelgenie.data.normlocalvol", "Norm. Local Volume");
+        columnNameMap.put("gelgenie.data.normglobalvol", "Norm. Global Volume");
+        columnNameMap.put("gelgenie.data.normrbvol", "Norm. Rolling Volume");
+
+        String headerString = "";
+        for (BooleanProperty pref : GelGeniePrefs.dataBoolPreferences()) {
+            // TODO: can simplify this logic
+            if (!localCorrection && (pref.getName().equals("gelgenie.data.localvol") || pref.getName().equals("gelgenie.data.normlocalvol"))) {
+                continue;
+            }
+            if (!globalCorrection && (pref.getName().equals("gelgenie.data.globalvol") || pref.getName().equals("gelgenie.data.normglobalvol"))) {
+                continue;
+            }
+            if (!rollingBallCorrection && (pref.getName().equals("gelgenie.data.rbvol") || pref.getName().equals("gelgenie.data.normrbvol"))) {
+                continue;
+            }
+            if (pref.get()) {
+                headerString = headerString + columnNameMap.get(pref.getName()) + ",";
+            }
         }
-        if (globalCorrection) {
-            headerString = headerString + ",Global Corrected Volume,Norm. Global Volume";
-        }
-        if (rollingBallCorrection) {
-            headerString = headerString + ",Rolling Ball Corrected Volume,Norm. Rolling Volume";
-        }
-        headerString = headerString + "\n";
+        headerString = headerString.substring(0, headerString.length() - 1) + "\n";
         br.write(headerString);
 
         for (BandEntry band : bandData) {
-            String sb = band.getBandName() + "," + band.getLaneID() + "," + band.getBandID() + "," + band.getPixelCount() + "," + band.getWidth()
-                    + "," + band.getHeight() + "," + band.getAverageIntensity() + "," + band.getStdIntensity()
-                    + "," + band.getRawVolume() + "," + band.getNormVolume();
-            if (localCorrection) {
-                sb = sb + "," + band.getLocalVolume() + "," + band.getNormLocal();
+            String sb = "";
+            for (BooleanProperty pref : GelGeniePrefs.dataBoolPreferences()) {
+                // TODO: can simplify this logic
+                if (!localCorrection && (pref.getName().equals("gelgenie.data.localvol") || pref.getName().equals("gelgenie.data.normlocalvol"))) {
+                    continue;
+                }
+                if (!globalCorrection && (pref.getName().equals("gelgenie.data.globalvol") || pref.getName().equals("gelgenie.data.normglobalvol"))) {
+                    continue;
+                }
+                if (!rollingBallCorrection && (pref.getName().equals("gelgenie.data.rbvol") || pref.getName().equals("gelgenie.data.normrbvol"))) {
+                    continue;
+                }
+                if (pref.get()) {
+                    // TODO: remove all this hardcoding!
+                    if (pref.getName() == "gelgenie.data.band") {
+                        sb = sb + band.getBandName() + ",";
+                    } else if (pref.getName() == "gelgenie.data.lane") {
+                        sb = sb + band.getLaneID() + ",";
+                    } else if (pref.getName() == "gelgenie.data.name") {
+                        sb = sb + band.getBandID() + ",";
+                    } else if (pref.getName() == "gelgenie.data.pixelcount") {
+                        sb = sb + band.getPixelCount() + ",";
+                    } else if (pref.getName() == "gelgenie.data.width") {
+                        sb = sb + band.getWidth() + ",";
+                    } else if (pref.getName() == "gelgenie.data.height") {
+                        sb = sb + band.getHeight() + ",";
+                    } else if (pref.getName() == "gelgenie.data.averagepixel") {
+                        sb = sb + band.getAverageIntensity() + ",";
+                    } else if (pref.getName() == "gelgenie.data.sdpixel") {
+                        sb = sb + band.getStdIntensity() + ",";
+                    } else if (pref.getName() == "gelgenie.data.rawvol") {
+                        sb = sb + band.getRawVolume() + ",";
+                    } else if (pref.getName() == "gelgenie.data.localvol") {
+                        sb = sb + band.getLocalVolume() + ",";
+                    } else if (pref.getName() == "gelgenie.data.globalvol") {
+                        sb = sb + band.getGlobalVolume() + ",";
+                    } else if (pref.getName() == "gelgenie.data.rbvol") {
+                        sb = sb + band.getRollingVolume() + ",";
+                    } else if (pref.getName() == "gelgenie.data.normrawvol") {
+                        sb = sb + band.getNormVolume() + ",";
+                    } else if (pref.getName() == "gelgenie.data.normlocalvol") {
+                        sb = sb + band.getNormLocal() + ",";
+                    } else if (pref.getName() == "gelgenie.data.normglobalvol") {
+                        sb = sb + band.getNormGlobal() + ",";
+                    } else if (pref.getName() == "gelgenie.data.normrbvol") {
+                        sb = sb + band.getNormRolling() + ",";
+                    }
+                }
             }
-            if (globalCorrection) {
-                sb = sb + "," + band.getGlobalVolume() + "," + band.getNormGlobal();
-            }
-            if (rollingBallCorrection) {
-                sb = sb + "," + band.getRollingVolume() + "," + band.getNormRolling();
-            }
-            sb = sb + "\n";
+            sb = sb.substring(0, sb.length() - 1) + "\n";
             br.write(sb);
         }
+
         br.close();
     }
+
+    /**
+     * Creates window that allows user to make adjustments to what data is shown in the table and exported.
+     *
+     * @throws IOException
+     */
+    public void createDataPrefTable() throws IOException {
+        this.dataPrefsCommand.run();
+    }
+
     /**
      * Exports salient table columns to CSV (this is the function called by the UI button that uses the global saved value of the bandData).
      *
@@ -706,9 +829,9 @@ public class TableController {
         boolean localIsValid = this.localCorrection && chartLocalView.isSelected();
         boolean rollingIsValid = this.rollingBallCorrection && chartRollingView.isSelected();
 
-        if (chartNormFlipper.isSelected()){
+        if (chartNormFlipper.isSelected()) {
             displayChart.getYAxis().setLabel("Normalised Intensity");
-        }else{
+        } else {
             displayChart.getYAxis().setLabel("Intensity (A.U.)");
         }
 
@@ -727,7 +850,7 @@ public class TableController {
         for (BandEntry band : all_bands) {
             labels[counter] = band.getBandName();
 
-            if (chartNormFlipper.isSelected()){
+            if (chartNormFlipper.isSelected()) {
                 if (rawIsValid) {
                     rawPixels[counter] = band.getNormVolume();
                 }
@@ -740,8 +863,7 @@ public class TableController {
                 if (rollingIsValid) {
                     rollingCorrVol[counter] = band.getNormRolling();
                 }
-            }
-            else {
+            } else {
                 if (rawIsValid) {
                     rawPixels[counter] = band.getRawVolume();
                 }
@@ -817,15 +939,16 @@ public class TableController {
 
     /**
      * Scriptable function to compute and export band data without producing an explicit table window.
+     *
      * @param globalCorrection:      Enable global background calculation
      * @param localCorrection:       Enable local background calculation
      * @param rollingBallCorrection: Enable rolling ball background calculation
-     * @param normType:             Type of normalisation to apply (Global or Lane)
+     * @param normType:              Type of normalisation to apply (Global or Lane)
      * @param localSensitivity:      Pixel sensitivity for local background calculation
      * @param rollingRadius:         The radius used for the rolling ball background subtraction
      * @param invertImage:           Image needs to be inverted before calculations are made
-     * @param folder: Folder to save data to
-     * @param filename: Specific filename to use or null to use default filename
+     * @param folder:                Folder to save data to
+     * @param filename:              Specific filename to use or null to use default filename
      * @throws Exception
      */
     public static void computeAndExportBandData(boolean globalCorrection, boolean localCorrection, boolean rollingBallCorrection,
@@ -837,8 +960,7 @@ public class TableController {
         double globalMean;
         if (globalCorrection) {
             globalMean = calculateGlobalBackgroundAverage(server, invertImage);
-        }
-        else{
+        } else {
             globalMean = 0.0;
         }
         Mat rollingBallImage = findRollingBallImage(server, rollingRadius, invertImage);

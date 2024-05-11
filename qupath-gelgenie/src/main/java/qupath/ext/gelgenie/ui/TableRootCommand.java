@@ -103,7 +103,8 @@ public class TableRootCommand implements Runnable {
         Scene scene = new Scene(pane);
         stage.initOwner(qupath.getStage());
         stage.setTitle(resources.getString("title") + " " + panel_name);
-
+        // TODO: when github repo is live, replace the local logo with the online github one (or cache?)
+        // stage.getIcons().add(new Image("file:/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/graphics/logo/v1/gelgenie_small.png"));
         stage.setScene(scene);
         stage.setResizable(resizable);
         stage.show();

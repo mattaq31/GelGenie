@@ -42,6 +42,7 @@ import qupath.lib.images.servers.PixelType;
 import qupath.lib.objects.PathObject;
 import qupath.lib.objects.PathObjects;
 import qupath.lib.objects.classes.PathClass;
+import qupath.lib.projects.Project;
 import qupath.lib.regions.Padding;
 import qupath.lib.regions.RegionRequest;
 import qupath.lib.roi.interfaces.ROI;
@@ -140,6 +141,7 @@ public class ModelRunner {
             annot.setPathClass(PathClass.fromString("Gel Band", 8000));
         }
         addObjects(annotations);
+
         return annotations;
     }
 

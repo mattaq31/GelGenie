@@ -22,6 +22,10 @@ import javafx.beans.property.Property;
 import javafx.beans.property.StringProperty;
 import qupath.lib.gui.prefs.PathPrefs;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+
 /**
  * Collection of persistent preferences (retained after app is closed and re-opened)
  */
@@ -35,12 +39,30 @@ public class GelGeniePrefs {
     private static final Property<Integer> localCorrectionPixels = PathPrefs.createPersistentPreference("gelgenie.localcorrectionpixels", 5).asObject();
     private static final Property<Integer> rollingRadius = PathPrefs.createPersistentPreference("gelgenie.rollingradius", 50).asObject();
 
+    private static final Collection<BooleanProperty> dataBoolPreferences =
+            new ArrayList<>(
+                    Arrays.asList(
+                            PathPrefs.createPersistentPreference("gelgenie.data.name", true),
+                            PathPrefs.createPersistentPreference("gelgenie.data.lane", true),
+                            PathPrefs.createPersistentPreference("gelgenie.data.band", true),
+                            PathPrefs.createPersistentPreference("gelgenie.data.pixelcount", false),
+                            PathPrefs.createPersistentPreference("gelgenie.data.width", false),
+                            PathPrefs.createPersistentPreference("gelgenie.data.height", false),
+                            PathPrefs.createPersistentPreference("gelgenie.data.averagepixel", false),
+                            PathPrefs.createPersistentPreference("gelgenie.data.sdpixel", false),
+                            PathPrefs.createPersistentPreference("gelgenie.data.rawvol", true),
+                            PathPrefs.createPersistentPreference("gelgenie.data.normrawvol", true),
+                            PathPrefs.createPersistentPreference("gelgenie.data.localvol", true),
+                            PathPrefs.createPersistentPreference("gelgenie.data.normlocalvol", true),
+                            PathPrefs.createPersistentPreference("gelgenie.data.globalvol", true),
+                            PathPrefs.createPersistentPreference("gelgenie.data.normglobalvol", true),
+                            PathPrefs.createPersistentPreference("gelgenie.data.rbvol", true),
+                            PathPrefs.createPersistentPreference("gelgenie.data.normrbvol", true)));
+
     public static StringProperty deviceProperty() {
         return deviceProperty;
     }
-    public static BooleanProperty useDJLProperty() {
-        return useDJLProperty;
-    }
+    public static BooleanProperty useDJLProperty() { return useDJLProperty; }
     public static BooleanProperty deletePreviousBandsProperty() {
         return deletePreviousBandsProperty;
     }
@@ -56,9 +78,16 @@ public class GelGeniePrefs {
     public static Property<Integer> localCorrectionPixels() {
         return localCorrectionPixels;
     }
+    public static Property<Integer> rollingRadius() { return rollingRadius; }
 
-    public static Property<Integer> rollingRadius() {
-        return rollingRadius;
+    public static Collection<BooleanProperty> dataBoolPreferences() {return dataBoolPreferences; }
+
+    public static BooleanProperty specificDataBoolPref(String propertyName){
+        for (BooleanProperty pref : dataBoolPreferences){
+            if (pref.getName().equals(propertyName)){
+                return pref;
+            }
+        } // TODO: do I need to throw an exception here instead of return null?
+        return null;
     }
-
 }

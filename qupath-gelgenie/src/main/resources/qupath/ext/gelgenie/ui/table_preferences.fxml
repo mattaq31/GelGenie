@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.control.TitledPane?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane prefHeight="500.0" prefWidth="300.0" xmlns="http://javafx.com/javafx/20.0.1"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="qupath.ext.gelgenie.ui.TablePreferences">
+    <center>
+        <ScrollPane prefHeight="500.0" prefWidth="300.0" BorderPane.alignment="CENTER">
+            <content>
+                <VBox prefHeight="500.0" prefWidth="300.0">
+                    <TitledPane prefHeight="500.0" animated="false" collapsible="false" text="%ui.dataprefs.pane">
+                        <VBox alignment="TOP_CENTER" styleClass="standard-spacing ">
+                            <HBox alignment="BASELINE_RIGHT" styleClass="standard-spacing">
+                                <children>
+                                    <CheckBox mnemonicParsing="false" text="%ui.dataprefs.band" fx:id="bandCheckBox"
+                                              nodeOrientation="RIGHT_TO_LEFT"/>
+                                </children>
+                                <padding>
+                                    <Insets right="80.0"/>
+                                </padding>
+                            </HBox>
+
+                            <HBox alignment="BASELINE_RIGHT" styleClass="standard-spacing">
+                                <children>
+                                    <CheckBox mnemonicParsing="false" text="%ui.dataprefs.lane" fx:id="laneCheckBox"
+                                              nodeOrientation="RIGHT_TO_LEFT"/>
+                                </children>
+                                <padding>
+                                    <Insets right="80.0"/>
+                                </padding>
+                            </HBox>
+
+                            <HBox alignment="BASELINE_RIGHT" styleClass="standard-spacing">
+                                <children>
+                                    <CheckBox mnemonicParsing="false" text="%ui.dataprefs.name" fx:id="nameCheckBox"
+                                              nodeOrientation="RIGHT_TO_LEFT"/>
+                                </children>
+                                <padding>
+                                    <Insets right="80.0"/>
+                                </padding>
+                            </HBox>
+                            <HBox alignment="BASELINE_RIGHT" styleClass="standard-spacing">
+                                <children>
+                                    <CheckBox mnemonicParsing="false" text="%ui.dataprefs.numpixels"
+                                              fx:id="pixelsCheckBox" nodeOrientation="RIGHT_TO_LEFT"/>
+                                </children>
+                                <padding>
+                                    <Insets right="80.0"/>
+                                </padding>
+                            </HBox>
+                            <HBox alignment="BASELINE_RIGHT" styleClass="standard-spacing">
+                                <children>
+                                    <CheckBox mnemonicParsing="false" text="%ui.dataprefs.width" fx:id="widthCheckBox"
+                                              nodeOrientation="RIGHT_TO_LEFT"/>
+                                </children>
+                                <padding>
+                                    <Insets right="80.0"/>
+                                </padding>
+                            </HBox>
+                            <HBox alignment="BASELINE_RIGHT" styleClass="standard-spacing">
+                                <children>
+                                    <CheckBox mnemonicParsing="false" text="%ui.dataprefs.height" fx:id="heightCheckBox"
+                                              nodeOrientation="RIGHT_TO_LEFT"/>
+                                </children>
+                                <padding>
+                                    <Insets right="80.0"/>
+                                </padding>
+                            </HBox>
+                            <HBox alignment="BASELINE_RIGHT" styleClass="standard-spacing">
+                                <children>
+                                    <CheckBox mnemonicParsing="false" text="%ui.dataprefs.mean" fx:id="averageCheckBox"
+                                              nodeOrientation="RIGHT_TO_LEFT"/>
+                                </children>
+                                <padding>
+                                    <Insets right="80.0"/>
+                                </padding>
+                            </HBox>
+                            <HBox alignment="BASELINE_RIGHT" styleClass="standard-spacing">
+                                <children>
+                                    <CheckBox mnemonicParsing="false" text="%ui.dataprefs.intensitysd"
+                                              fx:id="sdCheckBox" nodeOrientation="RIGHT_TO_LEFT"/>
+                                </children>
+                                <padding>
+                                    <Insets right="80.0"/>
+                                </padding>
+                            </HBox>
+                            <HBox alignment="BASELINE_RIGHT" styleClass="standard-spacing">
+                                <children>
+                                    <CheckBox mnemonicParsing="false" text="%ui.dataprefs.rawvol" fx:id="rawCheckBox"
+                                              nodeOrientation="RIGHT_TO_LEFT"/>
+                                </children>
+                                <padding>
+                                    <Insets right="80.0"/>
+                                </padding>
+                            </HBox>
+                            <HBox alignment="BASELINE_RIGHT" styleClass="standard-spacing">
+                                <children>
+
+                                    <CheckBox mnemonicParsing="false" text="%ui.dataprefs.normrawval"
+                                              fx:id="normRawCheckBox" nodeOrientation="RIGHT_TO_LEFT"/>
+                                </children>
+                                <padding>
+                                    <Insets right="80.0"/>
+                                </padding>
+                            </HBox>
+                            <HBox alignment="BASELINE_RIGHT" styleClass="standard-spacing">
+                                <children>
+                                    <CheckBox mnemonicParsing="false" text="%ui.dataprefs.localvol"
+                                              fx:id="localCheckBox" nodeOrientation="RIGHT_TO_LEFT"/>
+                                </children>
+                                <padding>
+                                    <Insets right="80.0"/>
+                                </padding>
+                            </HBox>
+                            <HBox alignment="BASELINE_RIGHT" styleClass="standard-spacing">
+                                <children>
+                                    <CheckBox mnemonicParsing="false" text="%ui.dataprefs.normlocalval"
+                                              fx:id="normLocalCheckBox" nodeOrientation="RIGHT_TO_LEFT"/>
+                                </children>
+                                <padding>
+                                    <Insets right="80.0"/>
+                                </padding>
+                            </HBox>
+                            <HBox alignment="BASELINE_RIGHT" styleClass="standard-spacing">
+                                <children>
+                                    <CheckBox mnemonicParsing="false" text="%ui.dataprefs.globalvol"
+                                              fx:id="globalCheckBox" nodeOrientation="RIGHT_TO_LEFT"/>
+                                </children>
+                                <padding>
+                                    <Insets right="80.0"/>
+                                </padding>
+                            </HBox>
+                            <HBox alignment="BASELINE_RIGHT" styleClass="standard-spacing">
+                                <children>
+                                    <CheckBox mnemonicParsing="false" text="%ui.dataprefs.normglobalval"
+                                              fx:id="normGlobalCheckBox" nodeOrientation="RIGHT_TO_LEFT"/>
+                                </children>
+                                <padding>
+                                    <Insets right="80.0"/>
+                                </padding>
+                            </HBox>
+                            <HBox alignment="BASELINE_RIGHT" styleClass="standard-spacing">
+                                <children>
+                                    <CheckBox mnemonicParsing="false" text="%ui.dataprefs.rollingvol"
+                                              fx:id="rollingCheckBox" nodeOrientation="RIGHT_TO_LEFT"/>
+                                </children>
+                                <padding>
+                                    <Insets right="80.0"/>
+                                </padding>
+                            </HBox>
+                            <HBox alignment="BASELINE_RIGHT" styleClass="standard-spacing">
+                                <children>
+                                    <CheckBox mnemonicParsing="false" text="%ui.dataprefs.normrollingval"
+                                              fx:id="normRollingCheckBox" nodeOrientation="RIGHT_TO_LEFT"/>
+                                </children>
+                                <padding>
+                                    <Insets right="80.0"/>
+                                </padding>
+                            </HBox>
+                        </VBox>
+                    </TitledPane>
+                </VBox>
+            </content>
+        </ScrollPane>
+    </center>
+</BorderPane>
