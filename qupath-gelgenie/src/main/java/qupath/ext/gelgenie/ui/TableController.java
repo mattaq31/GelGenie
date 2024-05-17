@@ -687,9 +687,9 @@ public class TableController {
 
         // TODO: should this be moved somewhere else?
         Map<String, String> columnNameMap = new HashMap<>();
-        columnNameMap.put("gelgenie.data.band", "Name");
+        columnNameMap.put("gelgenie.data.band", "Band ID");
         columnNameMap.put("gelgenie.data.lane", "Lane ID");
-        columnNameMap.put("gelgenie.data.name", "Band ID");
+        columnNameMap.put("gelgenie.data.name", "Name");
         columnNameMap.put("gelgenie.data.pixelcount", "Pixel Count");
         columnNameMap.put("gelgenie.data.width", "Width");
         columnNameMap.put("gelgenie.data.height", "Height");
@@ -739,11 +739,11 @@ public class TableController {
                 if (pref.get()) {
                     // TODO: remove all this hardcoding!
                     if (pref.getName() == "gelgenie.data.band") {
-                        sb = sb + band.getBandName() + ",";
+                        sb = sb + band.getBandID() + ",";
                     } else if (pref.getName() == "gelgenie.data.lane") {
                         sb = sb + band.getLaneID() + ",";
                     } else if (pref.getName() == "gelgenie.data.name") {
-                        sb = sb + band.getBandID() + ",";
+                        sb = sb + band.getBandName() + ",";
                     } else if (pref.getName() == "gelgenie.data.pixelcount") {
                         sb = sb + band.getPixelCount() + ",";
                     } else if (pref.getName() == "gelgenie.data.width") {

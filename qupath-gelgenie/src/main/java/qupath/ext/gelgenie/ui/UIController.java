@@ -693,6 +693,7 @@ public class UIController {
                         removables.add(annot);
                     }
                 }
+                // TODO: add this to script too (or make it optional)
                 removeObjects(removables, false);
             }
             pendingTask.set(null);
