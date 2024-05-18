@@ -87,7 +87,7 @@ def visual_onnx_export(model_folder, epoch, image_folder):
 
     net, final_file = simple_onnx_export(model_folder, epoch)  # runs normal export
 
-    val_set = ImageDataset(image_folder, 1, padding=True)
+    val_set = ImageDataset(image_folder, 1, individual_padding=True, padding=False)
     dataloader = DataLoader(val_set, shuffle=False, batch_size=1, num_workers=0, pin_memory=True)
 
     for im_index, batch in enumerate(dataloader):  # extracts the first image from the folder

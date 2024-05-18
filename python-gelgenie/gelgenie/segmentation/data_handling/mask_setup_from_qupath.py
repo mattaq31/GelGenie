@@ -32,6 +32,10 @@ mask_path = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/da
 originals_paths = ['/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/originals/matthew_gels']
 output_image_path = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/maximal_set/matthew_gels/images'
 
+mask_path = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/maximal_set/stella_gels/masks'
+originals_paths = ['/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/originals/stella_gels']
+output_image_path = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/maximal_set/stella_gels/images'
+
 
 original_images = []
 for path in originals_paths:

@@ -97,7 +97,7 @@ def watershed_seg_direct(image, sure_fg, sure_bg):
     markers_plot = 255 - markers_plot
 
     # Apply the watershed algorithm itself, using the elevation map and markers
-    segmentation = skimage.segmentation.watershed(elevation_map, markers)
+    segmentation = skimage.segmentation.watershed(elevation_map, markers.astype('int'))
 
     # Fill holes and relabel bands, giving each a unique label
     segmentation = ndi.binary_fill_holes(segmentation - 1)

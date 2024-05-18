@@ -440,7 +440,7 @@ def segment_and_plot(models, model_names, input_folder, output_folder, minmax_no
             rgb_labels = label2rgb(labels, image=np_image)
             all_model_outputs.append(rgb_labels)
             save_model_output(output_folder, mname, image_name, rgb_labels)
-            save_segmentation_map(output_folder, mname, image_name, mask,positive_pixel_colour=map_pixel_colour)
+            save_segmentation_map(output_folder, mname, image_name, mask, positive_pixel_colour=map_pixel_colour)
 
         plot_model_comparison(all_model_outputs, model_names, image_name, np_image, output_folder,
                               images_per_row, double_indexing)
