@@ -48,7 +48,7 @@ class TrainingHandler:
         self.main_folder = join(base_dir, experiment_name)
 
         # basic setup
-        if training_parameters['load_checkpoint']:
+        if training_parameters['load_checkpoint'] and not training_parameters['restart_wandb']:
             saved_config = toml.load(join(self.main_folder, 'config.toml'))
             unique_id = saved_config['training']['wandb_id']
         else:
