@@ -130,6 +130,9 @@ public class TableController {
     private Button globalNormButton;
     @FXML
     private Button laneNormButton;
+    @FXML
+    private Button selectedNormButton;
+
     private ObservableList<BandEntry> bandData;
     private Boolean barChartActive = false;
 
@@ -259,6 +262,7 @@ public class TableController {
         ButtonBar.setButtonData(exportHistoButton, ButtonBar.ButtonData.RIGHT);
         ButtonBar.setButtonData(laneNormButton, ButtonBar.ButtonData.LEFT);
         ButtonBar.setButtonData(globalNormButton, ButtonBar.ButtonData.LEFT);
+        ButtonBar.setButtonData(selectedNormButton, ButtonBar.ButtonData.LEFT);
 
         globalNormButton.setDisable(true);
 
@@ -534,6 +538,9 @@ public class TableController {
         mainTable.refresh();
         globalNormButton.setDisable(false);
         laneNormButton.setDisable(true);
+        selectedNormButton.setDisable(false);
+        selectedNormButton.setText("Norm. by Selection");
+
         updateHistogramData();
     }
 
@@ -542,11 +549,25 @@ public class TableController {
         mainTable.refresh();
         globalNormButton.setDisable(true);
         laneNormButton.setDisable(false);
+        selectedNormButton.setDisable(false);
+        selectedNormButton.setText("Norm. by Selection");
+
+        updateHistogramData();
+    }
+
+    public void selectedBandNormalise() {
+        if (!selectedBandNormalise(bandData)){
+            return; // if the function errors out, don't make any updates to the buttons
+        }
+        mainTable.refresh();
+        globalNormButton.setDisable(false);
+        laneNormButton.setDisable(false);
+        selectedNormButton.setText("Re-norm. by Sel.");
         updateHistogramData();
     }
 
     /**
-     * Normalises all columns to the minimum and maximum values in each lane (lane normalisation).
+     * Normalises all columns to the maximum value in each lane (lane normalisation).
      *
      * @param bands: List of bands to be normalised.
      */
@@ -579,16 +600,16 @@ public class TableController {
                 entry.setNormLocal(1.0);
                 entry.setNormRolling(1.0);
             } else {
-                entry.setNormVolume((entry.getRawVolume() - laneDictionary.get(entry.getLaneID())[0][0]) / (laneDictionary.get(entry.getLaneID())[0][1] - laneDictionary.get(entry.getLaneID())[0][0]));
-                entry.setNormGlobal((entry.getGlobalVolume() - laneDictionary.get(entry.getLaneID())[1][0]) / (laneDictionary.get(entry.getLaneID())[1][1] - laneDictionary.get(entry.getLaneID())[1][0]));
-                entry.setNormLocal((entry.getLocalVolume() - laneDictionary.get(entry.getLaneID())[2][0]) / (laneDictionary.get(entry.getLaneID())[2][1] - laneDictionary.get(entry.getLaneID())[2][0]));
-                entry.setNormRolling((entry.getRollingVolume() - laneDictionary.get(entry.getLaneID())[3][0]) / (laneDictionary.get(entry.getLaneID())[3][1] - laneDictionary.get(entry.getLaneID())[3][0]));
+                entry.setNormVolume(entry.getRawVolume() / laneDictionary.get(entry.getLaneID())[0][1]);
+                entry.setNormGlobal(entry.getGlobalVolume() / laneDictionary.get(entry.getLaneID())[1][1]);
+                entry.setNormLocal(entry.getLocalVolume() / laneDictionary.get(entry.getLaneID())[2][1]);
+                entry.setNormRolling(entry.getRollingVolume() / laneDictionary.get(entry.getLaneID())[3][1]);
             }
         }
     }
 
     /**
-     * Normalises all columns to the minimum and maximum values in the table (global normalisation).
+     * Normalises all columns to the maximum value in the table (global normalisation).
      *
      * @param bands: List of bands to be normalised.
      */
@@ -611,11 +632,38 @@ public class TableController {
         }
 
         for (BandEntry entry : bands) {
-            entry.setNormVolume((entry.getRawVolume() - minMax[0]) / (minMax[1] - minMax[0]));
-            entry.setNormLocal((entry.getLocalVolume() - localMinMax[0]) / (localMinMax[1] - localMinMax[0]));
-            entry.setNormGlobal((entry.getGlobalVolume() - globalMinMax[0]) / (globalMinMax[1] - globalMinMax[0]));
-            entry.setNormRolling((entry.getRollingVolume() - rollingMinMax[0]) / (rollingMinMax[1] - rollingMinMax[0]));
+            entry.setNormVolume(entry.getRawVolume() / minMax[1]);
+            entry.setNormLocal(entry.getLocalVolume() / localMinMax[1]);
+            entry.setNormGlobal(entry.getGlobalVolume() / globalMinMax[1]);
+            entry.setNormRolling(entry.getRollingVolume() / rollingMinMax[1]);
         }
+    }
+
+    /**
+     * Normalises all columns to the values of the selected band (selected band normalisation).
+     * Output values can be higher than 1.
+     * This function cannot be used by the scripting interface.
+     *
+     * @param bands: List of bands to be normalised.
+     */
+    private boolean selectedBandNormalise(ObservableList<BandEntry> bands) {
+        BandEntry selBand = mainTable.getSelectionModel().getSelectedItem();
+        if (selBand == null) {
+            Dialogs.showWarningNotification(resources.getString("title"), resources.getString("error.no-band-selected"));
+            return false;
+        }
+        double normRaw = selBand.getRawVolume();
+        double normLocal = selBand.getLocalVolume();
+        double normGlobal = selBand.getGlobalVolume();
+        double normRollingBall = selBand.getRollingVolume();
+
+        for (BandEntry entry : bands) {
+            entry.setNormVolume(entry.getRawVolume() / normRaw);
+            entry.setNormLocal(entry.getLocalVolume() / normLocal);
+            entry.setNormGlobal(entry.getGlobalVolume() / normGlobal);
+            entry.setNormRolling(entry.getRollingVolume() / normRollingBall);
+        }
+        return true;
     }
 
     /**

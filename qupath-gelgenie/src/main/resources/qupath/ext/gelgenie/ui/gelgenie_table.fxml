@@ -44,6 +44,7 @@
                 <Button fx:id="dataPrefButton" mnemonicParsing="false" onAction="#createDataPrefTable" text="Data Prefs." />
                 <Button fx:id="laneNormButton" mnemonicParsing="false" onAction="#laneNormalise" text="Normalise by Lane"/>
                 <Button fx:id="globalNormButton" mnemonicParsing="false" onAction="#fullNormalise" text="Global Normalisation"/>
+                <Button fx:id="selectedNormButton" mnemonicParsing="false" onAction="#selectedBandNormalise" text="Norm. by Selection"/>
             </buttons>
         </ButtonBar>
     </bottom>
