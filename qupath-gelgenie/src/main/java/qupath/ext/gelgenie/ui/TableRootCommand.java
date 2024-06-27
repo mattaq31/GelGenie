@@ -1,3 +1,19 @@
+/**
+ * Copyright 2024 University of Edinburgh
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package qupath.ext.gelgenie.ui;
 
 import javafx.stage.Stage;
@@ -33,11 +49,16 @@ public class TableRootCommand implements Runnable {
 
     private final boolean globalCorrection;
     private final boolean localCorrection;
+    private final boolean rollingCorrection;
     private final int localSensitivity;
+    private final int rollingRadius;
+    private final boolean invertImage;
+
     private final Collection<PathObject> selectedBands = new ArrayList<>();
 
     public TableRootCommand(QuPathGUI qupath, String ui_name, String panel_name, Boolean resizable,
-                            boolean globalCorrection, boolean localCorrection, int localSensitivity,
+                            boolean globalCorrection, boolean localCorrection, boolean rollingCorrection,
+                            int localSensitivity, int rollingRadius, boolean invertImage,
                             Collection<PathObject> selectedBands) { // Constructor
         this.qupath = qupath;
         this.panel_name = panel_name;
@@ -49,7 +70,11 @@ public class TableRootCommand implements Runnable {
         // user defined settings
         this.globalCorrection = globalCorrection;
         this.localCorrection = localCorrection;
+        this.rollingCorrection = rollingCorrection;
         this.localSensitivity = localSensitivity;
+        this.rollingRadius = rollingRadius;
+        this.invertImage = invertImage;
+
         if (!selectedBands.isEmpty()){
             this.selectedBands.addAll(selectedBands);
         }
@@ -72,12 +97,14 @@ public class TableRootCommand implements Runnable {
 
         stage = new Stage();
         TableController controller = rootFXML.getController();
-        controller.setPreferences(globalCorrection, localCorrection, localSensitivity, selectedBands);
+        controller.setPreferences(globalCorrection, localCorrection, rollingCorrection, localSensitivity,
+                rollingRadius, invertImage, selectedBands);
 
         Scene scene = new Scene(pane);
         stage.initOwner(qupath.getStage());
         stage.setTitle(resources.getString("title") + " " + panel_name);
-
+        // TODO: when github repo is live, replace the local logo with the online github one (or cache?)
+        // stage.getIcons().add(new Image("file:/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/graphics/logo/v1/gelgenie_small.png"));
         stage.setScene(scene);
         stage.setResizable(resizable);
         stage.show();

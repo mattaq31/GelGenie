@@ -1,3 +1,19 @@
+"""
+ * Copyright 2024 University of Edinburgh
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+"""
+
 import torch.onnx
 import onnx
 from onnxsim import simplify
@@ -71,7 +87,7 @@ def visual_onnx_export(model_folder, epoch, image_folder):
 
     net, final_file = simple_onnx_export(model_folder, epoch)  # runs normal export
 
-    val_set = ImageDataset(image_folder, 1, padding=True)
+    val_set = ImageDataset(image_folder, 1, individual_padding=True, padding=False)
     dataloader = DataLoader(val_set, shuffle=False, batch_size=1, num_workers=0, pin_memory=True)
 
     for im_index, batch in enumerate(dataloader):  # extracts the first image from the folder

@@ -20,6 +20,7 @@ apply_augmentations = false
 padding = true
 individual_padding = false
 weak_augmentations = false
+minmax_norm = false
 
 [model]
 model_name = 'UNDEFINED'   # model architecture name
@@ -39,3 +40,5 @@ scheduler_type = false  # No scheduler is used
 save_checkpoint = true # Whether model checkpoints are saved
 checkpoint_frequency = 1 # How often checkpoints are saved (per epoch)
 wandb_track = true # Whether to track training with wandb
+model_cleanup_metric = 'Dice Score' # use validation dice score to clean up by default
+restart_wandb = false # Whether to restart wandb run if continuing from a checkpoint

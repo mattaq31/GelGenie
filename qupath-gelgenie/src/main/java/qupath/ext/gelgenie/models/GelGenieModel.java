@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 University of Edinburgh
+ * Copyright 2023/24 University of Edinburgh
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@
  *  limitations under the License.
  *
  * Copied with attribution from qupath-extension-wsinfer.
+ * Further edits were made to this file for the GelGenie qupath extension, also licensed under Apache 2.0.
  */
-// This was mostly edited from the WSInfer extension - need to check with Pete how to properly attribute
 
 package qupath.ext.gelgenie.models;
 
@@ -32,6 +32,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Objects;
 
 import static qupath.ext.gelgenie.models.ModelInterfacing.checkPathExists;
 
@@ -69,12 +70,13 @@ public class GelGenieModel {
 
     public String getAbbrvName() {return abbrvName;}
 
+    public String getDescription() {return description;}
     /**
      * Remove the cached model files.
      */
     public synchronized void removeCache() {
         getTSFile().delete();
-        getCFFile().delete();
+        getReadmeFile().delete();
         getOnnxFile().delete();
     }
 
@@ -94,8 +96,8 @@ public class GelGenieModel {
      * Get the configuration file. Note that it is not guaranteed that the model has been downloaded.
      * @return path to model config file in cache dir
      */
-    public File getCFFile() {
-        return getFile("config.toml");
+    public File getReadmeFile() {
+        return getFile("README.md");
     }
 
     /**
@@ -103,7 +105,16 @@ public class GelGenieModel {
      * @return true if the files exist and the SHA matches, and the config is valid.
      */
     public boolean isValid() {
-        return getTSFile().exists() && getOnnxFile().exists() && checkModifiedTimes();
+
+        boolean onnxCheck;
+        if(!Objects.equals(onnxModel, "None")){
+            onnxCheck = getOnnxFile().exists();
+        }
+        else{
+            onnxCheck = true;
+        }
+
+        return getTSFile().exists() && onnxCheck && checkModifiedTimes();
     }
 
     /**
@@ -151,26 +162,29 @@ public class GelGenieModel {
     /**
      * Check that the SHA-256 checksum in the LFS pointer file matches one
      * we calculate ourselves.
-     * @return true if the torchscript and onnx model files are identical to the remote ones.
+     * @return true if the torchscript and onnx model (if available) files are identical to the remote ones.
      */
     private boolean checkSHAMatches() {
-        try { //TODO: make this more elegant.
+        try {
             String shaDown = checkSumSHA256(getTSFile());
             String content = Files.readString(getPointerFileTS().toPath(), StandardCharsets.UTF_8);
             String shaUp = content.split("\n")[1].replace("oid sha256:", "");
             if (!shaDown.equals(shaUp)) {
                 return false;
             }
-            String shaDownonnx = checkSumSHA256(getOnnxFile());
-            String contentonnx = Files.readString(getPointerFileOnnx().toPath(), StandardCharsets.UTF_8);
-            String shaUponnx = contentonnx.split("\n")[1].replace("oid sha256:", "");
-            if (!shaDownonnx.equals(shaUponnx)) {
-                return false;
+            if(!Objects.equals(onnxModel, "None")) {
+                String shaDownonnx = checkSumSHA256(getOnnxFile());
+                String contentonnx = Files.readString(getPointerFileOnnx().toPath(), StandardCharsets.UTF_8);
+                String shaUponnx = contentonnx.split("\n")[1].replace("oid sha256:", "");
+                if (!shaDownonnx.equals(shaUponnx)) {
+                    return false;
+                }
             }
         } catch (IOException | NoSuchAlgorithmException e) {
             logger.error("Unable to generate SHA for {}", getTSFile(), e);
             return false;
         }
+        logger.info("SHA matches for {}", torchscriptModel);
         return true;
     }
 
@@ -185,13 +199,14 @@ public class GelGenieModel {
         checkPathExists(Paths.get(modelDirectory.toString(), "onnx_checkpoints"));
         checkPathExists(Paths.get(modelDirectory.toString(), "torchscript_checkpoints"));
 
-        downloadFileToCacheDir(String.format("onnx_checkpoints/%s", onnxModel));
+        if(!Objects.equals(onnxModel, "None")){
+            downloadFileToCacheDir(String.format("onnx_checkpoints/%s", onnxModel));
+            URL urlPt1 = new URL(String.format("https://huggingface.co/%s/raw/%s/onnx_checkpoints/%s", hfRepoId, hfRevision, onnxModel));
+            ModelInterfacing.downloadURLToFile(urlPt1, getPointerFileOnnx());
+        }
+        downloadFileToCacheDir("README.md");
+
         downloadFileToCacheDir(String.format("torchscript_checkpoints/%s", torchscriptModel));
-        downloadFileToCacheDir("config.toml");
-
-        URL urlPt1 = new URL(String.format("https://huggingface.co/%s/raw/%s/onnx_checkpoints/%s", hfRepoId, hfRevision, onnxModel));
-        ModelInterfacing.downloadURLToFile(urlPt1, getPointerFileOnnx());
-
         URL urlPt2 = new URL(String.format("https://huggingface.co/%s/raw/%s/torchscript_checkpoints/%s", hfRepoId, hfRevision, torchscriptModel));
         ModelInterfacing.downloadURLToFile(urlPt2, getPointerFileTS());
 

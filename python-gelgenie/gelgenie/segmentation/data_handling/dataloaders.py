@@ -1,4 +1,19 @@
-# code here modified from https://github.com/milesial/Pytorch-UNet/tree/e36c782fbfc976b7326182a47dd7213bd3360a7e
+"""
+ * Copyright 2024 University of Edinburgh
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+"""
+
 import imageio
 import cv2
 import os
@@ -15,7 +30,7 @@ from gelgenie.segmentation.helper_functions.general_functions import extract_ima
 
 class ImageDataset(Dataset):
     def __init__(self, images_dir: str, n_channels: int, padding: bool = False,
-                 individual_padding=False, image_names=None, augmentations=None):
+                 individual_padding=False, image_names=None, augmentations=None, minmax_norm=False):
         """
         For datasets of images only, used in model_eval if no masks are provided
         :param images_dir: Path of image directory
@@ -24,9 +39,11 @@ class ImageDataset(Dataset):
         :param padding: (Bool) Whether to apply padding to images and masks to a constant value for the entire dataset
         :param individual_padding: (Bool) Whether to apply padding to images and masks individually (for UNet)
         :param image_names: ([String]) List of image names selected
+        :param minmax_norm: (Bool) Whether to apply minmax normalization to images (unique normalisation for each image)
         """
 
         self.n_channels = n_channels
+        self.minmax_norm = minmax_norm
         self.standard_image_transform = transforms.Compose([transforms.ToTensor()])  # Transforms image to tensor
 
         self.image_folders = images_dir
@@ -43,7 +60,10 @@ class ImageDataset(Dataset):
         if not self.image_names:
             raise RuntimeError(f'No images found in {images_dir}, make sure you put your images there.')
 
-        rprint(f'[bold blue]Created dataset with {len(self.image_names)} images.[/bold blue]')
+        if len(self.image_names) == 1:
+            rprint(f'[bold blue]Created dataset with {len(self.image_names)} image.[/bold blue]')
+        else:
+            rprint(f'[bold blue]Created dataset with {len(self.image_names)} images.[/bold blue]')
 
     def image_finding_logic(self, image_names):
         if image_names is not None:
@@ -74,9 +94,7 @@ class ImageDataset(Dataset):
         return len(self.image_names)
 
     @staticmethod
-    def load_image(filename, n_channels):
-        image = imageio.v2.imread(filename)
-
+    def channel_converter(image, n_channels):
         # Converts to desired number of channels
         if n_channels == 1:  # Target input: 1 channel
             if image.shape[-1] == 3:  # Actual input: 3 channels
@@ -89,16 +107,27 @@ class ImageDataset(Dataset):
                 image = cv2.cvtColor(image, cv2.COLOR_RGBA2RGB)
             elif image.shape[-1] != 3:  # Actual input: 1 channels
                 image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+        return image
+
+    def load_image(self, filename):
+        image = imageio.v2.imread(filename)
+
+        image = ImageDataset.channel_converter(image, self.n_channels)
 
         # Normalizing image
-        if image.dtype == 'uint8':
-            max_val = 255  # values are 0 - 256
-        elif image.dtype == 'uint16':
-            max_val = 65535  # values are 0 - 65536
+        if self.minmax_norm:
+            min_pixel = np.min(image)
+            max_pixel = np.max(image)
+            image = (image.astype(np.float32) - min_pixel) / (max_pixel-min_pixel)
         else:
-            raise RuntimeError(f'Image type {image.dtype} not recognized, only accepts uint8 or uint16 for now.')
+            if image.dtype == 'uint8':
+                max_val = 255  # values are 0 - 255
+            elif image.dtype == 'uint16':
+                max_val = 65535  # values are 0 - 65535
+            else:
+                raise RuntimeError(f'Image type {image.dtype} not recognized, only accepts uint8 or uint16 for now.')
 
-        image = image.astype(np.float32) / max_val
+            image = image.astype(np.float32) / max_val
 
         return image
 
@@ -123,7 +152,8 @@ class ImageDataset(Dataset):
     def __getitem__(self, idx):
         img_file = self.image_names[idx]
 
-        img_array = self.load_image(filename=img_file, n_channels=self.n_channels)
+        img_array = self.load_image(filename=img_file)
+        orig_height, orig_width = img_array.shape[0], img_array.shape[1]
 
         if self.augmentations:
             sample = self.augmentations(image=img_array)  # Apply augmentations
@@ -141,12 +171,15 @@ class ImageDataset(Dataset):
         return {
             'image': img_tensor,
             'image_name': os.path.basename(img_file).split('.')[0],
+            'image_height': orig_height,
+            'image_width': orig_width
         }
 
 
 class ImageMaskDataset(ImageDataset):
     def __init__(self, images_dir, masks_dir, n_channels: int, mask_suffix: str = '.tif',
-                 augmentations=None, padding: bool = False, individual_padding=False, image_names=None):
+                 augmentations=None, padding: bool = False, individual_padding=False, image_names=None,
+                 minmax_norm=False):
         """
         :param images_dir: Path of image directory
         :param masks_dir: Path of mask directory
@@ -156,12 +189,13 @@ class ImageMaskDataset(ImageDataset):
         :param padding: (Bool) Whether to apply padding to images and masks
         :param individual_padding: (Bool) Whether to apply padding to images and masks individually (for UNet)
         :param image_names: ([String]) List of image names selected
+        :param minmax_norm: (Bool) Whether to apply minmax normalization to images (unique normalisation for each image)
         """
         self.mask_suffix = mask_suffix
         self.mask_names = []
         self.masks_dirs = masks_dir
         super().__init__(images_dir, n_channels=n_channels, padding=padding, individual_padding=individual_padding,
-                         image_names=image_names, augmentations=augmentations)
+                         image_names=image_names, augmentations=augmentations, minmax_norm=minmax_norm)
 
         self.class_weighting = self.data_metrics['Class Weighting']
 
@@ -242,8 +276,9 @@ class ImageMaskDataset(ImageDataset):
         if os.path.basename(img_file).split('.')[0] != os.path.basename(mask_file).split('.')[0]:
             raise RuntimeError('Gel and mask images do not match - there is some mismatch in the data folders provided')
 
-        img_array = self.load_image(filename=img_file, n_channels=self.n_channels)
+        img_array = self.load_image(filename=img_file)
         mask_array = self.load_mask(mask_file)
+        orig_height, orig_width = img_array.shape[0], img_array.shape[1]
 
         assert img_array.shape == mask_array.shape, \
             f'Image and mask should be the same size, but are {img_array.shape} and {mask_array.shape}'
@@ -267,6 +302,8 @@ class ImageMaskDataset(ImageDataset):
         return {
             'image': img_tensor,
             'image_name': os.path.basename(img_file).split('.')[0],
-            'mask': mask_tensor.int()
+            'mask': mask_tensor.int(),
+            'image_height': orig_height,
+            'image_width': orig_width
         }
 

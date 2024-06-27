@@ -1,3 +1,19 @@
+/**
+ * Copyright 2024 University of Edinburgh
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package qupath.ext.gelgenie.graphics;
 
 import javafx.collections.FXCollections;
@@ -8,6 +24,8 @@ import javafx.scene.SnapshotParameters;
 import javafx.scene.chart.*;
 import javafx.scene.image.WritableImage;
 import qupath.fx.dialogs.FileChoosers;
+import qupath.lib.common.GeneralTools;
+import qupath.lib.images.servers.ServerTools;
 
 import javax.imageio.ImageIO;
 import java.io.File;
@@ -16,16 +34,16 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 
+import static qupath.lib.scripting.QP.getCurrentImageData;
+
 /**
- * Main class in charge of embedded bar chart.
+ * Main class in charge of embedded bar charts in main GelGenie window and results table.
  */
 public class EmbeddedBarChart {
-
-
     public static ObservableList<XYChart.Series<String, Number>> plotBars(Collection<double[]> y_data,
                                                                           Collection<String> legendData,
                                                                           String[] labels) {
-        // TODO: add normalisation option
+
         ObservableList<XYChart.Series<String, Number>> allPlots = FXCollections.observableArrayList();
 
         Iterator<double[]> itY = y_data.iterator();
@@ -110,8 +128,9 @@ public class EmbeddedBarChart {
      * @param Chart: Chart to save
      */
     public static void saveChart(BarChart Chart){
+        String defaultName = GeneralTools.getNameWithoutExtension(new File(ServerTools.getDisplayableImageName(getCurrentImageData().getServer())));
 
-        File fileOutput = FileChoosers.promptToSaveFile("Export Chart", new File("bandChart.png"),
+        File fileOutput = FileChoosers.promptToSaveFile("Export Chart",  new File(defaultName + "_band_chart.png"),
                 FileChoosers.createExtensionFilter("Save as PNG", ".png"));
         if (fileOutput == null)
             return;

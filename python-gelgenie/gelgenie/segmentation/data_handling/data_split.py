@@ -1,3 +1,19 @@
+"""
+ * Copyright 2024 University of Edinburgh
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+"""
+
 import os
 from os.path import join
 from gelgenie.segmentation.helper_functions.general_functions import extract_image_names_from_folder, create_dir_if_empty
@@ -7,7 +23,7 @@ import shutil
 
 base_dir = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/maximal_set'
 
-all_datasets = ['lsdb_gels', 'matthew_gels', 'matthew_gels_2', 'nathan_gels', 'neb_ladders']
+all_datasets = ['lsdb_gels', 'matthew_gels', 'matthew_gels_2', 'nathan_gels', 'neb_ladders', 'quantitation_ladder_gels', 'stella_gels']
 
 val_percent = 0.1
 test_percent = 0.1

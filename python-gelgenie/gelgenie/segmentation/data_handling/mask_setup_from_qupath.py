@@ -1,3 +1,19 @@
+"""
+ * Copyright 2024 University of Edinburgh
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+"""
+
 import os
 from gelgenie.segmentation.helper_functions.general_functions import extract_image_names_from_folder
 import shutil
@@ -15,6 +31,10 @@ import shutil
 mask_path = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/maximal_set/matthew_gels/masks'
 originals_paths = ['/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/originals/matthew_gels']
 output_image_path = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/maximal_set/matthew_gels/images'
+
+mask_path = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/maximal_set/stella_gels/masks'
+originals_paths = ['/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/originals/stella_gels']
+output_image_path = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/maximal_set/stella_gels/images'
 
 
 original_images = []
@@ -42,5 +62,3 @@ for index, file in enumerate(extract_image_names_from_folder(mask_path)):
     else:
         os.rename(file, updated_mask)
         shutil.copy2(input_image_file, output_image_path)
-
-

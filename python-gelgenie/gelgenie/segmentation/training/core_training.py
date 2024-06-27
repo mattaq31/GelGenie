@@ -1,3 +1,19 @@
+"""
+ * Copyright 2024 University of Edinburgh
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+"""
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -32,7 +48,7 @@ class TrainingHandler:
         self.main_folder = join(base_dir, experiment_name)
 
         # basic setup
-        if training_parameters['load_checkpoint']:
+        if training_parameters['load_checkpoint'] and not training_parameters['restart_wandb']:
             saved_config = toml.load(join(self.main_folder, 'config.toml'))
             unique_id = saved_config['training']['wandb_id']
         else:
@@ -87,6 +103,7 @@ class TrainingHandler:
         self.checkpoint_saving = training_parameters['save_checkpoint']
         self.checkpoint_save_frequency = training_parameters['checkpoint_frequency']
         self.model_cleanup_frequency = training_parameters['model_cleanup_frequency']
+        self.model_cleanup_metric = training_parameters['model_cleanup_metric']
         self.grad_scaler = torch.cuda.amp.GradScaler(enabled=training_parameters['grad_scaler'])  # CUDA only function
         self.use_amp_scaler = training_parameters['grad_scaler']
 
@@ -328,7 +345,12 @@ class TrainingHandler:
         for epoch in range(self.current_epoch, self.max_epochs + 1):
 
             train_metrics = self.train_epoch(epoch)
-            val_metrics, seg_sample_package = self.eval_epoch(epoch)
+            if self.val_loader is None:
+                # if no validation data provided, eval is turned off
+                val_metrics = {}
+                seg_sample_package = {}
+            else:
+                val_metrics, seg_sample_package = self.eval_epoch(epoch)
 
             current_epoch_metrics = {**train_metrics, **val_metrics}  # combines all metrics
 
@@ -341,7 +363,10 @@ class TrainingHandler:
             elif type(self.scheduler).__name__ == 'CosineAnnealingWarmRestarts':
                 self.scheduler.step()
 
-            stat_plotting = [['Training Loss', 'Dice Score'], ['Learning Rate']]
+            if self.val_loader is None:
+                stat_plotting = [['Training Loss'], ['Learning Rate']]
+            else:
+                stat_plotting = [['Training Loss', 'Dice Score'], ['Learning Rate']]
             if 'Dice Loss' in current_epoch_metrics and 'Cross-Entropy Loss' in current_epoch_metrics:
                 stat_plotting += [['Dice Loss', 'Cross-Entropy Loss']]
 
@@ -355,31 +380,39 @@ class TrainingHandler:
                             append=True if epoch > 1 else False)
 
             if self.wandb_track:
-                # log to wandb
-                self.wandb_package.log({
-                    'Learning rate': current_epoch_metrics['Learning Rate'],
-                    'Validation Dice': current_epoch_metrics['Dice Score'],
-                    'Train loss': current_epoch_metrics['Training Loss'],
-                    'Validation sample': {
-                        'Input': wandb.Image(seg_sample_package['image']),
-                        'Segmentation': {
-                            'True': wandb.Image(seg_sample_package['mask_true']),
-                            'Predicted': wandb.Image(seg_sample_package['threshold_mask']),
-                            'Predicted-superimposed': wandb.Image(seg_sample_package['combi_mask']),
+                if self.val_loader is None:
+                    self.wandb_package.log({
+                        'Learning rate': current_epoch_metrics['Learning Rate'],
+                        'Train loss': current_epoch_metrics['Training Loss'],
+                        'epoch': epoch,
+                    })
+                else:
+                    # log eval sample to wandb, if available
+                    self.wandb_package.log({
+                        'Learning rate': current_epoch_metrics['Learning Rate'],
+                        'Validation Dice': current_epoch_metrics['Dice Score'],
+                        'Train loss': current_epoch_metrics['Training Loss'],
+                        'Validation sample': {
+                            'Input': wandb.Image(seg_sample_package['image']),
+                            'Segmentation': {
+                                'True': wandb.Image(seg_sample_package['mask_true']),
+                                'Predicted': wandb.Image(seg_sample_package['threshold_mask']),
+                                'Predicted-superimposed': wandb.Image(seg_sample_package['combi_mask']),
+                            },
                         },
-                    },
-                    'epoch': epoch,
-                })
+                        'epoch': epoch,
+                    })
 
             if self.checkpoint_saving and (epoch == self.max_epochs or epoch % self.checkpoint_save_frequency == 0):
                 self.save_checkpoint('checkpoint_epoch_%s.pth' % epoch)
 
             if self.model_cleanup_frequency > 0 and epoch % self.model_cleanup_frequency == 0:
-                top_epoch_idx = sorted(range(len(total_metrics['Dice Score'])),
-                                       key=lambda i: total_metrics['Dice Score'][i])[-2:]
+                top_epoch_idx = sorted(range(len(total_metrics[self.model_cleanup_metric])),
+                                       key=lambda i: total_metrics[self.model_cleanup_metric][i],
+                                       reverse=True if 'Loss' in self.model_cleanup_metric else False)[-2:]
                 top_epochs = [total_metrics['Epoch'][i] for i in top_epoch_idx]
                 deleted_epochs = []
-                for epoch_id in total_metrics['Epoch']:
+                for epoch_id in total_metrics['Epoch'][:-1]:
                     if epoch_id not in top_epochs and epoch_id % 100 != 0:
                         model_file = join(self.checkpoints_folder, 'checkpoint_epoch_%s.pth' % epoch_id)
                         if os.path.isfile(model_file):

@@ -1,3 +1,19 @@
+"""
+ * Copyright 2024 University of Edinburgh
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+"""
+
 import rich_click as click
 import sys
 
@@ -25,15 +41,6 @@ def model_eval_load(exp_folder, eval_epoch):
     return model
 
 
-@click.command()
-@click.option('--datafolder', '-d', default=None,
-              help='Folder to import/export data.')
-@click.option('--datafile', '-f', default=None,
-              help='Specific csv file to be analyzed.')
-def segmentation_results_compare(datafolder, datafile):
-    from gelgenie.segmentation.evaluation.reference_image_analysis import segmentation_accuracy_comparison
-    segmentation_accuracy_comparison(datafolder, datafile)
-
 
 @click.command()
 @click.option('--model_and_epoch', '-me', multiple=True,
@@ -44,12 +51,25 @@ def segmentation_results_compare(datafolder, datafile):
               help='Path to folder containing input images.')
 @click.option('--output_folder', '-o', default=None,
               help='Path to folder containing output images.')
-@click.option('--run_ref_analysis', is_flag=True,
-              help='Set this flag to run analysis on standard reference images.')
-def segmentation_pipeline(model_and_epoch, model_folder, input_folder, output_folder, run_ref_analysis):
+@click.option('--multi_augment', is_flag=True,
+              help='Set this flag to run test-time augmentation on input images.')
+@click.option('--run_quant_analysis', is_flag=True,
+              help='Set this flag to run quantitative analysis comparing output images with target masks.')
+@click.option('--mask_folder', default=None,
+              help='Path to ground truth mask data corresponding to input images.')
+@click.option('--classical_analysis', is_flag=True,
+              help='Set this flag to also run classical analyses for comparison purposes.')
+@click.option('--map_colour', default=None, type=(int, int, int),
+              help='Colour to use for output segmentation map.  Default is a brown/golden colour.')
+@click.option('--add_map_from_file', default=None, type=(str, str), multiple=True,
+              help='Tuple with 1) the name of a pre-computed model and 2) path to its precomputed segmentation maps '
+                   'for the dataset in question. These maps will be added to the output '
+                   'images and quantified as normal.')
+def segmentation_pipeline(model_and_epoch, model_folder, input_folder, output_folder, multi_augment,
+                          run_quant_analysis, mask_folder, classical_analysis, map_colour, add_map_from_file):
 
     from os.path import join
-    from gelgenie.segmentation.evaluation.core_functions import segment_and_analyze
+    from gelgenie.segmentation.evaluation.core_functions import segment_and_plot, segment_and_quantitate
     from gelgenie.segmentation.helper_functions.general_functions import create_dir_if_empty
 
     experiment_names, eval_epochs = zip(*model_and_epoch)
@@ -63,11 +83,17 @@ def segmentation_pipeline(model_and_epoch, model_folder, input_folder, output_fo
 
     create_dir_if_empty(output_folder)
 
-    if run_ref_analysis:  # TODO: broken, needs a rewrite
-        raise NotImplementedError('This function needs to be rewritten.')
-        # standard_ladder_analysis(model, output_folder)
+    if map_colour is None:
+        map_colour = (163, 106, 13)
+
+    if run_quant_analysis:
+        segment_and_quantitate(models, list(experiment_names), input_folder, mask_folder, output_folder,
+                               multi_augment=multi_augment, run_classical_techniques=classical_analysis,
+                               map_pixel_colour=map_colour, nnunet_models_and_folders=add_map_from_file)
     else:
-        segment_and_analyze(models, experiment_names, input_folder, output_folder)
+        segment_and_plot(models, list(experiment_names), input_folder, output_folder, multi_augment=multi_augment,
+                         run_classical_techniques=classical_analysis, map_pixel_colour=map_colour,
+                         nnunet_models_and_folders=add_map_from_file)
 
 
 if __name__ == '__main__':

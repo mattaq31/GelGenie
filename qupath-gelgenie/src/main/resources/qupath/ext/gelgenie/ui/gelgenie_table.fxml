@@ -14,17 +14,22 @@
               <TableView fx:id="mainTable" prefHeight="400.0" prefWidth="1010.0">
                   <columns>
                       <TableColumn fx:id="thumbnailCol" style="-fx-alignment: CENTER;" text="Thumbnail" />
-                      <TableColumn fx:id="bandCol" prefWidth="75.0" style="-fx-alignment: CENTER;" text="Band ID" />
-                      <TableColumn fx:id="laneCol" prefWidth="75.0" style="-fx-alignment: CENTER;" text="Lane ID" />
-                      <TableColumn fx:id="nameCol" prefWidth="75.0" style="-fx-alignment: CENTER;" text="Band Name" />
-                      <TableColumn fx:id="pixelCol" prefWidth="75.0" style="-fx-alignment: CENTER;" text="# Pixels" />
-                      <TableColumn fx:id="meanCol" prefWidth="100.0" style="-fx-alignment: CENTER;" text="Mean Intensity" />
-                      <TableColumn fx:id="rawCol" prefWidth="90.0" style="-fx-alignment: CENTER;" text="Raw Volume" />
-                      <TableColumn fx:id="normVolCol" prefWidth="120.0" style="-fx-alignment: CENTER;" text="Norm. Volume" />
-                      <TableColumn fx:id="localVolCol" prefWidth="170.0" style="-fx-alignment: CENTER;" text="Local Corrected Volume" />
-                      <TableColumn fx:id="normLocalVolCol" prefWidth="150.0" style="-fx-alignment: CENTER;" text="Norm. Local Volume" />
-                      <TableColumn fx:id="globalVolCol" prefWidth="170.0" style="-fx-alignment: CENTER;" text="Global Corrected Volume" />
-                      <TableColumn fx:id="normGlobalVolCol" prefWidth="150.0" style="-fx-alignment: CENTER;" text="Norm. Global Volume" />
+                      <TableColumn fx:id="bandCol" prefWidth="75.0" style="-fx-alignment: CENTER;" text="%ui.dataprefs.band" />
+                      <TableColumn fx:id="laneCol" prefWidth="75.0" style="-fx-alignment: CENTER;" text="%ui.dataprefs.lane" />
+                      <TableColumn fx:id="nameCol" prefWidth="75.0" style="-fx-alignment: CENTER;" text="%ui.dataprefs.name" />
+                      <TableColumn fx:id="pixelCol" prefWidth="75.0" style="-fx-alignment: CENTER;" text="%ui.dataprefs.numpixels" />
+                      <TableColumn fx:id="widthCol" prefWidth="75.0" style="-fx-alignment: CENTER;" text="%ui.dataprefs.width" />
+                      <TableColumn fx:id="heightCol" prefWidth="75.0" style="-fx-alignment: CENTER;" text="%ui.dataprefs.height" />
+                      <TableColumn fx:id="meanCol" prefWidth="100.0" style="-fx-alignment: CENTER;" text="%ui.dataprefs.mean" />
+                      <TableColumn fx:id="stdCol" prefWidth="100.0" style="-fx-alignment: CENTER;" text="%ui.dataprefs.intensitysd" />
+                      <TableColumn fx:id="rawCol" prefWidth="90.0" style="-fx-alignment: CENTER;" text="%ui.dataprefs.rawvol" />
+                      <TableColumn fx:id="normVolCol" prefWidth="120.0" style="-fx-alignment: CENTER;" text="%ui.dataprefs.normrawval" />
+                      <TableColumn fx:id="localVolCol" prefWidth="170.0" style="-fx-alignment: CENTER;" text="%ui.dataprefs.localvol" />
+                      <TableColumn fx:id="normLocalVolCol" prefWidth="150.0" style="-fx-alignment: CENTER;" text="%ui.dataprefs.normlocalval" />
+                      <TableColumn fx:id="globalVolCol" prefWidth="170.0" style="-fx-alignment: CENTER;" text="%ui.dataprefs.globalvol" />
+                      <TableColumn fx:id="normGlobalVolCol" prefWidth="150.0" style="-fx-alignment: CENTER;" text="%ui.dataprefs.normglobalval" />
+                      <TableColumn fx:id="rollingVolCol" prefWidth="170.0" style="-fx-alignment: CENTER;" text="%ui.dataprefs.rollingvol" />
+                      <TableColumn fx:id="normRollingVolCol" prefWidth="150.0" style="-fx-alignment: CENTER;" text="%ui.dataprefs.normrollingval" />
                   </columns>
               </TableView>
          </items>
@@ -33,9 +38,13 @@
     <bottom>
         <ButtonBar prefHeight="40.0" prefWidth="200.0" BorderPane.alignment="CENTER">
             <buttons>
-                <Button fx:id="histoButton" mnemonicParsing="false" onAction="#toggleHistogram" text="View Data Histogram" />
-                <Button fx:id="exportHistoButton" mnemonicParsing="false" onAction="#saveHistogram" text="Export Histogram"/>
+                <Button fx:id="histoButton" mnemonicParsing="false" onAction="#toggleHistogram" text="View Bart Chart"/>
+                <Button fx:id="exportHistoButton" mnemonicParsing="false" onAction="#saveHistogram" text="Export Bar Chart"/>
                 <Button fx:id="exportButton" mnemonicParsing="false" onAction="#exportData" text="Export Data" />
+                <Button fx:id="dataPrefButton" mnemonicParsing="false" onAction="#createDataPrefTable" text="Data Prefs." />
+                <Button fx:id="laneNormButton" mnemonicParsing="false" onAction="#laneNormalise" text="Normalise by Lane"/>
+                <Button fx:id="globalNormButton" mnemonicParsing="false" onAction="#fullNormalise" text="Global Normalisation"/>
+                <Button fx:id="selectedNormButton" mnemonicParsing="false" onAction="#selectedBandNormalise" text="Norm. by Selection"/>
             </buttons>
         </ButtonBar>
     </bottom>

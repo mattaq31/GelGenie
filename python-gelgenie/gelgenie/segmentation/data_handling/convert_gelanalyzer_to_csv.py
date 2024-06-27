@@ -1,10 +1,26 @@
+"""
+ * Copyright 2024 University of Edinburgh
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+"""
+
 import os
 from os.path import join
 import pandas as pd
 
 base_folder = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/quantitative_results/gelanalyzer'
 
-for i in range(30):
+for i in range(34):
     analysis = join(base_folder, str(i))
     if os.path.isdir(analysis):
         full_data = []
@@ -27,3 +43,4 @@ for i in range(30):
 
         df = pd.DataFrame(full_data, columns=['Lane ID', 'Band ID', 'Raw Volume', 'Background Corrected Volume'])
         df.to_csv(join(analysis, 'collated_data.csv'), index=False)
+
