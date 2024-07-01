@@ -310,19 +310,19 @@ public class TableController {
             histoPane = new BorderPane();
             histoPane.setCenter(displayChart);
             chartNormFlipper = new CheckBox(resources.getString("ui.table.histo.norm"));
-            chartNormFlipper.selectedProperty().addListener((observable, oldValue, newValue) -> updateHistogramData()); // chart data always updated when checkbox is toggled
+            chartNormFlipper.selectedProperty().addListener((observable, oldValue, newValue) -> updateBarChartData()); // chart data always updated when checkbox is toggled
 
             chartRawView = new CheckBox(resources.getString("ui.table.histo.raw"));
-            chartRawView.selectedProperty().addListener((observable, oldValue, newValue) -> updateHistogramData()); // chart data always updated when checkbox is toggled
+            chartRawView.selectedProperty().addListener((observable, oldValue, newValue) -> updateBarChartData()); // chart data always updated when checkbox is toggled
 
             chartGlobalView = new CheckBox(resources.getString("ui.table.histo.global"));
-            chartGlobalView.selectedProperty().addListener((observable, oldValue, newValue) -> updateHistogramData()); // chart data always updated when checkbox is toggled
+            chartGlobalView.selectedProperty().addListener((observable, oldValue, newValue) -> updateBarChartData()); // chart data always updated when checkbox is toggled
 
             chartRollingView = new CheckBox(resources.getString("ui.table.histo.rolling"));
-            chartRollingView.selectedProperty().addListener((observable, oldValue, newValue) -> updateHistogramData()); // chart data always updated when checkbox is toggled
+            chartRollingView.selectedProperty().addListener((observable, oldValue, newValue) -> updateBarChartData()); // chart data always updated when checkbox is toggled
 
             chartLocalView = new CheckBox(resources.getString("ui.table.histo.local"));
-            chartLocalView.selectedProperty().addListener((observable, oldValue, newValue) -> updateHistogramData()); // chart data always updated when checkbox is toggled
+            chartLocalView.selectedProperty().addListener((observable, oldValue, newValue) -> updateBarChartData()); // chart data always updated when checkbox is toggled
 
             HBox chartFooter = new HBox(chartNormFlipper, chartRawView);
 
@@ -541,7 +541,7 @@ public class TableController {
         selectedNormButton.setDisable(false);
         selectedNormButton.setText("Norm. by Selection");
 
-        updateHistogramData();
+        updateBarChartData();
     }
 
     public void fullNormalise() {
@@ -552,7 +552,7 @@ public class TableController {
         selectedNormButton.setDisable(false);
         selectedNormButton.setText("Norm. by Selection");
 
-        updateHistogramData();
+        updateBarChartData();
     }
 
     public void selectedBandNormalise() {
@@ -563,7 +563,7 @@ public class TableController {
         globalNormButton.setDisable(false);
         laneNormButton.setDisable(false);
         selectedNormButton.setText("Re-norm. by Sel.");
-        updateHistogramData();
+        updateBarChartData();
     }
 
     /**
@@ -854,23 +854,23 @@ public class TableController {
     }
 
     /**
-     * Toggles the display of a histogram, which appears as a side panel in the table view.
+     * Toggles the display of a bar chart, which appears as a side panel in the table view.
      */
-    public void toggleHistogram() {
+    public void toggleBarChart() {
         if (barChartActive) {
             dataTableSplitPane.getItems().remove(1);
             barChartActive = false;
         } else {
-            updateHistogramData();
+            updateBarChartData();
             dataTableSplitPane.getItems().add(histoPane);
             barChartActive = true;
         }
     }
 
     /**
-     * Collects data from table and prepares histogram.  Currently only presents raw and global corrected volumes.
+     * Collects data from table and prepares bar chart.
      */
-    private void updateHistogramData() {
+    private void updateBarChartData() {
 
         boolean rawIsValid = chartRawView.isSelected();
         boolean globalIsValid = this.globalCorrection && chartGlobalView.isSelected();
@@ -954,9 +954,9 @@ public class TableController {
     }
 
     /**
-     * Saves histogram to file.
+     * Saves bar chart to file.
      */
-    public void saveHistogram() {
+    public void saveBarChart() {
         saveChart(displayChart);
     }
 

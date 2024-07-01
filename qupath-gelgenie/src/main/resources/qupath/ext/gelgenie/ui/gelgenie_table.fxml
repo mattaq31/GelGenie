@@ -38,8 +38,8 @@
     <bottom>
         <ButtonBar prefHeight="40.0" prefWidth="200.0" BorderPane.alignment="CENTER">
             <buttons>
-                <Button fx:id="histoButton" mnemonicParsing="false" onAction="#toggleHistogram" text="View Bart Chart"/>
-                <Button fx:id="exportHistoButton" mnemonicParsing="false" onAction="#saveHistogram" text="Export Bar Chart"/>
+                <Button fx:id="histoButton" mnemonicParsing="false" onAction="#toggleBarChart" text="View Bart Chart"/>
+                <Button fx:id="exportHistoButton" mnemonicParsing="false" onAction="#saveBarChart" text="Export Bar Chart"/>
                 <Button fx:id="exportButton" mnemonicParsing="false" onAction="#exportData" text="Export Data" />
                 <Button fx:id="dataPrefButton" mnemonicParsing="false" onAction="#createDataPrefTable" text="Data Prefs." />
                 <Button fx:id="laneNormButton" mnemonicParsing="false" onAction="#laneNormalise" text="Normalise by Lane"/>
