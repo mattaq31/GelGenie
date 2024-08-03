@@ -24,7 +24,7 @@ import numpy as np
 import imageio
 import seaborn as sns
 
-in_folder = '/Users/matt/Desktop/seg_analysis'
+in_folder = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/quantitative_evaluation/full_test_set_eval/metrics/band_level_accuracy_analysis'
 eval_models = ['unet_dec_21', 'nnunet_final_fold_0', 'unet_dec_21_lsdb_only', 'watershed', 'multiotsu']
 mg_1 = ['8', '13', '38', '62', '81', '105', '108', '114', '128', '132', '140', '143', '146', '161', '168', '179', '183',
         '187', '205', '214', '220', '230', '235', '242', '251', '257', '263', '292', '307', '312']
@@ -43,7 +43,6 @@ for dataset_combo, data_name in zip([mg_1 + mg_2 + ng + quantg, lsdb], ['Standar
 
     dataset_level_id_average = defaultdict(list)
     dataset_level_error_average = defaultdict(list)
-    dataset_level_full_errors = defaultdict(list)
 
     for key, val in gel_level_dict.items():
         if key not in dataset_combo:
@@ -51,53 +50,17 @@ for dataset_combo, data_name in zip([mg_1 + mg_2 + ng + quantg, lsdb], ['Standar
         for model_ind, model in enumerate(eval_models):
             id_list = val['identified'][model_ind]
             error_list = [max(1-x, 0) for x in val['error'][model_ind]]
-
-            if sum(id_list) == 0:
-                percent_identified = 0
-                average_error_for_identified = 0
-            else:
-                percent_identified = (sum(id_list) / len(id_list)) * 100
-                if ceiling:
-                    average_error_for_identified = sum([err for id, err in zip(id_list, error_list) if id]) / sum(
-                        id_list)
-                else:
-                    average_error_for_identified = sum(error_list) / len(error_list)
-
-            print(f'For gel {key}, {model} identified {percent_identified:.2f}% of bands, with an average accuracy of {average_error_for_identified:.3f}')
-            model_level_id_average[model_ind] += percent_identified
-            model_level_error_average[model_ind] += average_error_for_identified
-            dataset_level_id_average[model].append(percent_identified)
-            dataset_level_error_average[model].append(average_error_for_identified)
-            dataset_level_full_errors[model].extend(error_list)
-        print('----')
-    print('---------')
-
-    model_level_error_average = [x/len(dataset_combo) for x in model_level_error_average]
-    model_level_id_average = [x/len(dataset_combo) for x in model_level_id_average]
-
-    print('Final averages:')
-    print(model_level_error_average)
-    print(model_level_id_average)
+            dataset_level_error_average[model].extend(error_list)
+    #     print('----')
+    # print('---------')
 
     id_dataset = pd.DataFrame.from_dict(dataset_level_id_average)
     err_dataset = pd.DataFrame.from_dict(dataset_level_error_average)
-    full_err_dataset = pd.DataFrame.from_dict(dataset_level_full_errors)
 
     plt.figure(figsize=(15, 10))
-    sns.boxplot(data=id_dataset, showfliers=False)
-    sns.stripplot(data=id_dataset, jitter=True, marker="o", palette='dark:black', size=8, alpha=0.6)
-    plt.title(data_name)
-    plt.show()
-
-    plt.figure(figsize=(15, 10))
-    sns.boxplot(data=err_dataset, showfliers=False)
-    sns.stripplot(data=err_dataset, jitter=True, marker="o", palette='dark:black', size=8, alpha=0.6)
+    sns.violinplot(data=err_dataset)
+    # sns.boxplot(data=err_dataset, showfliers=False)
+    # sns.stripplot(data=err_dataset, jitter=True, marker="o", palette='dark:black', size=8, alpha=0.6)
     plt.title(data_name)
     plt.ylim([-0.05, 1.05])
-    plt.show()
-
-    plt.figure(figsize=(15, 10))
-    sns.boxplot(data=full_err_dataset, showfliers=False)
-    sns.stripplot(data=full_err_dataset, jitter=True, marker="o", palette='dark:black', size=8, alpha=0.6)
-    plt.title(data_name + ' Full Accuracy')
     plt.show()

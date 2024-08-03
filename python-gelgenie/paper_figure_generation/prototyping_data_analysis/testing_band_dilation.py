@@ -101,13 +101,12 @@ def band_label_and_sort(band_labels):
         lane_counter += 1
     return label_id_mapping
 
-
-input_folder = ['/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/quantitative_results/base_data']
+input_folder = ['/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/quantitative_evaluation/ladder_eval/base_data']
 base_images = extract_image_names_from_folder(input_folder[0])
-mask_folder = ['/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/quantitative_results/qupath_data/james_data_v3_fixed_global/indiv_label_segmaps']
+mask_folder = ['/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/quantitative_evaluation/ladder_eval/qupath_data/james_data_v3_fixed_global/indiv_label_segmaps']
 mask_images = extract_image_names_from_folder(mask_folder[0])
 
-reference_path = "/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/quantitative_results/reference_ladder_masses.csv"
+reference_path = "/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/quantitative_evaluation/ladder_eval/reference_ladder_masses.csv"
 
 data_df = defaultdict(list)
 

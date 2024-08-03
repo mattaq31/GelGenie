@@ -27,7 +27,7 @@ from scipy import ndimage as ndi
 from gelgenie.segmentation.data_handling.dataloaders import ImageMaskDataset
 from gelgenie.segmentation.helper_functions.general_functions import create_dir_if_empty, index_converter
 
-eval_folder = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/quantitative_results/full_test_set_eval'
+eval_folder = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/quantitative_evaluation/full_test_set_eval'
 output_folder = '/Users/matt/Desktop/band_level_accuracy_analysis'
 image_folders = [
     '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/data/processed_gels/maximal_set/matthew_gels/test_images',
@@ -159,4 +159,4 @@ for im_index, batch in tqdm(enumerate(dataloader), total=len(dataloader)):
         plt.tight_layout()
         # plt.savefig(os.path.join(output_folder, '%s_error_plot.png' % image_name), dpi=300)
         plt.show()
-# pickle.dump(gel_level_stats, open(os.path.join(output_folder, 'gel_level_stats_no_ceiling.pkl'), 'wb'))
+pickle.dump(gel_level_stats, open(os.path.join(output_folder, 'gel_level_stats_no_ceiling.pkl'), 'wb'))
