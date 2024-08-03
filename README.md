@@ -15,13 +15,18 @@
 </div>
 
 ---
-Main coding repository for GelGenie, an app that uses deep learning models to automatically segment gel electrophoresis images.  The repo is split into two:
+Main code repository for GelGenie, an app that uses deep learning models to automatically segment gel electrophoresis images.  The repo is split into two:
 - `python-gelgenie` contains a python package for preparing gel image datasets, creating segmentation architectures and training/evaluating deep learning models with PyTorch.  More details on usage and installation in the python package [README](./python-gelgenie/README.md).
 - `qupath-gelgenie` contains a QuPath extension that provides an easy-to-access interface for GelGenie models as well as a rich set of tools for analysing and exporting segmentation results.
 
 Full Description, feature list and installation instructions TBD
 
-ALSO ADD SCREENSHOTS OF APP USAGE
+<div style="display: flex; flex-wrap: wrap; justify-content: space-around;">
+  <img src="./qupath-gelgenie/screenshots/s1.png" alt="GelGenie Screenshot 1" style="width: 47%; margin: 0.5%;">
+  <img src="./qupath-gelgenie/screenshots/s2.png" alt="GelGenie Screenshot 2" style="width: 47%; margin: 0.5%;">
+  <img src="./qupath-gelgenie/screenshots/s3.png" alt="GelGenie Screenshot 3" style="width: 47%; margin: 0.5%;">
+  <img src="./qupath-gelgenie/screenshots/s4.png" alt="GelGenie Screenshot 4" style="width: 47%; margin: 0.5%;">
+</div>
 
 Installing the QuPath GelGenie Extension
 ==============================
