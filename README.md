@@ -15,11 +15,18 @@
 </div>
 
 ---
-Main code repository for GelGenie, an app that uses deep learning models to automatically segment gel electrophoresis images.  The repo is split into two:
+Main code repository for GelGenie, an app that uses deep learning models to segment gel electrophoresis images and completely automate the gel analysis process.  The repo is split into two:
 - `python-gelgenie` contains a python package for preparing gel image datasets, creating segmentation architectures and training/evaluating deep learning models with PyTorch.  More details on usage and installation in the python package [README](./python-gelgenie/README.md).
 - `qupath-gelgenie` contains a QuPath extension that provides an easy-to-access interface for GelGenie models as well as a rich set of tools for analysing and exporting segmentation results.
 
-Full Description, feature list and installation instructions TBD
+GelGenie Feature Highlights:
+- One-click segmentation of gel electrophoresis images
+- General-purpose models that work with wide range of gel conditions, imagers and stains
+- Customisable band measurement, bar chart generation and normalisation
+- Easy export to csv for further processing
+- Scriptable interface for model inference and labelling
+- Python environment for training new models and advanced features
+- Open-source and editable by everyone!
 
 <div style="display: flex; flex-wrap: wrap; justify-content: space-around;">
   <img src="./qupath-gelgenie/screenshots/s1.png" alt="GelGenie Screenshot 1" style="width: 47%; margin: 0.5%;">
@@ -28,49 +35,44 @@ Full Description, feature list and installation instructions TBD
   <img src="./qupath-gelgenie/screenshots/s4.png" alt="GelGenie Screenshot 4" style="width: 47%; margin: 0.5%;">
 </div>
 
-Installing the QuPath GelGenie Extension
-==============================
+## Installing the QuPath GelGenie Extension
 
-Download the latest version of the extension from the XXXX page.
+Download the latest version of the extension from the [releases](https://github.com/mattaq31/GelGenie/releases) page.
 
 Then drag & drop the downloaded .jar file onto the main QuPath window to install it. 
 
 ADD SCREENSHOTS HERE
 
-Installing GelGenie's Python Environment
-==============================
-To install the gelgenie python package and its dependencies simply run the following command from the `./python-gelgenie` directory:
+## Using the QuPath GelGenie Extension
 
-`pip install -e .`
+- Watch the video HERE!! for a quick overview of the extension's features.
+- For a more comprehensive overview, read the docs HERE!!
 
-Package requirements and further installation details coming soon.
+##  GelGenie's Python Environment and Training New Models
 
-ADD DETAILS OF ELECTRON SERVER TOO
+Get more info here: [Python Quick Start](./python-gelgenie/README.md).
 
-Accessing Labelled Gel Datasets
-===============================
+## Accessing Labelled Gel Datasets
 
-TBC
+All data can be downloaded in the original format used for training, validation and testing from our Zenodo upload with DOI [10.5281/zenodo.13218469](https://doi.org/10.5281/zenodo.13218469).
 
-Training New Segmentation Models
-================================
-
-TBC
-
-Development & Support
-==============================
-
-The principal GelGenie researcher and developer is [Matthew Aquilina](https://www.linkedin.com/in/matthewaq/), who built up the concept of gel electrophoresis segmentation and oversaw the project together with [Katherine Dunn](https://www.katherinedunnresearch.eng.ed.ac.uk) at the University of Edinburgh.  Many others have also contributed to the project:
+## Development & Support
+The principal GelGenie researcher and developer is [Matthew Aquilina](https://www.linkedin.com/in/matthewaq/), who built up the concept of gel electrophoresis segmentation and oversaw the project together with [Katherine Dunn](https://www.katherinedunnresearch.eng.ed.ac.uk) at the University of Edinburgh.  The other developers/scientists who contributed to the project are:
 
 - [Nathan Wu](https://nathanw23.github.io) - Gel labelling, lab data generation, data analysis and statistical pipeline development
 - [Kiros Kwan](https://www.linkedin.com/in/kiros-kwan/) - Gel labelling, deep learning framework development and model training
 - [Filip Buŝić](https://www.linkedin.com/in/filipbusic/) - Image analysis, classical segmentation algorithms and prototype GUI development
 - [James Dodd](https://www.linkedin.com/in/james-dodd-b636041ab/) - Gel labelling, lab data generation, prototype testing and feedback
 - [Peter Bankhead](https://github.com/petebankhead) - QuPath extension development, deep learning algorithms and java development guidance
-- Details of other members of QuPath team TBC
+- [Alan O'Callaghan](https://github.com/alanocallaghan) - QuPath extension development and java development guiidance
+- [Laura Nicolás-Sáenz](https://github.com/lauranicolass) - Clustering algorithm development
+- We also received advice, gel data (thanks Arun and Stella!) and alpha testing feedback from other colleagues in both the University of Edinburgh and the Dana-Farber/Wyss Institute for which we are incredibly grateful! 
 
 The project was supported by both the [School of Engineering](https://www.eng.ed.ac.uk) (who funded Kiros and Filip) and the [Precision Medicine Doctoral Training Programme](https://www.ed.ac.uk/usher/precision-medicine) at the University of Edinburgh (via Medical Research Council (MRC) grant number MR/N013166/1).  The EDDIE compute cluster (from the Edinburgh Compute and Data Facility ([ECDF](http://www.ecdf.ed.ac.uk/))) was used to train the baseline machine learning models.
 
 For more details of everyone's coding contributions, please check the graphs [here](https://github.com/mattaq31/GelGenie/graphs/contributors).
 
+Contributions from the open-source community are welcome!
+
+## Literature Citation
 Citation details TBC
