@@ -11,7 +11,7 @@ plugins {
 
 ext.moduleName = 'io.github.qupath.extension.gelgenie'
 
-version = "0.1.0"
+version = "1.0.0-alpha"
 description = 'QuPath extension to directly run and interface with GelGenie models.'
 
 // The default 'gradle.ext.qupathVersion' reads this from settings.gradle.

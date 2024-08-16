@@ -21,12 +21,12 @@ Main code repository for GelGenie, an app that uses deep learning models to segm
 
 GelGenie Feature Highlights:
 - One-click segmentation of gel electrophoresis images
-- General-purpose models that work with wide range of gel conditions, imagers and stains
+- General-purpose models that work with a wide range of gel conditions, imagers and stains
 - Customisable band measurement, bar chart generation and normalisation
 - Easy export to csv for further processing
 - Scriptable interface for model inference and labelling
 - Python environment for training new models and advanced features
-- Open-source and editable by everyone!
+- Open-source and configurable by everyone!
 
 <div style="display: flex; flex-wrap: wrap; justify-content: space-around;">
   <img src="./qupath-gelgenie/screenshots/s1.png" alt="GelGenie Screenshot 1" style="width: 47%; margin: 0.5%;">
@@ -37,16 +37,26 @@ GelGenie Feature Highlights:
 
 ## Installing the QuPath GelGenie Extension
 
-Download the latest version of the extension from the [releases](https://github.com/mattaq31/GelGenie/releases) page.
+Download the latest version of the extension from the [releases](https://github.com/mattaq31/GelGenie/releases) page (make sure to only download the .jar file):
 
-Then drag & drop the downloaded .jar file onto the main QuPath window to install it. 
+<div style="text-align: center;">
+<img src="./qupath-gelgenie/screenshots/release_download.png" alt="Sample Image" width="500">
+</div>
 
-ADD SCREENSHOTS HERE
+Then drag & drop the downloaded .jar file onto the main QuPath window to install it:
+<div style="text-align: center;">
+<img src="./qupath-gelgenie/screenshots/drag_n_drop.png" alt="Sample Image" width="500">
+</div>
+Finally, run GelGenie from the extensions menu:
 
-## Using the QuPath GelGenie Extension
+<div style="text-align: center;">
+<img src="./qupath-gelgenie/screenshots/open_extension.png" alt="Sample Image" width="500">
+</div>
+
+## QuPath GelGenie Extension Tutorial/Manual
 
 - Watch the video HERE!! for a quick overview of the extension's features.
-- For a more comprehensive overview, read the docs HERE!!
+- For a more comprehensive overview, read the docs [here](/qupath-gelgenie/README.md).
 
 ##  GelGenie's Python Environment and Training New Models
 
