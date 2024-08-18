@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import qupath.lib.common.Version;
 import qupath.lib.gui.QuPathGUI;
+import qupath.lib.gui.extensions.GitHubProject;
 import qupath.lib.gui.extensions.QuPathExtension;
 import qupath.lib.gui.prefs.PathPrefs;
 
@@ -33,7 +34,7 @@ import qupath.ext.gelgenie.ui.GUIRootCommand;
 /**
  This is the main access point for all the GelGenie functionality.
  */
-public class GelGenie implements QuPathExtension {
+public class GelGenie implements QuPathExtension, GitHubProject {
 
     private final static ResourceBundle resources = ResourceBundle.getBundle("qupath.ext.gelgenie.ui.strings");
     private final static Logger logger = LoggerFactory.getLogger(QuPathExtension.class);
@@ -101,4 +102,8 @@ public class GelGenie implements QuPathExtension {
         return EXTENSION_QUPATH_VERSION;
     }
 
+    @Override
+    public GitHubRepo getRepository() {
+        return GitHubRepo.create(getName(), "mattaq31", "GelGenie");
+    }
 }
