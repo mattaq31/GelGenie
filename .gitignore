@@ -147,7 +147,7 @@ python-gelgenie/scratch/*
 python-gelgenie/scratch_scripts/*
 
 # qupath related ignores
-qupath/
+/qupath/
 qupath-extension-wsinfer/
 qupath-extension-djl/
 nnUNet/

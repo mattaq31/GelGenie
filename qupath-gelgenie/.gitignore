@@ -16,7 +16,6 @@ out/
 gradle.properties
 build/
 .gradle/
-gradle.properties
 
 # Eclipse
 .settings/
