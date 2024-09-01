@@ -29,6 +29,13 @@ from skimage import io
 import math
 import numpy as np
 
+"""
+To run this code, you will first need to generate a pre-traced model using nnunet_pre_packaging.py.  
+Otherwise, this can be run using the same Python environment as GelGenie.
+
+This code is the final step for packaging an nnunet model for use in Java.  It entirely encapsulates the nnunet pre and 
+post processing within a single executable model.
+"""
 
 class PackagedTTA(nn.Module):
     def __init__(self, nnunet_model):

@@ -13,14 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 """
-
+import importlib
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import toml
 
 from tqdm import tqdm
-import wandb
 import os
 from os.path import join
 import numpy as np
@@ -38,6 +37,13 @@ from .training_setup import core_setup
 from ..data_handling import prep_train_val_dataloaders
 from ..networks import model_configure
 from gelgenie.segmentation.helper_functions.dice_score import multiclass_dice_coeff
+
+wdb_spec = importlib.util.find_spec("wandb")  # only imports wandb if this is available
+if wdb_spec is not None:
+    import wandb
+    wandb_available = True
+else:
+    wandb_available = False
 
 
 class TrainingHandler:
@@ -74,7 +80,7 @@ class TrainingHandler:
         self.resumed_model = True if training_parameters['load_checkpoint'] else False
 
         # Initialise wandb logging
-        if self.wandb_track:
+        if self.wandb_track and wandb_available:
             if processing_parameters['base_hardware'] == 'EDDIE':
                 self.wandb_package = wandb.init(project='GelGenie Final Phase', entity='dunn-group', resume='allow',
                                                 name=os.path.basename(self.main_folder), id=unique_id,
@@ -83,6 +89,8 @@ class TrainingHandler:
                 self.wandb_package = wandb.init(project='GelGenie Final Phase', entity='dunn-group',
                                                 name=os.path.basename(self.main_folder), id=unique_id,
                                                 resume='allow')
+        elif self.wandb_track:
+            raise RuntimeError('Wandb is not installed, so cannot be used for tracking.  Remove this parameter or install wandb.')
 
         create_dir_if_empty(self.main_folder, self.checkpoints_folder, self.example_output_folder, self.logs_folder)
 

@@ -58,11 +58,14 @@ Finally, run GelGenie from the extensions menu:
 - Watch the video HERE!! for a quick overview of the extension's features.
 - For a more comprehensive overview, read the docs [here](/qupath-gelgenie/README.md).
 
-##  GelGenie's Python Environment and Training New Models
+##  GelGenie's Python Environment and Training New Models (for developers)
 
-Get more info here: [Python Quick Start](./python-gelgenie/README.md).
+Full documentation, Python installation instructions and more details are provided here [Python Quick Start](./python-gelgenie/README.md).
+##  Acessing Pre-Trained Models (for developers)
 
-## Accessing Labelled Gel Datasets
+All pre-trained models are available on HuggingFace.  The main registry can be found at the link [here](https://huggingface.co/datasets/mattaq/GelGenie-Model-Zoo/blob/main/registry.json).  The QuPath GelGenie extension directly downloads the models from HuggingFace too.
+
+## Accessing Labelled Gel Datasets 
 
 All data can be downloaded in the original format used for training, validation and testing from our Zenodo upload with DOI [10.5281/zenodo.13218469](https://doi.org/10.5281/zenodo.13218469).
 
@@ -82,7 +85,7 @@ The project was directly supported by both the [School of Engineering](https://w
 
 For more details of everyone's coding contributions, please check the graphs [here](https://github.com/mattaq31/GelGenie/graphs/contributors).
 
-Contributions from the open-source community are welcome!
+Contributions from the open-source community are welcome!  In particular, we are looking for help with introducing unit tests to both the Python and Java GelGenie packages!
 
 ## Literature Citation
 Citation details TBC
