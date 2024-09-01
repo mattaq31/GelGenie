@@ -198,11 +198,11 @@ def watershed_analysis(input_image, image_name=None, intermediate_plot_folder=No
             ax[index_converter((i*ipr) + 3, ipr, index_conversion)].axis('off')
             ax[index_converter((i*ipr) + 4, ipr, index_conversion)].axis('off')
 
-            ax[index_converter((i*ipr) + 0, ipr, index_conversion)].imshow(working_image_dict[i][0], cmap='Purples')
-            ax[index_converter((i*ipr) + 1, ipr, index_conversion)].imshow(working_image_dict[i][1], cmap='Purples_r')
+            ax[index_converter((i*ipr) + 0, ipr, index_conversion)].imshow(working_image_dict[i][0], cmap='plasma_r')
+            ax[index_converter((i*ipr) + 1, ipr, index_conversion)].imshow(working_image_dict[i][1], cmap='plasma')
             ax[index_converter((i*ipr) + 2, ipr, index_conversion)].imshow(working_image_dict[i][3])
-            ax[index_converter((i*ipr) + 3, ipr, index_conversion)].imshow(working_image_dict[i][4], cmap='Purples_r')
-            ax[index_converter((i*ipr) + 4, ipr, index_conversion)].imshow(working_image_dict[i][5], cmap='Purples')
+            ax[index_converter((i*ipr) + 3, ipr, index_conversion)].imshow(working_image_dict[i][4], cmap='plasma')
+            ax[index_converter((i*ipr) + 4, ipr, index_conversion)].imshow(working_image_dict[i][5], cmap='plasma_r')
 
             ax[index_converter((i*ipr) + 0, ipr, index_conversion)].set_title('Markers')
             ax[index_converter((i*ipr) + 1, ipr, index_conversion)].set_title('Elevation Map')

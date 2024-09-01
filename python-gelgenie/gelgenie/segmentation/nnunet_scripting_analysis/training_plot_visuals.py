@@ -23,7 +23,7 @@ import seaborn as sns
 out_folder = '/Users/matt/Desktop'
 model_folder = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models/December 2023/nnunet_final'
 
-model = 'fold_all'
+model = 'fold_0'
 
 df = pd.read_csv(os.path.join(model_folder, model, 'combined_training_stats.csv'))
 
@@ -33,7 +33,8 @@ c3 = 'tab:green'
 c4 = 'tab:purple'
 
 label_size = 40
-tick_size = 24
+tick_size = 26
+legend_size= 35
 line_width = 4
 
 sns.set(style="white")
@@ -62,7 +63,7 @@ sns.lineplot(x=df['Epoch'], y=running_average, color=c2, linewidth=line_width,
 # ax.set_yticks(np.linspace(ax.get_ybound()[0], ax.get_ybound()[1], 7))
 # ax2.set_yticks(np.linspace(ax2.get_ybound()[0], ax2.get_ybound()[1], 7))
 
-ax.set_ylabel('Training Loss', color=c1, fontsize=label_size, weight="bold")
+ax.set_ylabel('nnU-Net Training Loss', color=c1, fontsize=label_size, weight="bold")
 ax.set_xlabel('Epoch', fontsize=label_size, weight="bold")
 ax.tick_params(axis='y', labelcolor=c1, labelsize=tick_size)
 ax.tick_params(axis='x', labelsize=tick_size)
@@ -71,8 +72,8 @@ ax2.set_ylabel('Validation Pseudo-Dice Score', color=c2, fontsize=label_size, we
 ax2.tick_params(axis='y', labelcolor=c2, labelsize=tick_size)
 
 ax.legend([], [], frameon=False)
-ax2.legend(fontsize=tick_size, loc='center right')
+ax2.legend(fontsize=legend_size, loc='center right')
 # ax2.legend([], [], frameon=False)
 
-plt.savefig(os.path.join(out_folder, 'example_training_plot.png'), bbox_inches='tight', dpi=300)
+plt.savefig(os.path.join(out_folder, 'example_training_plot_nnunet.png'), bbox_inches='tight', dpi=300)
 plt.show()

@@ -148,6 +148,8 @@ python-gelgenie/scratch_scripts/*
 
 # qupath related ignores
 /qupath/
+qupath_latest/
 qupath-extension-wsinfer/
 qupath-extension-djl/
+qupath-extension-djl-latest/
 nnUNet/

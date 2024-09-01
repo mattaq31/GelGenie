@@ -353,6 +353,8 @@ def segment_and_quantitate(models, model_names, input_folder, mask_folder, outpu
     for key, value in metrics_dict.items():
         pd_data = pd.DataFrame.from_dict(value, orient='index')
         pd_data.columns = model_names
+        if len(pd_data) == 1: # this solves issues with computing mean when only one image is present
+            pd_data = pd_data.map(lambda x: x.item() if isinstance(x, (np.ndarray,)) else x)
         pd_data.loc['mean'] = pd_data.mean()
         pd_data.to_csv(os.path.join(output_folder, 'metrics', '%s.csv' % key), mode='w', header=True, index=True, index_label='Image')
 

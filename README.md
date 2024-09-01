@@ -78,7 +78,7 @@ The principal GelGenie researcher and developer is [Matthew Aquilina](https://ww
 - [Laura Nicolás-Sáenz](https://github.com/lauranicolass) - Clustering algorithm development
 - We also received advice, gel data (thanks Arun and Stella!) and alpha testing feedback from other colleagues in both the University of Edinburgh and the Dana-Farber/Wyss Institute for which we are incredibly grateful! 
 
-The project was supported by both the [School of Engineering](https://www.eng.ed.ac.uk) (who funded Kiros and Filip) and the [Precision Medicine Doctoral Training Programme](https://www.ed.ac.uk/usher/precision-medicine) at the University of Edinburgh (via Medical Research Council (MRC) grant number MR/N013166/1).  The EDDIE compute cluster (from the Edinburgh Compute and Data Facility ([ECDF](http://www.ecdf.ed.ac.uk/))) was used to train the baseline machine learning models.
+The project was directly supported by both the [School of Engineering](https://www.eng.ed.ac.uk) (who funded Kiros and Filip) and the [Precision Medicine Doctoral Training Programme](https://www.ed.ac.uk/usher/precision-medicine) at the University of Edinburgh (via Medical Research Council (MRC) grant number MR/N013166/1).  The EDDIE compute cluster (from the Edinburgh Compute and Data Facility ([ECDF](http://www.ecdf.ed.ac.uk/))) was used to train the baseline machine learning models.
 
 For more details of everyone's coding contributions, please check the graphs [here](https://github.com/mattaq31/GelGenie/graphs/contributors).
 
