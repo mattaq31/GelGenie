@@ -37,17 +37,19 @@ GelGenie Feature Highlights:
 
 ## Installing the QuPath GelGenie Extension
 
-Download the latest version of the extension from the [releases](https://github.com/mattaq31/GelGenie/releases) page (make sure to only download the .jar file):
+- First, install the latest version of QuPath (currently 0.5.1), following the instructions for your operating system [here](https://qupath.github.io).
+- Next, download the latest version of the GelGenie extension from the [releases](https://github.com/mattaq31/GelGenie/releases) page (make sure to only download the .jar file):
 
 <p align="center">
 <img src="./qupath-gelgenie/screenshots/release_download.png" alt="Sample Image" width="500">
 </p>
 
-Then drag & drop the downloaded .jar file onto the main QuPath window to install it:
+- Then drag & drop the downloaded .jar file onto the main QuPath window to install it:
 <p align="center">
 <img src="./qupath-gelgenie/screenshots/drag_n_drop.png" alt="Sample Image" width="500">
 </p>
-Finally, run GelGenie from the extensions menu:
+
+- Finally, run GelGenie from the extensions menu:
 
 <p align="center">
 <img src="./qupath-gelgenie/screenshots/open_extension.png" alt="Sample Image" width="500">
@@ -56,14 +58,14 @@ Finally, run GelGenie from the extensions menu:
 ## QuPath GelGenie Extension Tutorial/Manual
 
 - Watch the video HERE!! for a quick overview of the extension's features.
-- For a more comprehensive overview, read the docs [here](/qupath-gelgenie/README.md).
+- For a more comprehensive overview of all available features, read the docs [here](/qupath-gelgenie/README.md).
 
 ##  GelGenie's Python Environment and Training New Models (for developers)
 
 Full documentation, Python installation instructions and more details are provided here [Python Quick Start](./python-gelgenie/README.md).
 ##  Acessing Pre-Trained Models (for developers)
 
-All pre-trained models are available on HuggingFace.  The main registry can be found at the link [here](https://huggingface.co/datasets/mattaq/GelGenie-Model-Zoo/blob/main/registry.json).  The QuPath GelGenie extension directly downloads the models from HuggingFace too.
+All pre-trained models are available on HuggingFace.  The main registry can be found at the link [here](https://huggingface.co/datasets/mattaq/GelGenie-Model-Zoo/blob/main/registry.json).  The QuPath GelGenie extension directly downloads the models from HuggingFace, with no user tweaking required.
 
 ## Accessing Labelled Gel Datasets 
 
