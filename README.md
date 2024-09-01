@@ -41,18 +41,18 @@ GelGenie Feature Highlights:
 - Next, download the latest version of the GelGenie extension from the [releases](https://github.com/mattaq31/GelGenie/releases) page (make sure to only download the .jar file):
 
 <p align="center">
-<img src="./qupath-gelgenie/screenshots/release_download.png" alt="Sample Image" width="500">
+<img src="./qupath-gelgenie/screenshots/release_download.png" alt="How to download GelGenie" width="500">
 </p>
 
 - Then drag & drop the downloaded .jar file onto the main QuPath window to install it:
 <p align="center">
-<img src="./qupath-gelgenie/screenshots/drag_n_drop.png" alt="Sample Image" width="500">
+<img src="./qupath-gelgenie/screenshots/drag_n_drop.png" alt="Drag-n-drop installation" width="500">
 </p>
 
 - Finally, run GelGenie from the extensions menu:
 
 <p align="center">
-<img src="./qupath-gelgenie/screenshots/open_extension.png" alt="Sample Image" width="500">
+<img src="./qupath-gelgenie/screenshots/open_extension.png" alt="How to activate GelGenie" width="500">
 </p>
 
 ## QuPath GelGenie Extension Tutorial/Manual
