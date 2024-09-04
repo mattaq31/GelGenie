@@ -16,6 +16,7 @@
 
 package qupath.ext.gelgenie.tools;
 
+import org.bytedeco.javacpp.PointerScope;
 import org.bytedeco.opencv.global.opencv_core;
 import org.bytedeco.opencv.opencv_core.Mat;
 
@@ -44,23 +45,25 @@ public class ImageTools {
      */
     public static double[] extractAnnotationPixels(PathObject annotation, ImageServer<BufferedImage> server, boolean invertImage) {
 
-        // creates a mask of the correct shape within the rectangular region bordering an annotation
-        BufferedImage im_mask = BufferedImageTools.createROIMask((int) Math.ceil(annotation.getROI().getBoundsWidth()),
-                (int) Math.ceil(annotation.getROI().getBoundsHeight()), annotation.getROI(),
-                annotation.getROI().getBoundsX(), annotation.getROI().getBoundsY(), 1.0);
+        try (var scope = new PointerScope()) { // pointer scope allows for automatic memory management
+            // creates a mask of the correct shape within the rectangular region bordering an annotation
+            BufferedImage im_mask = BufferedImageTools.createROIMask((int) Math.ceil(annotation.getROI().getBoundsWidth()),
+                    (int) Math.ceil(annotation.getROI().getBoundsHeight()), annotation.getROI(),
+                    annotation.getROI().getBoundsX(), annotation.getROI().getBoundsY(), 1.0);
 
-        // creates a request for the full rectangular region
-        RegionRequest request = RegionRequest.createInstance(server.getPath(), 1.0, annotation.getROI());
-        BufferedImage img;
-        try {
-            img = server.readRegion(request);
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
+            // creates a request for the full rectangular region
+            RegionRequest request = RegionRequest.createInstance(server.getPath(), 1.0, annotation.getROI());
+            BufferedImage img;
+            try {
+                img = server.readRegion(request);
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+
+            // selects pixels which are in the mask and not the outer edges of the rectangular region
+            return extractPixelsfromMask(OpenCVTools.imageToMat(img), OpenCVTools.imageToMat(im_mask),
+                    false, invertImage, server.getPixelType().getUpperBound().doubleValue());
         }
-
-        // selects pixels which are in the mask and not the outer edges of the rectangular region
-        return extractPixelsfromMask(OpenCVTools.imageToMat(img), OpenCVTools.imageToMat(im_mask),
-                false, invertImage, server.getPixelType().getUpperBound().doubleValue());
     }
     /**
      * Extracts pixels from a selected annotation, with an OpenCV image provided instead of an ImageServer.
@@ -72,21 +75,23 @@ public class ImageTools {
      */
     public static double[] extractAnnotationPixelsFromMat(PathObject annotation, Mat fullImage, Boolean invertImage, double invertMax) {
 
-        // creates a mask of the correct shape within the image
-        BufferedImage im_mask = BufferedImageTools.createROIMask((int) Math.ceil(annotation.getROI().getBoundsWidth()),
-                (int) Math.ceil(annotation.getROI().getBoundsHeight()), annotation.getROI(),
-                annotation.getROI().getBoundsX(), annotation.getROI().getBoundsY(), 1.0);
+        try (var scope = new PointerScope()) { // pointer scope allows for automatic memory management
+            // creates a mask of the correct shape within the image
+            BufferedImage im_mask = BufferedImageTools.createROIMask((int) Math.ceil(annotation.getROI().getBoundsWidth()),
+                    (int) Math.ceil(annotation.getROI().getBoundsHeight()), annotation.getROI(),
+                    annotation.getROI().getBoundsX(), annotation.getROI().getBoundsY(), 1.0);
 
-        // crops out rectangular region bordering annotation from opencv image
-        Mat croppedImage = OpenCVTools.crop(fullImage,
-                (int) annotation.getROI().getBoundsX(),
-                (int) annotation.getROI().getBoundsY(),
-                (int) annotation.getROI().getBoundsWidth(),
-                (int) annotation.getROI().getBoundsHeight());
+            // crops out rectangular region bordering annotation from opencv image
+            Mat croppedImage = OpenCVTools.crop(fullImage,
+                    (int) annotation.getROI().getBoundsX(),
+                    (int) annotation.getROI().getBoundsY(),
+                    (int) annotation.getROI().getBoundsWidth(),
+                    (int) annotation.getROI().getBoundsHeight());
 
-        // extracts masked pixels as normal
-        return extractPixelsfromMask(croppedImage, OpenCVTools.imageToMat(im_mask), false,
-                invertImage, invertMax);
+            // extracts masked pixels as normal
+            return extractPixelsfromMask(croppedImage, OpenCVTools.imageToMat(im_mask), false,
+                    invertImage, invertMax);
+        }
     }
 
     /**
@@ -99,23 +104,24 @@ public class ImageTools {
      */
     public static double[] extractLocalBackgroundPixels(PathObject annotation, ImageServer<BufferedImage> server, int pixelBorder,
                                                         boolean invertImage) {
+        try (var scope = new PointerScope()) { // pointer scope allows for automatic memory management
+            // creates rectangular region bordering annotation
+            ImageRegion extendedLocalRegion = createAnnotationImageFrame(annotation, pixelBorder);
+            RegionRequest request = RegionRequest.createInstance(server.getPath(), 1.0, extendedLocalRegion);
+            BufferedImage img;
+            try {
+                img = server.readRegion(request);
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
 
-        // creates rectangular region bordering annotation
-        ImageRegion extendedLocalRegion = createAnnotationImageFrame(annotation, pixelBorder);
-        RegionRequest request = RegionRequest.createInstance(server.getPath(), 1.0, extendedLocalRegion);
-        BufferedImage img;
-        try {
-            img = server.readRegion(request);
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
+            // gets actual annotation shape mask
+            BufferedImage im_mask = BufferedImageTools.createROIMask(request.getWidth(),
+                    request.getHeight(), annotation.getROI(), request.getX(), request.getY(), 1.0);
+
+            return extractPixelsfromMask(OpenCVTools.imageToMat(img), OpenCVTools.imageToMat(im_mask), true, invertImage,
+                    server.getPixelType().getUpperBound().doubleValue());
         }
-
-        // gets actual annotation shape mask
-        BufferedImage im_mask = BufferedImageTools.createROIMask(request.getWidth(),
-                request.getHeight(), annotation.getROI(), request.getX(), request.getY(), 1.0);
-
-        return extractPixelsfromMask(OpenCVTools.imageToMat(img), OpenCVTools.imageToMat(im_mask), true, invertImage,
-                server.getPixelType().getUpperBound().doubleValue());
     }
 
     /**

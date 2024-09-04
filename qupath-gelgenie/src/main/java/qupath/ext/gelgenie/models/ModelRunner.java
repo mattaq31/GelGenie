@@ -22,11 +22,11 @@ import ij.gui.Roi;
 import ij.process.ImageProcessor;
 
 import javafx.application.Platform;
+import org.bytedeco.javacpp.PointerScope;
 import org.bytedeco.javacpp.indexer.FloatIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.bytedeco.opencv.global.opencv_core;
 import org.bytedeco.opencv.opencv_core.Mat;
-import org.bytedeco.opencv.opencv_core.MatExpr;
 import org.bytedeco.opencv.opencv_core.Scalar;
 import org.opencv.core.CvType;
 import org.slf4j.Logger;
@@ -36,24 +36,20 @@ import qupath.fx.dialogs.Dialogs;
 import qupath.imagej.processing.RoiLabeling;
 import qupath.imagej.tools.IJTools;
 import qupath.lib.images.ImageData;
-import qupath.lib.images.PathImage;
 import qupath.lib.images.servers.ImageServer;
-import qupath.lib.images.servers.PixelType;
 import qupath.lib.objects.PathObject;
 import qupath.lib.objects.PathObjects;
 import qupath.lib.objects.classes.PathClass;
-import qupath.lib.projects.Project;
-import qupath.lib.regions.Padding;
 import qupath.lib.regions.RegionRequest;
 import qupath.lib.roi.interfaces.ROI;
 import qupath.lib.scripting.QP;
 import qupath.opencv.dnn.DnnTools;
 import qupath.opencv.dnn.OpenCVDnn;
-import qupath.opencv.ops.ImageDataOp;
-import qupath.opencv.ops.ImageOps;
 import qupath.opencv.tools.OpenCVTools;
-
+import ai.djl.modality.cv.translator.SemanticSegmentationTranslatorFactory;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferUShort;
+import java.awt.image.WritableRaster;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -182,65 +178,66 @@ public class ModelRunner {
      */
     private static Collection<PathObject> runOpenCVModel(GelGenieModel model, ImageData<BufferedImage> imageData, RegionRequest request, Boolean invertImage) throws IOException {
 
-        int[] fullPadding = getPadding(request.getHeight(), request.getWidth(), 32); //gets padding to be added to get the image pixels as a multiple of 32
+        try (var scope = new PointerScope()) { // pointer scope allows for automatic memory management
+            int[] fullPadding = getPadding(request.getHeight(), request.getWidth(), 32); //gets padding to be added to get the image pixels as a multiple of 32
 
-        OpenCVDnn dnnModel = DnnTools.builder(model.getOnnxFile().toString()).size( // creates opencv model from ONNX file
-                request.getWidth() + fullPadding[0] + fullPadding[1],
-                request.getHeight() + fullPadding[2] + fullPadding[3]).build();
+            OpenCVDnn dnnModel = DnnTools.builder(model.getOnnxFile().toString()).size( // creates opencv model from ONNX file
+                    request.getWidth() + fullPadding[0] + fullPadding[1],
+                    request.getHeight() + fullPadding[2] + fullPadding[3]).build();
 
-        // Create required intermediate Mat images
-        Mat paddedImage = new Mat();
-        Mat originalImage = OpenCVTools.imageToMat(imageData.getServer().readRegion(request));
-        Mat predImage = new Mat();
+            // Create required intermediate Mat images
+            Mat paddedImage = new Mat();
+            Mat originalImage = OpenCVTools.imageToMat(imageData.getServer().readRegion(request));
+            Mat predImage = new Mat();
 
-        // if an RGB image provided, average channels into a single channel
-        if (originalImage.channels() > 1){
-            var temp = originalImage.reshape(1, originalImage.rows()*originalImage.cols());
-            opencv_core.reduce(temp, temp, 1, opencv_core.REDUCE_AVG);
-            originalImage = temp.reshape(1, originalImage.rows());
-        }
-
-        // applies zero padding here
-        opencv_core.copyMakeBorder(originalImage, paddedImage, fullPadding[2], fullPadding[3], fullPadding[0], fullPadding[1], opencv_core.BORDER_CONSTANT, new Scalar(0.0));
-
-        //converts to float and normalises to 0-1
-        paddedImage.convertTo(paddedImage, CvType.CV_32F);
-        opencv_core.dividePut(paddedImage, imageData.getServer().getPixelType().getUpperBound().doubleValue());
-
-        // inverts image if requested
-        if (invertImage) {
-            opencv_core.subtract(Mat.ones(paddedImage.size(), paddedImage.type()).asMat(), paddedImage, paddedImage);
-        }
-        // runs model
-        var output = dnnModel.predict(Map.of("input", paddedImage));
-        predImage.put(output.values().iterator().next());
-
-        // The below processes the two outputs from the openCV model into a single segmentation map
-
-        // first, the output is split into two different channels
-        List<Mat> splitchannels = OpenCVTools.splitChannels(predImage);
-
-        // indexers and a new output image are created
-        Mat segmentedMat = new Mat(request.getHeight(), request.getWidth(), CvType.CV_32F);
-
-        Indexer backgroundIndexer = splitchannels.get(0).createIndexer();
-        Indexer foregroundIndexer = splitchannels.get(1).createIndexer();
-        Indexer newIndexer = segmentedMat.createIndexer();
-
-        // the split channels are compared - the output pixel is a positive if the foreground channel is larger than the background channel
-        // the zero-padding is also removed through the indexing operations
-        for (int i=fullPadding[2]; i<request.getHeight() + fullPadding[2]; i++){
-            for (int j=fullPadding[0]; j<request.getWidth() + fullPadding[0]; j++) {
-                int classSelection = 0;
-                if (foregroundIndexer.getDouble(i,j) >= backgroundIndexer.getDouble(i,j)){
-                    classSelection = 1;
-                }
-                ((FloatIndexer) newIndexer).put(i-fullPadding[2], j-fullPadding[0], classSelection);
+            // if an RGB image provided, average channels into a single channel
+            if (originalImage.channels() > 1) {
+                var temp = originalImage.reshape(1, originalImage.rows() * originalImage.cols());
+                opencv_core.reduce(temp, temp, 1, opencv_core.REDUCE_AVG);
+                originalImage = temp.reshape(1, originalImage.rows());
             }
-        }
 
-        // final labelling occurs on the segmented image
-        return findSplitROIs(segmentedMat, request);
+            // applies zero padding here
+            opencv_core.copyMakeBorder(originalImage, paddedImage, fullPadding[2], fullPadding[3], fullPadding[0], fullPadding[1], opencv_core.BORDER_CONSTANT, new Scalar(0.0));
+
+            //converts to float and normalises to 0-1
+            paddedImage.convertTo(paddedImage, CvType.CV_32F);
+            opencv_core.dividePut(paddedImage, imageData.getServer().getPixelType().getUpperBound().doubleValue());
+
+            // inverts image if requested
+            if (invertImage) {
+                opencv_core.subtract(Mat.ones(paddedImage.size(), paddedImage.type()).asMat(), paddedImage, paddedImage);
+            }
+            // runs model
+            var output = dnnModel.predict(Map.of("input", paddedImage));
+            predImage.put(output.values().iterator().next());
+
+            // The below processes the two outputs from the openCV model into a single segmentation map
+
+            // first, the output is split into two different channels
+            List<Mat> splitchannels = OpenCVTools.splitChannels(predImage);
+
+            // indexers and a new output image are created
+            Mat segmentedMat = new Mat(request.getHeight(), request.getWidth(), CvType.CV_32F);
+
+            Indexer backgroundIndexer = splitchannels.get(0).createIndexer();
+            Indexer foregroundIndexer = splitchannels.get(1).createIndexer();
+            Indexer newIndexer = segmentedMat.createIndexer();
+
+            // the split channels are compared - the output pixel is a positive if the foreground channel is larger than the background channel
+            // the zero-padding is also removed through the indexing operations
+            for (int i = fullPadding[2]; i < request.getHeight() + fullPadding[2]; i++) {
+                for (int j = fullPadding[0]; j < request.getWidth() + fullPadding[0]; j++) {
+                    int classSelection = 0;
+                    if (foregroundIndexer.getDouble(i, j) >= backgroundIndexer.getDouble(i, j)) {
+                        classSelection = 1;
+                    }
+                    ((FloatIndexer) newIndexer).put(i - fullPadding[2], j - fullPadding[0], classSelection);
+                }
+            }
+            // final labelling occurs on the segmented image
+            return findSplitROIs(segmentedMat, request);
+        }
     }
 
     /**
@@ -325,16 +322,18 @@ public class ModelRunner {
             }
         }
 
-        // The below converts the integer array into openCV Mat.  Unsure if there is a more elegant way to do this.
-        Mat imMat = new Mat(request.getHeight(), request.getWidth(), CvType.CV_32F);
-        Indexer indexer = imMat.createIndexer();
-        for (int i=0; i<request.getHeight(); i++){
-            for (int j=0; j<request.getWidth(); j++) {
-                ((FloatIndexer) indexer).put(i, j, maskOrig[i][j]);
+        try (var scope = new PointerScope()) { // pointer scope allows for automatic memory management
+            // The below converts the integer array into openCV Mat.  Unsure if there is a more elegant way to do this.
+            Mat imMat = new Mat(request.getHeight(), request.getWidth(), CvType.CV_32F);
+            Indexer indexer = imMat.createIndexer();
+            for (int i = 0; i < request.getHeight(); i++) {
+                for (int j = 0; j < request.getWidth(); j++) {
+                    ((FloatIndexer) indexer).put(i, j, maskOrig[i][j]);
+                }
             }
-        }
 
-        return findSplitROIs(imMat, request); // final splitter operation
+            return findSplitROIs(imMat, request); // final splitter operation
+        }
     }
 
     public static Transform createToTensorTransform(Device device) {

@@ -36,6 +36,7 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import org.bytedeco.javacpp.PointerScope;
 import org.bytedeco.opencv.opencv_core.Mat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -290,7 +291,9 @@ public class TableController {
         Platform.runLater(() -> {
             calculateGlobalBackground(server);
             try {
-                rollingBallImage = findRollingBallImage(server, rollingRadius, invertImage);
+                try (var scope = new PointerScope()) { // pointer scope allows for automatic memory management
+                    rollingBallImage = findRollingBallImage(server, rollingRadius, invertImage);
+                }
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -1011,13 +1014,13 @@ public class TableController {
         } else {
             globalMean = 0.0;
         }
-        Mat rollingBallImage = findRollingBallImage(server, rollingRadius, invertImage);
-
-        ArrayList<PathObject> annots = (ArrayList<PathObject>) getAnnotationObjects(); // sorts annotations by lane/band ID since this sorting is lost after reloading an image
-        annots.sort(new LaneBandCompare());
-
-        ObservableList<BandEntry> bandData = computeTableColumns(annots, server, globalCorrection, localCorrection, rollingBallCorrection, localSensitivity, globalMean, invertImage, rollingBallImage, normType);
-        exportDataToFolder(bandData, folder, filename, globalCorrection, localCorrection, rollingBallCorrection);
+        try (var scope = new PointerScope()) { // pointer scope allows for automatic memory management
+            Mat rollingBallImage = findRollingBallImage(server, rollingRadius, invertImage);
+            ArrayList<PathObject> annots = (ArrayList<PathObject>) getAnnotationObjects(); // sorts annotations by lane/band ID since this sorting is lost after reloading an image
+            annots.sort(new LaneBandCompare());
+            ObservableList<BandEntry> bandData = computeTableColumns(annots, server, globalCorrection, localCorrection, rollingBallCorrection, localSensitivity, globalMean, invertImage, rollingBallImage, normType);
+            exportDataToFolder(bandData, folder, filename, globalCorrection, localCorrection, rollingBallCorrection);
+        }
     }
 
     /**
