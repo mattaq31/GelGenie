@@ -159,6 +159,10 @@ public class ModelInterfacing {
         public Map<String, GelGenieModel> getModels() {
             return Collections.unmodifiableMap(models);
         }
+
+        public void addModel(String name, GelGenieModel model) {
+            models.put(name, model);
+        }
     }
 
     /**

@@ -21,6 +21,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 <?import javafx.scene.text.Text?>
+<?import javafx.scene.control.ComboBox?>
 
 <VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefWidth="370" stylesheets="@gelgeniestyles.css" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" xmlns="http://javafx.com/javafx/20.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="qupath.ext.gelgenie.ui.UIController">
     <TabPane fx:id="mainTabGroup" prefWidth="370.0" tabClosingPolicy="UNAVAILABLE">
@@ -46,11 +47,11 @@
                                             <Label styleClass="regular" text="%ui.model" />
                                             <HBox alignment="CENTER" styleClass="standard-spacing, standard-padding">
                                                 <children>
-                                                    <ChoiceBox id="deviceChoices" fx:id="modelChoiceBox" prefHeight="31.0" prefWidth="220.0">
+                                                    <ComboBox id="deviceChoices" fx:id="modelChoiceBox" prefHeight="31.0" prefWidth="220.0">
                                                         <tooltip>
                                                             <Tooltip text="%ui.model.tooltip" />
                                                         </tooltip>
-                                                    </ChoiceBox>
+                                                    </ComboBox>
                                                     <Button fx:id="downloadButton" mnemonicParsing="false" onAction="#downloadModel" prefHeight="31.0" prefWidth="39.0">
                                                         <tooltip>
                                                             <Tooltip text="%ui.model.download.tooltip" />

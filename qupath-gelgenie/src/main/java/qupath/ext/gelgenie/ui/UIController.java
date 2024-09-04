@@ -33,12 +33,14 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.geometry.Pos;
 import javafx.geometry.Side;
 import javafx.scene.Node;
 import javafx.scene.chart.BarChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
 import javafx.scene.text.TextFlow;
@@ -191,7 +193,7 @@ public class UIController {
     @FXML
     private BarChart<String, Number> bandChart;
     @FXML
-    private ChoiceBox<GelGenieModel> modelChoiceBox;
+    private ComboBox<GelGenieModel> modelChoiceBox;
     @FXML
     private ChoiceBox<String> deviceChoiceBox;
     @FXML
@@ -456,13 +458,66 @@ public class UIController {
      */
     private void getModelsPopulateList() {
         ModelInterfacing.GelGenieModelCollection models = ModelInterfacing.getModelCollection();
-        modelChoiceBox.getItems().setAll(models.getModels().values());
+
+        // Prepares headers to visually sort the many models available from HuggingFace
+        // Primary models are those that work best with most images
+        GelGenieModel primaryDummyHeader = new GelGenieModel();
+        primaryDummyHeader.setAbbrvName("Primary Models");
+        primaryDummyHeader.setDummyModel(true); // not a true model - just a placeholder to act as a header
+
+        GelGenieModel prototypeDummyHeader = new GelGenieModel();
+        prototypeDummyHeader.setAbbrvName("Prototype Models");
+        prototypeDummyHeader.setDummyModel(true);
+
+        models.addModel("Dummy Header - Primary", primaryDummyHeader); // adds to the list of models
+        models.addModel("Dummy Header - Prototypes", prototypeDummyHeader);
+
+        // the below arranges the models in the dropdown menu in a more logical order - is it possible to make this more elegant?
+        Collection<GelGenieModel> default_model_order = models.getModels().values();
+        Collection<GelGenieModel> header_arranged_order = new ArrayList<>();
+
+        header_arranged_order.add(primaryDummyHeader);
+        for (GelGenieModel model:default_model_order) {
+            if (!model.isDummyModel() && model.getModelType().equals("Primary")) {
+                header_arranged_order.add(model);
+            }
+        }
+        header_arranged_order.add(prototypeDummyHeader);
+        for (GelGenieModel model:default_model_order) {
+            if (!model.isDummyModel() && model.getModelType().equals("Prototype")) {
+                header_arranged_order.add(model);
+            }
+        }
+
+        // Customize the ListCell to turn dummy models into headers - centered + bold
+        modelChoiceBox.setCellFactory(cb -> new ListCell<GelGenieModel>() {
+            @Override
+            protected void updateItem(GelGenieModel item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setText(null);
+                } else {
+                    setText(item.getAbbrvName());
+                    setDisable(false);
+                    setAlignment(Pos.CENTER_LEFT);
+                    setStyle("");
+                    if (item.isDummyModel()) {
+                        setDisable(true); // Disable this item (headers should never be selected)
+                        setAlignment(Pos.CENTER);
+                        setStyle("-fx-font-weight: bold;");
+                    }
+                }
+            }
+        });
+
+        modelChoiceBox.getItems().setAll(header_arranged_order);
         modelChoiceBox.setConverter(new ModelInterfacing.ModelStringConverter(models));
+
         modelChoiceBox.getSelectionModel().selectedItemProperty().addListener(
                 (v, o, n) -> downloadButton.setDisable((n == null) || n.isValid()));
         modelChoiceBox.getSelectionModel().selectedItemProperty().addListener(
                 (v, o, n) -> infoButton.setDisable((n == null) || !n.isValid()|| !checkFileExists(n.getReadmeFile())));
-        modelChoiceBox.getSelectionModel().selectFirst();
+        modelChoiceBox.getSelectionModel().select(models.getModels().get("GelGenie-Universal-Dec-2023")); // default should always be the universal model
     }
 
     /**
@@ -808,7 +863,7 @@ public class UIController {
         SegmentationMap.exportSegmentationMap(fileOutput.toString());
 
         // records export command for scripting
-        addSegmentationExportToHistoryWorkflow(QP.getCurrentImageData());
+        addSegmentationExportToHistoryWorkflow(getCurrentImageData());
     }
 
     // WORKFLOW RECORDERS HERE

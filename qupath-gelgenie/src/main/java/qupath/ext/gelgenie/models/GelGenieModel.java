@@ -60,6 +60,11 @@ public class GelGenieModel {
     @SerializedName("abbrvName")
     private String abbrvName;
 
+    @SerializedName("modelType")
+    private String modelType;
+
+    private Boolean dummyModel = false;
+
     public String getName() {
         return modelName;
     }
@@ -71,6 +76,17 @@ public class GelGenieModel {
     public String getAbbrvName() {return abbrvName;}
 
     public String getDescription() {return description;}
+
+    public String getModelType() {return modelType;}
+
+    public Boolean isDummyModel() {return dummyModel;}
+
+    public void setDummyModel(Boolean dummyModel) {this.dummyModel = dummyModel;}
+
+    public void setAbbrvName(String abbrvName) {
+        this.abbrvName = abbrvName;
+    }
+
     /**
      * Remove the cached model files.
      */
