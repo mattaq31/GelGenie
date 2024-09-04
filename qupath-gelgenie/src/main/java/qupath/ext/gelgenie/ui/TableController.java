@@ -289,23 +289,23 @@ public class TableController {
         // Core table generation functionality.
         // This code block depends on user settings, which are not provided until this runLater() command.
         Platform.runLater(() -> {
-            calculateGlobalBackground(server);
-            try {
-                try (var scope = new PointerScope()) { // pointer scope allows for automatic memory management
+            try (var scope = new PointerScope()) { // pointer scope allows for automatic memory management
+                calculateGlobalBackground(server);
+                try {
                     rollingBallImage = findRollingBallImage(server, rollingRadius, invertImage);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
                 }
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
 
-            if (!selectedBands.isEmpty()) {
-                selectedBands.sort(new LaneBandCompare());
-                bandData = computeTableColumns(selectedBands, server, globalCorrection, localCorrection, rollingBallCorrection,
-                        localSensitivity, globalMean, invertImage, rollingBallImage, "Global");
-            } else {
-                annots.sort(new LaneBandCompare());
-                bandData = computeTableColumns(annots, server, globalCorrection, localCorrection, rollingBallCorrection,
-                        localSensitivity, globalMean, invertImage, rollingBallImage, "Global");
+                if (!selectedBands.isEmpty()) {
+                    selectedBands.sort(new LaneBandCompare());
+                    bandData = computeTableColumns(selectedBands, server, globalCorrection, localCorrection, rollingBallCorrection,
+                            localSensitivity, globalMean, invertImage, rollingBallImage, "Global");
+                } else {
+                    annots.sort(new LaneBandCompare());
+                    bandData = computeTableColumns(annots, server, globalCorrection, localCorrection, rollingBallCorrection,
+                            localSensitivity, globalMean, invertImage, rollingBallImage, "Global");
+                }
             }
             tableSetup();
 
