@@ -57,8 +57,8 @@ GelGenie Feature Highlights:
 
 ## QuPath GelGenie Extension Tutorial/Manual
 
-- Watch the video HERE!! for a quick overview of the extension's features.
-- For a comprehensive manual describing the entire process, jump to the readme page [here](/qupath-gelgenie/README.md).
+- For a comprehensive manual describing the installation and use of GelGenie, jump to the readme page [here](/qupath-gelgenie/README.md).
+- Short quick-start video tutorials coming soon!
 
 ##  GelGenie's Python Environment and Training New Models (for developers)
 
