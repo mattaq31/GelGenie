@@ -46,10 +46,7 @@ import qupath.lib.scripting.QP;
 import qupath.opencv.dnn.DnnTools;
 import qupath.opencv.dnn.OpenCVDnn;
 import qupath.opencv.tools.OpenCVTools;
-import ai.djl.modality.cv.translator.SemanticSegmentationTranslatorFactory;
 import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferUShort;
-import java.awt.image.WritableRaster;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -64,6 +61,7 @@ import ai.djl.training.util.*;
 import ai.djl.modality.cv.ImageFactory;
 
 import static qupath.lib.scripting.QP.addObjects;
+import static qupath.opencv.tools.OpenCVTools.matToBufferedImage;
 
 
 /**
@@ -82,25 +80,26 @@ public class ModelRunner {
      * @param model:     Model to be used for segmentation.
      * @param useDJL:    Boolean - set to true to use DJL, set to false to use OpenCV.
      * @param invertImage: Boolean - set to true to invert image before running model.
+     * @param dataMaxNorm: Boolean - set to true to normalize by datatype max range instead of max pixel value in image
      * @param imageData: Image containing gel bands to be segmented     .
      * @return Collection of individual gel bands found in image
      * @throws IOException
      */
-    public static Collection<PathObject> runFullImageInference(GelGenieModel model, boolean useDJL, boolean invertImage, ImageData<BufferedImage> imageData) throws IOException, TranslateException, ModelNotFoundException, MalformedModelException {
+    public static Collection<PathObject> runFullImageInference(GelGenieModel model, boolean useDJL, boolean invertImage, boolean dataMaxNorm, ImageData<BufferedImage> imageData) throws IOException, TranslateException, ModelNotFoundException, MalformedModelException {
 
         ImageServer<BufferedImage> server = imageData.getServer();
         // Use the entire image at full resolution
         RegionRequest request = RegionRequest.createInstance(server, downsample);
 
         if(useDJL){
-            return runDJLModel(model, imageData, request, model.getName().contains("nnUNet"), invertImage);
+            return runDJLModel(model, imageData, request, model.getName().contains("nnUNet"), invertImage, dataMaxNorm);
         }
         else{
             if (model.getName().contains("nnUNet")) {
                 Dialogs.showErrorMessage(resources.getString("ui.model-error.window-header"), resources.getString("error.model-issue"));
                 return null;
             }
-            return runOpenCVModel(model, imageData, request, invertImage);
+            return runOpenCVModel(model, imageData, request, invertImage, dataMaxNorm);
         }
     }
 
@@ -109,15 +108,16 @@ public class ModelRunner {
      * @param model: String-name of model to be used (must be available in model collection)
      * @param useDJL: Boolean - set to true to use DJL, set to false to use OpenCV.
      * @param invertImage: Boolean - set to true to invert image before running model.
+     * @param dataMaxNorm: Boolean - set to true to normalize by datatype max range instead of max pixel value in image
      * @return Collection of individual gel bands found in image.
      * @throws IOException
      * @throws TranslateException
      * @throws ModelNotFoundException
      * @throws MalformedModelException
      */
-    public static Collection<PathObject> runFullImageInference(String model, Boolean useDJL, Boolean invertImage) throws IOException, TranslateException, ModelNotFoundException, MalformedModelException {
+    public static Collection<PathObject> runFullImageInference(String model, Boolean useDJL, Boolean invertImage, Boolean dataMaxNorm) throws IOException, TranslateException, ModelNotFoundException, MalformedModelException {
         GelGenieModel selectedModel = ModelInterfacing.loadModel(model);
-        return runFullImageInference(selectedModel, useDJL, invertImage, QP.getCurrentImageData());
+        return runFullImageInference(selectedModel, useDJL, invertImage, dataMaxNorm, QP.getCurrentImageData());
     }
 
     /**
@@ -125,14 +125,15 @@ public class ModelRunner {
      * @param model: String-name of model to be used (must be available in model collection)
      * @param useDJL: Boolean - set to true to use DJL, set to false to use OpenCV.
      * @param invertImage: Boolean - set to true to invert image before running model.
+     * @param dataMaxNorm: Boolean - set to true to normalize by datatype max range instead of max pixel value in image
      * @return Collection of individual gel bands found in image.
      * @throws IOException
      * @throws TranslateException
      * @throws ModelNotFoundException
      * @throws MalformedModelException
      */
-    public static Collection<PathObject> runFullImageInferenceAndAddAnnotations(String model, Boolean useDJL, Boolean invertImage) throws TranslateException, ModelNotFoundException, MalformedModelException, IOException {
-        Collection<PathObject> annotations = runFullImageInference(model, useDJL, invertImage);
+    public static Collection<PathObject> runFullImageInferenceAndAddAnnotations(String model, Boolean useDJL, Boolean invertImage, Boolean dataMaxNorm) throws TranslateException, ModelNotFoundException, MalformedModelException, IOException {
+        Collection<PathObject> annotations = runFullImageInference(model, useDJL, invertImage, dataMaxNorm);
         for (PathObject annot : annotations) {
             annot.setPathClass(PathClass.fromString("Gel Band", 8000));
         }
@@ -150,6 +151,7 @@ public class ModelRunner {
      * @throws IOException
      */
     public static Collection<PathObject> runAnnotationInference(GelGenieModel model, boolean useDJL, boolean invertImage,
+                                                                boolean dataMaxNorm,
                                                                 ImageData<BufferedImage> imageData,
                                                                 PathObject annotation) throws IOException, TranslateException, ModelNotFoundException, MalformedModelException {
 
@@ -158,14 +160,14 @@ public class ModelRunner {
         // Slice out the selected annotation at full resolution
         RegionRequest request = RegionRequest.createInstance(server.getPath(), 1.0, annotation.getROI());
         if(useDJL){
-            return runDJLModel(model, imageData, request, model.getName().contains("nnUNet"), invertImage);
+            return runDJLModel(model, imageData, request, model.getName().contains("nnUNet"), invertImage, dataMaxNorm);
         }
         else{
             if (model.getName().contains("nnUNet")) {
                 Dialogs.showErrorMessage(resources.getString("ui.model-error.window-header"), resources.getString("error.model-issue"));
                 return null;
             }
-            return runOpenCVModel(model, imageData, request, invertImage);
+            return runOpenCVModel(model, imageData, request, invertImage, dataMaxNorm);
         }
     }
 
@@ -176,7 +178,7 @@ public class ModelRunner {
      * @return Collection of annotations containing segmented gel bands
      * @throws IOException
      */
-    private static Collection<PathObject> runOpenCVModel(GelGenieModel model, ImageData<BufferedImage> imageData, RegionRequest request, Boolean invertImage) throws IOException {
+    private static Collection<PathObject> runOpenCVModel(GelGenieModel model, ImageData<BufferedImage> imageData, RegionRequest request, Boolean invertImage, Boolean dataMaxNorm) throws IOException {
 
         try (var scope = new PointerScope()) { // pointer scope allows for automatic memory management
             int[] fullPadding = getPadding(request.getHeight(), request.getWidth(), 32); //gets padding to be added to get the image pixels as a multiple of 32
@@ -185,29 +187,33 @@ public class ModelRunner {
                     request.getWidth() + fullPadding[0] + fullPadding[1],
                     request.getHeight() + fullPadding[2] + fullPadding[3]).build();
 
-            // Create required intermediate Mat images
-            Mat paddedImage = new Mat();
-            Mat originalImage = OpenCVTools.imageToMat(imageData.getServer().readRegion(request));
+            BufferedImage image = imageData.getServer().readRegion(request);
+
+            // Create required intermediate Mat image
             Mat predImage = new Mat();
+            Mat convertedImage;
 
-            // if an RGB image provided, average channels into a single channel
-            if (originalImage.channels() > 1) {
-                var temp = originalImage.reshape(1, originalImage.rows() * originalImage.cols());
-                opencv_core.reduce(temp, temp, 1, opencv_core.REDUCE_AVG);
-                originalImage = temp.reshape(1, originalImage.rows());
+            // for 8-bit images, normalizing by dividing by 255 works in all cases
+            if (image.getType() == BufferedImage.TYPE_BYTE_GRAY) {
+                convertedImage = OpenCVTools.imageToMat(image);
+                opencv_core.dividePut(convertedImage, 255.0);
             }
-
-            // applies zero padding here
-            opencv_core.copyMakeBorder(originalImage, paddedImage, fullPadding[2], fullPadding[3], fullPadding[0], fullPadding[1], opencv_core.BORDER_CONSTANT, new Scalar(0.0));
-
-            //converts to float and normalises to 0-1
-            paddedImage.convertTo(paddedImage, CvType.CV_32F);
-            opencv_core.dividePut(paddedImage, imageData.getServer().getPixelType().getUpperBound().doubleValue());
+            // however, for other cases, normalizing by the max bit value could be problematic since it may be
+            // extremely high and will completely squash small values.  In this case, the user is given the choice
+            // between normalizing with the max bit value (default) or max pixel value in the image.
+            else{
+                convertedImage = convertAndNormalizeNonStandardImage(image, imageData, dataMaxNorm);
+            }
 
             // inverts image if requested
             if (invertImage) {
-                opencv_core.subtract(Mat.ones(paddedImage.size(), paddedImage.type()).asMat(), paddedImage, paddedImage);
+                opencv_core.subtract(Mat.ones(convertedImage.size(), convertedImage.type()).asMat(), convertedImage, convertedImage);
             }
+
+            Mat paddedImage = new Mat();
+            // applies zero padding here
+            opencv_core.copyMakeBorder(convertedImage, paddedImage, fullPadding[2], fullPadding[3], fullPadding[0], fullPadding[1], opencv_core.BORDER_CONSTANT, new Scalar(0.0));
+
             // runs model
             var output = dnnModel.predict(Map.of("input", paddedImage));
             predImage.put(output.values().iterator().next());
@@ -253,7 +259,7 @@ public class ModelRunner {
      * @throws MalformedModelException
      * @throws TranslateException
      */
-    private static Collection<PathObject> runDJLModel(GelGenieModel model, ImageData<BufferedImage> imageData, RegionRequest request, Boolean nnunetConfig, Boolean invertImage) throws IOException, ModelNotFoundException, MalformedModelException, TranslateException {
+    private static Collection<PathObject> runDJLModel(GelGenieModel model, ImageData<BufferedImage> imageData, RegionRequest request, Boolean nnunetConfig, Boolean invertImage, Boolean dataMaxNorm) throws IOException, ModelNotFoundException, MalformedModelException, TranslateException {
 
         Device device = PytorchManager.getDevice();
         int imageWidth = request.getWidth();
@@ -264,7 +270,8 @@ public class ModelRunner {
 
         Translator<Image, CategoryMask> translator;
 
-        if (nnunetConfig){
+        // prepares pipeline for preprocessing and running models here
+        if (nnunetConfig){ // nnunet do not require any padding (this is done internally in the torchscript model)
             if (invertImage){
                 translator = NnUNetSegmentationTranslator.builder()
                         .addTransform(createToTensorTransform(device))
@@ -304,7 +311,27 @@ public class ModelRunner {
 
         BufferedImage img = imageData.getServer().readRegion(request);
 
-        Image image = factory.fromImage(img);
+        // DJL's Image class is flawed - it only works properly with 8-bit images.
+        // To make it work with other image types and match openCV's output, need to convert to 8-bit explicitly
+        // However, since the image needs to be converted to 8-bit, some resolution is lost, which results in
+        // some minor mismatches with the OpenCV version.
+        // TODO: can this be resolved entirely by using Mat instead of Image for the DJL engine?  Need to investigate.
+        Image image;
+        if (img.getType() == BufferedImage.TYPE_BYTE_GRAY) {
+            image = factory.fromImage(img);
+        }
+        else{
+            // as with opencv, user is given the choice between max pixel and max range normalization for non 8-bit images
+            Mat convertedImage = convertAndNormalizeNonStandardImage(img, imageData, dataMaxNorm);
+
+            // converts to 8-bit image
+            opencv_core.multiplyPut(convertedImage, 255.0);
+            convertedImage.convertTo(convertedImage, CvType.CV_8U);
+
+            // extracts DJL's Image from the 8-bit image
+            image = factory.fromImage(matToBufferedImage(convertedImage));
+        }
+
         Criteria<Image, CategoryMask> criteria = Criteria.builder()
                 .setTypes(Image.class, CategoryMask.class)
                 .optModelPath(model.getTSFile().toPath())
@@ -334,6 +361,31 @@ public class ModelRunner {
 
             return findSplitROIs(imMat, request); // final splitter operation
         }
+    }
+
+    private static Mat convertAndNormalizeNonStandardImage(BufferedImage img, ImageData<BufferedImage> imageData, boolean dataMaxNorm){
+
+        // extracts image with OpenCV and converts to float
+        Mat normImage = OpenCVTools.imageToMat(img);
+        normImage.convertTo(normImage, CvType.CV_32F);
+
+        // if an RGB image provided, average channels into a single channel
+        if (normImage.channels() > 1) {
+            var temp = normImage.reshape(1, normImage.rows() * normImage.cols());
+            opencv_core.reduce(temp, temp, 1, opencv_core.REDUCE_AVG);
+            normImage = temp.reshape(1, normImage.rows());
+        }
+
+        if (!dataMaxNorm){
+            // normalises by the maximum pixel value in the image
+            double maxVal = Arrays.stream(OpenCVTools.extractDoubles(normImage)).max().getAsDouble();
+            opencv_core.dividePut(normImage, maxVal);
+        }
+        else{
+            opencv_core.dividePut(normImage, imageData.getServer().getPixelType().getUpperBound().doubleValue());
+        }
+
+        return normImage;
     }
 
     public static Transform createToTensorTransform(Device device) {

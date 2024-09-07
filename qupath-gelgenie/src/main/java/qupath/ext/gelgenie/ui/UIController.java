@@ -166,6 +166,10 @@ public class UIController {
     private CheckBox genTableOnSelectedBands;
     @FXML
     private CheckBox useDJLCheckBox;
+    @FXML
+    private CheckBox useModelMaxNormCheckBox;
+    @FXML
+    private CheckBox useModelDataNormCheckBox;
 
     // SPINNERS HERE
     @FXML
@@ -368,18 +372,34 @@ public class UIController {
         enableGlobalBackground.selectedProperty().bindBidirectional(GelGeniePrefs.globalCorrectionProperty());
         enableLocalBackground.selectedProperty().bindBidirectional(GelGeniePrefs.localCorrectionProperty());
         enableRollingBackground.selectedProperty().bindBidirectional(GelGeniePrefs.rollingCorrectionProperty());
+        useModelMaxNormCheckBox.selectedProperty().bindBidirectional(GelGeniePrefs.modelMaxNormProperty());
+        useModelDataNormCheckBox.selectedProperty().bindBidirectional(GelGeniePrefs.modelDataNormProperty());
 
+        // only one or the other checkbox can be selected
         runFullImage.selectedProperty().addListener(new ChangeListener<Boolean>() {
             @Override
             public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
                 runSelected.setSelected(!newValue);
             }
         });
-
         runSelected.selectedProperty().addListener(new ChangeListener<Boolean>() {
             @Override
             public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
                 runFullImage.setSelected(!newValue);
+            }
+        });
+
+        // only one or the other checkbox can be selected
+        useModelMaxNormCheckBox.selectedProperty().addListener(new ChangeListener<Boolean>() {
+            @Override
+            public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
+                useModelDataNormCheckBox.setSelected(!newValue);
+            }
+        });
+        useModelDataNormCheckBox.selectedProperty().addListener(new ChangeListener<Boolean>() {
+            @Override
+            public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
+                useModelMaxNormCheckBox.setSelected(!newValue);
             }
         });
 
@@ -720,9 +740,12 @@ public class UIController {
             if (inferencePrefs.runFullImagePref()) { // runs model on entire image
                 try {
                     newBands = ModelRunner.runFullImageInference(modelChoiceBox.getSelectionModel().getSelectedItem(),
-                            useDJLCheckBox.isSelected(), inferencePrefs.invertedImage(), imageData);
+                            useDJLCheckBox.isSelected(), inferencePrefs.invertedImage(),
+                            useModelDataNormCheckBox.isSelected(),imageData);
                     addInferenceToHistoryWorkflow(imageData,
-                            modelChoiceBox.getSelectionModel().getSelectedItem().getName(), useDJLCheckBox.isSelected(), inferencePrefs.invertedImage());
+                            modelChoiceBox.getSelectionModel().getSelectedItem().getName(), useDJLCheckBox.isSelected(),
+                            inferencePrefs.invertedImage(), useModelDataNormCheckBox.isSelected());
+
                 } catch (IOException | MalformedModelException | ModelNotFoundException | TranslateException e) {
                     pendingTask.set(null);
                     runButtonBinding.invalidate(); // fire an update to the binding, so the run button becomes available
@@ -731,7 +754,8 @@ public class UIController {
             } else { // runs model on data within selected annotation only
                 try {
                     newBands = ModelRunner.runAnnotationInference(modelChoiceBox.getSelectionModel().getSelectedItem(),
-                            useDJLCheckBox.isSelected(), inferencePrefs.invertedImage(), imageData, getSelectedObject());
+                            useDJLCheckBox.isSelected(), inferencePrefs.invertedImage(),
+                            useModelDataNormCheckBox.isSelected(), imageData, getSelectedObject());
 
                 } catch (IOException | MalformedModelException | TranslateException | ModelNotFoundException e) {
                     pendingTask.set(null);
@@ -876,12 +900,12 @@ public class UIController {
                         ));
     }
 
-    private static void addInferenceToHistoryWorkflow(ImageData<?> imageData, String modelName, boolean useDJL, boolean invertImage) {
+    private static void addInferenceToHistoryWorkflow(ImageData<?> imageData, String modelName, boolean useDJL, boolean invertImage, boolean dataMaxNorm) {
         imageData.getHistoryWorkflow()
                 .addStep(
                         new DefaultScriptableWorkflowStep(
                                 resources.getString("workflow.inference"),
-                                ModelRunner.class.getName() + ".runFullImageInferenceAndAddAnnotations(\""+modelName+"\","+useDJL+","+invertImage+")"
+                                ModelRunner.class.getName() + ".runFullImageInferenceAndAddAnnotations(\""+modelName+"\","+useDJL+","+invertImage+","+dataMaxNorm+")"
                         ));
     }
 

@@ -54,6 +54,7 @@ To run your first segmentation, follow these steps:
   - **`Delete previous bands`** - Selecting this will delete all previous segmentation results before generating new ones.
   - **`Light bands on dark background`** - Selecting this will assume that bands are lighter than the background (and vice-versa).  The extension will attempt to auto-assign the value of this checkbox but can sometimes make mistakes.  Make sure to fix this setting if it is incorrect for the current image.
 - Once a model is downloaded, it is always available for use and an internet connection is no longer required.
+- **For advanced users:** The default normalization method for images before being presented to a model is to divide all pixels by the maximum value of the image data type e.g. 65535 for 16-bit images, 255 for 8-bit images, etc.  However, we have observed that normalizing by the actual max pixel value (which can be less than the theoretical maximum) can sometimes have a beneficial effect in 16-bit (or more) images.  To use this setting, switch to the `Advanced` tab and toggle between the two checkboxes under `Model Runtime Settings`.  8-bit images are always normalized by 255, regardless of the values of these checkboxes.
 ### Direct CPU Inference (OpenCV Mode)
 - The easiest way to run models is in direct CPU inference mode using OpenCV, which is the default setting.  
 - This mode is fast, requires no preparation and will work well with all systems and models (except `nnUNet` models).
@@ -174,11 +175,12 @@ The `Workflow` tab will hold a record of all operations you've performed on an i
 </p>
 
 The full list of currently available GelGenie-specific scriptable commands and their inputs is provided below:
-- `qupath.ext.gelgenie.models.ModelRunner.runFullImageInferenceAndAddAnnotations(MODEL, BOOL-1, BOOL-2)`
+- `qupath.ext.gelgenie.models.ModelRunner.runFullImageInferenceAndAddAnnotations(MODEL, BOOL-1, BOOL-2, BOOL-3)`
   - Segments an image using the specified segmentation model.
   - MODEL: The model ID to run (e.g. "GelGenie-Universal-Dec-2023").  The exact ID will be provided in the workflow window if a model is run manually first.
   - BOOL-1: Set to `true` to use DJL, set to `false` to use OpenCV.
   - BOOL-2: Set to `true` to invert image before running model.
+  - BOOL-3: Set to `true` to normalize non-standard 8-bit images using the datatype maximum (e.g. 65535 for 16-bit images).  Set to false to normalize by the maximum pixel value in the current image instead.
 - `qupath.ext.gelgenie.tools.BandSorter.LabelBands()`
   - Automatically labels all bands in the image using the ladder-band scheme described above. 
 - `qupath.ext.gelgenie.ui.TableController.computeAndExportBandData(BOOL-1,BOOL-2,BOOL-3,NORM_TYPE,INT-1,INT-2,BOOL-4,OUTPUT_FOLDER,OUTPUT_FILENAME)`

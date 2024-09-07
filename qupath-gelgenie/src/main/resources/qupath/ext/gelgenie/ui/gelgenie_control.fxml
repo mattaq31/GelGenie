@@ -364,7 +364,7 @@
                         <TitledPane animated="false" collapsible="false" text="%ui.advanced.pane">
                             <VBox alignment="CENTER">
                                 <children>
-                                    <Label text="%ui.advanced.histotitle">
+                                    <Label text="%ui.advanced.histotitle" style="-fx-font-weight: bold;">
                                         <font>
                                             <Font name="System Bold" size="13.0" />
                                         </font>
@@ -396,7 +396,38 @@
                                             <Insets top="5.0" />
                                         </padding></Separator>
 
-                                    <Label text="%ui.advanced.DJL">
+                                    <Label text="%ui.advanced.modelsettings" style="-fx-font-weight: bold;">
+                                        <font>
+                                            <Font name="System Bold" size="13.0" />
+                                        </font>
+                                        <padding>
+                                            <Insets bottom="5.0" />
+                                        </padding>
+                                    </Label>
+
+                                    <HBox alignment="BASELINE_RIGHT" styleClass="standard-spacing">
+                                        <children>
+                                            <CheckBox fx:id="useModelMaxNormCheckBox" alignment="CENTER" contentDisplay="RIGHT" mnemonicParsing="false" nodeOrientation="RIGHT_TO_LEFT" text="%ui.advanced.modelnormswitch" />
+                                        </children>
+                                        <padding>
+                                            <Insets bottom="8.0" right="60.0" />
+                                        </padding>
+                                    </HBox>
+                                    <HBox alignment="BASELINE_RIGHT" styleClass="standard-spacing">
+                                        <children>
+                                            <CheckBox fx:id="useModelDataNormCheckBox" alignment="CENTER" contentDisplay="RIGHT" mnemonicParsing="false" selected="true" nodeOrientation="RIGHT_TO_LEFT" text="%ui.advanced.modelnormswitch2" />
+                                        </children>
+                                        <padding>
+                                            <Insets bottom="8.0" right="60.0" />
+                                        </padding>
+                                    </HBox>
+
+                                    <Separator prefWidth="200.0">
+                                        <padding>
+                                            <Insets top="5.0" />
+                                        </padding></Separator>
+
+                                    <Label text="%ui.advanced.DJL" style="-fx-font-weight: bold;">
                                         <font>
                                             <Font name="System Bold" size="13.0" />
                                         </font>

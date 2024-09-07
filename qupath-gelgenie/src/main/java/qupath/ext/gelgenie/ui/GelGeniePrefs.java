@@ -36,6 +36,9 @@ public class GelGeniePrefs {
     private static final BooleanProperty globalCorrectionProperty = PathPrefs.createPersistentPreference("gelgenie.globalcorrection", false);
     private static final BooleanProperty localCorrectionProperty = PathPrefs.createPersistentPreference("gelgenie.localcorrection", false);
     private static final BooleanProperty rollingCorrectionProperty = PathPrefs.createPersistentPreference("gelgenie.rollingcorrection", false);
+    private static final BooleanProperty modelMaxNormProperty = PathPrefs.createPersistentPreference("gelgenie.modelmaxnorm", true);
+    private static final BooleanProperty modelDataNormProperty = PathPrefs.createPersistentPreference("gelgenie.modeldatanorm", false);
+
     private static final Property<Integer> localCorrectionPixels = PathPrefs.createPersistentPreference("gelgenie.localcorrectionpixels", 5).asObject();
     private static final Property<Integer> rollingRadius = PathPrefs.createPersistentPreference("gelgenie.rollingradius", 50).asObject();
 
@@ -75,6 +78,9 @@ public class GelGeniePrefs {
     public static BooleanProperty rollingCorrectionProperty() {
         return rollingCorrectionProperty;
     }
+    public static BooleanProperty modelMaxNormProperty() {return modelMaxNormProperty;}
+    public static BooleanProperty modelDataNormProperty() {return modelDataNormProperty;}
+
     public static Property<Integer> localCorrectionPixels() {
         return localCorrectionPixels;
     }
