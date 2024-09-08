@@ -29,6 +29,8 @@ GelGenie Feature Highlights:
 - Open-source and configurable by everyone!
 
 <div style="display: flex; flex-wrap: wrap; justify-content: space-around;">
+  <img src="./qupath-gelgenie/screenshots/example_inference_1.gif" alt="GelGenie in action 1" style="width: 47%; margin: 0.5%;">
+  <img src="./qupath-gelgenie/screenshots/example_inference_3.gif" alt="GelGenie in action 2" style="width: 47%; margin: 0.5%;">
   <img src="./qupath-gelgenie/screenshots/s1.png" alt="GelGenie Screenshot 1" style="width: 47%; margin: 0.5%;">
   <img src="./qupath-gelgenie/screenshots/s2.png" alt="GelGenie Screenshot 2" style="width: 47%; margin: 0.5%;">
   <img src="./qupath-gelgenie/screenshots/s3.png" alt="GelGenie Screenshot 3" style="width: 47%; margin: 0.5%;">
