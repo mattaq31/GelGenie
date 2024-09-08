@@ -196,6 +196,7 @@ public class ModelRunner {
             // for 8-bit images, normalizing by dividing by 255 works in all cases
             if (image.getType() == BufferedImage.TYPE_BYTE_GRAY) {
                 convertedImage = OpenCVTools.imageToMat(image);
+                convertedImage.convertTo(convertedImage, CvType.CV_32F);
                 opencv_core.dividePut(convertedImage, 255.0);
             }
             // however, for other cases, normalizing by the max bit value could be problematic since it may be
