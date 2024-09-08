@@ -90,4 +90,23 @@ For more details of everyone's coding contributions, please check the graphs [he
 Contributions from the open-source community are welcome!  In particular, we are looking for help with introducing unit tests to both the Python and Java GelGenie packages!
 
 ## Literature Citation
-Citation details TBC
+
+Currently, our main manuscript is available as a preprint on bioRxiv, available here: https://doi.org/10.1101/2024.09.06.611479
+
+Bibtex citation details available below:
+
+```bibtex
+@article{aquilinaGelGenieAIpoweredFramework2024,
+	title = {{GelGenie}: an {AI}-powered framework for gel electrophoresis image analysis},
+	copyright = {All rights reserved},
+	url = {http://biorxiv.org/content/early/2024/09/06/2024.09.06.611479.abstract},
+	doi = {10.1101/2024.09.06.611479},
+	abstract = {Gel electrophoresis is a ubiquitous laboratory method for the separation and semi-quantitative analysis of biomolecules. However, gel image analysis principles have barely advanced for decades, in stark contrast to other fields where AI has revolutionised data processing. Here, we show that an AI-based system can automatically identify gel bands in seconds for a wide range of experimental conditions, far surpassing the capabilities of current software. We used a dataset containing 500+ images of manually-labelled gels to train various U-Nets to accurately identify bands through segmentation, i.e. classifying pixels as 'band' or 'background'. When applied to gel electrophoresis data from other laboratories, our system generated results that quantitatively matched those of the original authors. We have publicly released our models through GelGenie, an open-source application that allows users to extract bands from gel images on their own devices, with no expert knowledge or experience required.},
+	journal = {bioRxiv},
+	author = {Aquilina, Matthew and Wu, Nathan J.W. and Kwan, Kiros and Busic, Filip and Dodd, James and Nicolas-Saenz, Laura and O'Callaghan, Alan and Bankhead, Peter and Dunn, Katherine E},
+	month = jan,
+	year = {2024},
+	pages = {2024.09.06.611479},
+}
+```
+
