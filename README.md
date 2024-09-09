@@ -59,7 +59,7 @@ GelGenie Feature Highlights:
 ## QuPath GelGenie Extension Tutorial/Manual
 
 - For a comprehensive manual describing the installation and use of GelGenie, jump to the readme page [here](/qupath-gelgenie/README.md).
-- Short quick-start video tutorials coming soon!
+- A quick-start video showing how to install the app and the main features is available here: [https://youtu.be/_HZyM8Shgc0](https://youtu.be/_HZyM8Shgc0).
 
 ##  GelGenie's Python Environment and Training New Models (for developers)
 
