@@ -237,7 +237,12 @@ public class UIController {
         configureTabGroup(); // sets up tab pane
 
         if(qupath.getImageData() != null){
-            imageInversion.setSelected(!checkGelImageInversion());
+            if (getCurrentImageData().getProperty("Image Needs Inversion") == null){
+                imageInversion.setSelected(!checkGelImageInversion());
+            }
+            else{
+                imageInversion.setSelected(!(boolean) getCurrentImageData().getProperty("Image Needs Inversion"));
+            }
         }
 
         logger.info("GelGenie GUI loaded without errors");
@@ -404,17 +409,29 @@ public class UIController {
         });
 
         // checks the image to see if it's a dark or light background and then sets GUI checkbox accordingly.
-        // The checkbox can be manually adjusted by the user TODO: can this value be retained and associated with the specific image that's open?
+        // The checkbox can be manually adjusted by the user
         qupath.imageDataProperty().addListener((observable, oldValue, newValue) -> {
             if (getCurrentImageData() != null) {
                 try {
-                    imageInversion.setSelected(!checkGelImageInversion());
+                    if (getCurrentImageData().getProperty("Image Needs Inversion") == null){
+                        imageInversion.setSelected(!checkGelImageInversion());
+                    }
+                    else{
+                        imageInversion.setSelected(!(boolean) getCurrentImageData().getProperty("Image Needs Inversion"));
+                    }
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
             }
         });
 
+        // updates the image data property if the checkbox value changes
+        imageInversion.selectedProperty().addListener(new ChangeListener<Boolean>() {
+            @Override
+            public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
+                getCurrentImageData().setProperty("Image Needs Inversion", !newValue);
+            }
+        });
     }
 
     /*
