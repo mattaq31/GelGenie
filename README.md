@@ -38,7 +38,7 @@ GelGenie Feature Highlights:
 
 ## Installing the QuPath GelGenie Extension
 
-- First, install the latest version of QuPath (currently 0.5.1), following the instructions for your operating system [here](https://qupath.github.io).
+- First, install the latest version of QuPath (currently 0.6.0), following the instructions for your operating system [here](https://qupath.github.io).
 - Next, download the latest version of the GelGenie extension from the [releases](https://github.com/mattaq31/GelGenie/releases) page (make sure to only download the .jar file):
 
 <p align="center">

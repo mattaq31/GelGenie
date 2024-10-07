@@ -27,33 +27,49 @@ def to_numpy(tensor):
     return tensor.detach().cpu().numpy() if tensor.requires_grad else tensor.cpu().numpy()
 
 
-def simple_onnx_export(model_folder, epoch):
+def simple_onnx_export(model_folder, epoch, fixed_axes=False, dummy_image_dimensions=1024):
     """
-    Exports a pytorch model to onnx format, then simplifies it for use with OpenCV (4.6).
+    Exports a pytorch model to onnx format, then simplifies it for use with OpenCV.
+    Dynamic axes can only be used with OpenCV < 4.7.
     :param model_folder: Main model folder containing epoch checkpoints.
     :param epoch: Specific epoch to export.
+    :param fixed_axes: If True, the image input axes are fixed to dummy_image_dimensions, otherwise they are dynamic.
+    :param dummy_image_dimensions: The dimensions of the dummy image used for inference.
     :return: Pytorch model and filepath of exported onnx model.
     """
     output_folder = os.path.join(model_folder, 'onnx_checkpoints')
     create_dir_if_empty(output_folder)
 
-    descriptive_name = os.path.basename(model_folder) + '_epoch_' + str(epoch)
-    dummy_input = torch.zeros((1, 1, 128, 128), dtype=torch.float32)
+    if fixed_axes:
+        descriptive_name = os.path.basename(model_folder) + '_epoch_' + str(epoch) + '_fixed_dim_' + str(dummy_image_dimensions)
+    else:
+        descriptive_name = os.path.basename(model_folder) + '_epoch_' + str(epoch)
+
+    dummy_input = torch.zeros((1, 1, dummy_image_dimensions, dummy_image_dimensions), dtype=torch.float32)
     temp_file = os.path.join(output_folder, 'temp_checkpoint.onnx')
     final_file = os.path.join(output_folder, descriptive_name + '.onnx')
 
     net = model_eval_load(model_folder, epoch)
-
-    torch.onnx.export(net,  # model being run
-                      dummy_input,  # model input (or a tuple for multiple inputs)
-                      temp_file,
-                      export_params=True,  # store the trained parameter weights inside the model file
-                      opset_version=12,  # the ONNX version to export the model to
-                      do_constant_folding=True,  # whether to execute constant folding for optimization
-                      input_names=['input'],  # the model's input names
-                      output_names=['output'],
-                      dynamic_axes={'input': {0: 'batch_size', 2: 'height', 3: 'width'},  # variable length axes
-                                    'output': {0: 'batch_size', 2: 'height', 3: 'width'}})
+    if fixed_axes:
+        torch.onnx.export(net,  # model being run
+                          dummy_input,  # model input (or a tuple for multiple inputs)
+                          temp_file,
+                          export_params=True,  # store the trained parameter weights inside the model file
+                          opset_version=12,  # the ONNX version to export the model to
+                          do_constant_folding=True,  # whether to execute constant folding for optimization
+                          input_names=['input'],  # the model's input names
+                          output_names=['output'])
+    else:
+        torch.onnx.export(net,  # model being run
+                          dummy_input,  # model input (or a tuple for multiple inputs)
+                          temp_file,
+                          export_params=True,  # store the trained parameter weights inside the model file
+                          opset_version=12,  # the ONNX version to export the model to
+                          do_constant_folding=True,  # whether to execute constant folding for optimization
+                          input_names=['input'],  # the model's input names
+                          output_names=['output'],
+                          dynamic_axes={'input': {0: 'batch_size', 2: 'height', 3: 'width'},  # variable length axes
+                                        'output': {0: 'batch_size', 2: 'height', 3: 'width'}})
 
     onnx_model = onnx.load(temp_file)
     onnx.checker.check_model(onnx_model)
@@ -70,6 +86,7 @@ def simple_onnx_export(model_folder, epoch):
 def visual_onnx_export(model_folder, epoch, image_folder):
     """
     Runs an onnx export, and generates a sample image using onnx and opencv for comparison purposes.
+    Only supports dynamic axes and not static axes.
     :param model_folder: Main model folder containing epoch checkpoints.
     :param epoch: Specific epoch to export.
     :param image_folder: Folder containing images that can be tested on using the selected model.

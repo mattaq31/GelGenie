@@ -57,9 +57,10 @@ To run your first segmentation, follow these steps:
 - **For advanced users:** The default normalization method for images before being presented to a model is to divide all pixels by the maximum value of the image data type e.g. 65535 for 16-bit images, 255 for 8-bit images, etc.  However, we have observed that normalizing by the actual max pixel value (which can be less than the theoretical maximum) can sometimes have a beneficial effect in 16-bit (or more) images.  To use this setting, switch to the `Advanced` tab and toggle between the two checkboxes under `Model Runtime Settings`.  8-bit images are always normalized by 255, regardless of the values of these checkboxes.
 ### Direct CPU Inference (OpenCV Mode)
 - The easiest way to run models is in direct CPU inference mode using OpenCV, which is the default setting.  
-- This mode is fast, requires no preparation and will work well with all systems and models (except `nnUNet` models).
+- This mode is moderately fast, requires no preparation and will work well with all systems and models (except `nnUNet` models).
 - After clicking on the `Identify Bands` button, GelGenie will show a quick notification that inference has started.  Typically, the process should take just a few seconds on most normal gel images (expect a longer delay for very large .tif images).
 - When complete, the segmented bands will be shown directly on the image, as shown below.  Segmentation results can be adjusted and quantified following the guides in the next sections.
+- **For Advanced Users:**  From QuPath version 0.6+ (GelGenie version 1.1.0+), OpenCV can no longer run models on images of arbitrary size.  Instead, the model needs to accept a fixed input size to work.  To make things work for GelGenie, the model input size has been fixed to 1024x1024, and images which do not match this size are padded and/or tiled and fed into the model in 1024x1024 chunks.  The results are often identical to previous versions of GelGenie but some differences will still be apparent.  To use GelGenie in its intended format (accepting images of arbitrary size), please use the DJL inference mode instead.
 <p align="center">
 <img src="./screenshots/example_seg.png" alt="Example segmentation result" width="600">
 </p>

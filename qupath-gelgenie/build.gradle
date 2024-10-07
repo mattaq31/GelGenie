@@ -11,14 +11,14 @@ plugins {
 
 ext.moduleName = 'io.github.qupath.extension.gelgenie'
 
-version = "1.0.4"
-description = 'QuPath extension to directly run and interface with GelGenie models.'
+base {
+    description = 'QuPath extension to directly run and interface with GelGenie models.'
+    version = "1.1.0"
+    group = 'io.github.qupath'
+}
 
 // The default 'gradle.ext.qupathVersion' reads this from settings.gradle.
 ext.qupathVersion = gradle.ext.qupathVersion
-
-// 17 for QuPath v0.5.0
-ext.qupathJavaVersion = 17
 
 def djlVersion = libs.versions.deepJavaLibrary.get() // gets deep java version from main QuPath
 
@@ -85,14 +85,16 @@ tasks.register("copyDependencies", Copy) {
 }
 
 /*
- * Ensure Java 11 compatibility, and include sources and javadocs when building.
+ * Ensure Java 21 compatibility
  */
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(qupathJavaVersion)
+        languageVersion = JavaLanguageVersion.of(libs.versions.jdk.get())
     }
-    withSourcesJar()
-    withJavadocJar()
+    if (project.properties['sources'])
+        withSourcesJar()
+    if (project.properties['javadocs'])
+        withJavadocJar()
 }
 
 /*
