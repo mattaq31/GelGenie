@@ -40,11 +40,15 @@ import qupath.lib.images.servers.ImageServer;
 import qupath.lib.objects.PathObject;
 import qupath.lib.objects.PathObjects;
 import qupath.lib.objects.classes.PathClass;
+import qupath.lib.regions.Padding;
 import qupath.lib.regions.RegionRequest;
 import qupath.lib.roi.interfaces.ROI;
 import qupath.lib.scripting.QP;
 import qupath.opencv.dnn.DnnTools;
 import qupath.opencv.dnn.OpenCVDnn;
+import qupath.opencv.ops.ImageDataOp;
+import qupath.opencv.ops.ImageOp;
+import qupath.opencv.ops.ImageOps;
 import qupath.opencv.tools.OpenCVTools;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -172,7 +176,8 @@ public class ModelRunner {
     }
 
     /**
-     * Runs ONNX model using openCV.  Formats output mask into QuPath annotations.
+     * Runs ONNX model using openCV.  Formats output mask into QuPath annotations.  Image has to be split into tiles
+     * since OpenCV models (post version 4.6) do not support dynamic input sizes.
      * @param imageData:   Actual full image
      * @param request:     Region from which pixels to be extracted
      * @return Collection of annotations containing segmented gel bands
@@ -181,16 +186,16 @@ public class ModelRunner {
     private static Collection<PathObject> runOpenCVModel(GelGenieModel model, ImageData<BufferedImage> imageData, RegionRequest request, Boolean invertImage, Boolean dataMaxNorm) throws IOException {
 
         try (var scope = new PointerScope()) { // pointer scope allows for automatic memory management
-            int[] fullPadding = getPadding(request.getHeight(), request.getWidth(), 32); //gets padding to be added to get the image pixels as a multiple of 32
 
-            OpenCVDnn dnnModel = DnnTools.builder(model.getOnnxFile().toString()).size( // creates opencv model from ONNX file
-                    request.getWidth() + fullPadding[0] + fullPadding[1],
-                    request.getHeight() + fullPadding[2] + fullPadding[3]).build();
+            int padValue = 64;
+            int[] fullPadding = {padValue, padValue, padValue, padValue}; // padding selected to ensure that when image is tiled, minimal artifacts will appear due to arbitrary breaks in the image at tile boundaries
+
+            OpenCVDnn dnnModel = DnnTools.builder(model.getOnnxFile().toString()).size( 1024, 1024).build(); // creates opencv model from ONNX file - model size is fixed due to opencv issue with dynamic inputs
 
             BufferedImage image = imageData.getServer().readRegion(request);
 
             // Create required intermediate Mat image
-            Mat predImage = new Mat();
+//            Mat predImage = new Mat();
             Mat convertedImage;
 
             // for 8-bit images, normalizing by dividing by 255 works in all cases
@@ -212,36 +217,37 @@ public class ModelRunner {
             }
 
             Mat paddedImage = new Mat();
+
             // applies zero padding here
-            opencv_core.copyMakeBorder(convertedImage, paddedImage, fullPadding[2], fullPadding[3], fullPadding[0], fullPadding[1], opencv_core.BORDER_CONSTANT, new Scalar(0.0));
+            opencv_core.copyMakeBorder(convertedImage, paddedImage, fullPadding[0], fullPadding[1], fullPadding[2], fullPadding[3], opencv_core.BORDER_CONSTANT, new Scalar(0.0));
 
-            // runs model
-            var output = dnnModel.predict(Map.of("input", paddedImage));
-            predImage.put(output.values().iterator().next());
+            // runs model - model has to be a fixed size due to OpenCV limitations (post 4.6)
+            ImageOp dataOp = ImageOps.ML.dnn(dnnModel, 1024, 1024, Padding.symmetric(padValue));
 
-            // The below processes the two outputs from the openCV model into a single segmentation map
+            Mat predImage = dataOp.apply(paddedImage); // the image padding will be removed automatically by the tiling system
+
+            // The below processes the two channels from the openCV model into a single segmentation map
 
             // first, the output is split into two different channels
             List<Mat> splitchannels = OpenCVTools.splitChannels(predImage);
 
             // indexers and a new output image are created
             Mat segmentedMat = new Mat(request.getHeight(), request.getWidth(), CvType.CV_32F);
-
             Indexer backgroundIndexer = splitchannels.get(0).createIndexer();
             Indexer foregroundIndexer = splitchannels.get(1).createIndexer();
             Indexer newIndexer = segmentedMat.createIndexer();
 
             // the split channels are compared - the output pixel is a positive if the foreground channel is larger than the background channel
-            // the zero-padding is also removed through the indexing operations
-            for (int i = fullPadding[2]; i < request.getHeight() + fullPadding[2]; i++) {
-                for (int j = fullPadding[0]; j < request.getWidth() + fullPadding[0]; j++) {
+            for (int i = 0; i < request.getHeight(); i++) {
+                for (int j = 0; j < request.getWidth(); j++) {
                     int classSelection = 0;
                     if (foregroundIndexer.getDouble(i, j) >= backgroundIndexer.getDouble(i, j)) {
                         classSelection = 1;
                     }
-                    ((FloatIndexer) newIndexer).put(i - fullPadding[2], j - fullPadding[0], classSelection);
+                    ((FloatIndexer) newIndexer).put(i, j, classSelection);
                 }
             }
+
             // final labelling occurs on the segmented image
             return findSplitROIs(segmentedMat, request);
         }
