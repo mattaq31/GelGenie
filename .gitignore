@@ -152,4 +152,5 @@ qupath_latest/
 qupath-extension-wsinfer/
 qupath-extension-djl/
 qupath-extension-djl-latest/
+Qupath-extension-instanseg/
 nnUNet/

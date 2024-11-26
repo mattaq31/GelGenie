@@ -45,6 +45,7 @@ import qupath.lib.roi.interfaces.ROI;
 import qupath.lib.scripting.QP;
 import qupath.opencv.dnn.DnnTools;
 import qupath.opencv.dnn.OpenCVDnn;
+import qupath.opencv.ops.ImageOps;
 import qupath.opencv.tools.OpenCVTools;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -108,7 +109,8 @@ public class ModelRunner {
      * @param model: String-name of model to be used (must be available in model collection)
      * @param useDJL: Boolean - set to true to use DJL, set to false to use OpenCV.
      * @param invertImage: Boolean - set to true to invert image before running model.
-     * @param dataMaxNorm: Boolean - set to true to normalize by datatype max range instead of max pixel value in image
+     * @param dataMaxNorm: Boolean - set to true to normalize by datatype max range instead of max pixel value in image.
+     *                   The max pixel normalisation also applies percentile cutoffs and shifts data to the range 0-1.
      * @return Collection of individual gel bands found in image.
      * @throws IOException
      * @throws TranslateException
@@ -125,7 +127,8 @@ public class ModelRunner {
      * @param model: String-name of model to be used (must be available in model collection)
      * @param useDJL: Boolean - set to true to use DJL, set to false to use OpenCV.
      * @param invertImage: Boolean - set to true to invert image before running model.
-     * @param dataMaxNorm: Boolean - set to true to normalize by datatype max range instead of max pixel value in image
+     * @param dataMaxNorm: Boolean - set to true to normalize by datatype max range instead of max pixel value in image.
+     *                   The max pixel normalisation also applies percentile cutoffs and shifts data to the range 0-1.
      * @return Collection of individual gel bands found in image.
      * @throws IOException
      * @throws TranslateException
@@ -173,8 +176,12 @@ public class ModelRunner {
 
     /**
      * Runs ONNX model using openCV.  Formats output mask into QuPath annotations.
+     * @param model:       Model to be used for segmentation
      * @param imageData:   Actual full image
      * @param request:     Region from which pixels to be extracted
+     * @param invertImage: Boolean - set to true to invert image before running model.
+     * @param dataMaxNorm: Boolean - set to true to normalize by datatype max range instead of max pixel value in image.
+     *                   The max pixel normalisation also applies percentile cutoffs and shifts data to the range 0-1.
      * @return Collection of annotations containing segmented gel bands
      * @throws IOException
      */
@@ -252,8 +259,13 @@ public class ModelRunner {
      * inference and then splitting output pixels into annotations.
      * IMPORTANT: DJL models only run on 8-bit images - 16-bit images are automatically converted to 8-bit ones.
      * This should not affect final gel quantitation, however.
+     * @param model: The model to be used for segmentation.
      * @param imageData: The actual image pixel data.
      * @param request: The request corresponding to the image pixels.
+     * @param nnunetConfig: Boolean - set to true if the model is an nnUNet model.
+     * @param invertImage: Boolean - set to true to invert image before running model.
+     * @param dataMaxNorm: Boolean - set to true to normalize by datatype max range instead of max pixel value in image.
+     *                   The max pixel normalisation also applies percentile cutoffs and shifts data to the range 0-1.
      * @return A list of gel annotations found by the model.
      * @throws IOException
      * @throws ModelNotFoundException
@@ -378,11 +390,16 @@ public class ModelRunner {
         }
 
         if (!dataMaxNorm){
-            // normalises by the maximum pixel value in the image
-            double maxVal = Arrays.stream(OpenCVTools.extractDoubles(normImage)).max().getAsDouble();
-            opencv_core.dividePut(normImage, maxVal);
+            // normalises by the maximum pixel value in the image to the range 0-1
+            // also applies percentile normalization to remove bottom 0.1% and top 0.1% outliers
+            double[] percentiles = new double[]{0.1, 99.9};
+            var range = OpenCVTools.percentiles(normImage, percentiles); // finds percentile range
+            double scale = 1.0/(range[1] - range[0]);
+            double offset = -range[0];
+            normImage.convertTo(normImage, normImage.type(), scale, offset*scale);
         }
         else{
+            // plain and direct normalization by the datatype's maximum value - no percentile or 0-1 shifting performed
             opencv_core.dividePut(normImage, imageData.getServer().getPixelType().getUpperBound().doubleValue());
         }
 

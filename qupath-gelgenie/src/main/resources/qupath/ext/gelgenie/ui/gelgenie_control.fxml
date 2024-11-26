@@ -407,7 +407,7 @@
 
                                     <HBox alignment="BASELINE_RIGHT" styleClass="standard-spacing">
                                         <children>
-                                            <CheckBox fx:id="useModelMaxNormCheckBox" alignment="CENTER" contentDisplay="RIGHT" mnemonicParsing="false" nodeOrientation="RIGHT_TO_LEFT" text="%ui.advanced.modelnormswitch" />
+                                            <CheckBox fx:id="useModelMaxNormCheckBox" alignment="CENTER" contentDisplay="RIGHT" mnemonicParsing="false" selected="true" nodeOrientation="RIGHT_TO_LEFT" text="%ui.advanced.modelnormswitch" />
                                         </children>
                                         <padding>
                                             <Insets bottom="8.0" right="60.0" />
@@ -415,7 +415,7 @@
                                     </HBox>
                                     <HBox alignment="BASELINE_RIGHT" styleClass="standard-spacing">
                                         <children>
-                                            <CheckBox fx:id="useModelDataNormCheckBox" alignment="CENTER" contentDisplay="RIGHT" mnemonicParsing="false" selected="true" nodeOrientation="RIGHT_TO_LEFT" text="%ui.advanced.modelnormswitch2" />
+                                            <CheckBox fx:id="useModelDataNormCheckBox" alignment="CENTER" contentDisplay="RIGHT" mnemonicParsing="false" selected="false" nodeOrientation="RIGHT_TO_LEFT" text="%ui.advanced.modelnormswitch2" />
                                         </children>
                                         <padding>
                                             <Insets bottom="8.0" right="60.0" />
