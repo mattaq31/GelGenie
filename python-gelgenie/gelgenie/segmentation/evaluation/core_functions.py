@@ -26,6 +26,8 @@ import torch.nn.functional as F
 import matplotlib.pyplot as plt
 from scipy import ndimage as ndi
 from skimage.color import label2rgb
+from scipy.spatial.distance import directed_hausdorff
+from skimage.segmentation import find_boundaries
 from tqdm import tqdm
 import math
 import imageio
@@ -35,6 +37,7 @@ from collections import defaultdict
 import pandas as pd
 from sklearn.metrics import confusion_matrix
 from PIL import Image
+
 
 # location of reference data, to be imported if required in other files
 ref_data_folder = os.path.join(os.path.abspath(os.path.join(__file__, os.path.pardir, os.path.pardir, os.path.pardir)),
@@ -213,7 +216,7 @@ def read_nnunet_inference_from_file(nfile):
 
 
 def segment_and_quantitate(models, model_names, input_folder, mask_folder, output_folder,
-                           minmax_norm=False, multi_augment=False, images_per_row=3,
+                           minmax_norm=False, percentile_norm=False, multi_augment=False, images_per_row=3,
                            run_classical_techniques=False, nnunet_models_and_folders=None,
                            map_pixel_colour=(163, 106, 13)):
     """
@@ -225,6 +228,7 @@ def segment_and_quantitate(models, model_names, input_folder, mask_folder, outpu
     :param mask_folder: Corresponding folder containing ground truth mask labels for loss computation
     :param output_folder: Output folder to save results
     :param minmax_norm: Set to true to min-max normalise images before segmentation
+    :param percentile_norm: Set to true to percentile normalise images before segmentation
     :param multi_augment: Set to true to perform test-time augmentation
     :param images_per_row: Number of images to plot per row in the output comparison figure
     :param run_classical_techniques: Set to true to also run watershed and multiotsu segmentation apart from selected models
@@ -233,7 +237,7 @@ def segment_and_quantitate(models, model_names, input_folder, mask_folder, outpu
     :return: N/A (all outputs saved to file)
     """
     dataset = ImageMaskDataset(input_folder, mask_folder, 1, padding=False, individual_padding=True,
-                               minmax_norm=minmax_norm)
+                               minmax_norm=minmax_norm, percentile_norm=percentile_norm)
     dataloader = DataLoader(dataset, shuffle=False, batch_size=1, num_workers=0, pin_memory=True)
 
     if run_classical_techniques:
@@ -259,7 +263,7 @@ def segment_and_quantitate(models, model_names, input_folder, mask_folder, outpu
         double_indexing = False
 
     metrics_dict = {}
-    metrics = ['Dice Score', 'MultiClass Dice Score', 'True Negatives', 'False Positives', 'False Negatives', 'True Positives']
+    metrics = ['Dice Score', 'MultiClass Dice Score', 'True Negatives', 'False Positives', 'False Negatives', 'True Positives', 'Precision', 'Recall', 'Hausdorff Distance']
 
     for metric in metrics:
         metrics_dict[metric] = defaultdict(list)
@@ -322,9 +326,27 @@ def segment_and_quantitate(models, model_names, input_folder, mask_folder, outpu
                 c_mask = mask.flatten()
             else:
                 c_mask = mask.argmax(axis=0).flatten()
-            tn, fp, fn, tp = confusion_matrix(c_mask, gt_mask.numpy().squeeze().flatten()).ravel()
 
-            for metric, value in zip(metrics, [dice_score, dice_score_multi, tn, fp, fn, tp]):
+            # standard metrics to complement dice score
+            tn, fp, fn, tp = confusion_matrix(c_mask, gt_mask.numpy().squeeze().flatten()).ravel()
+            precision = tp/(tp+fp)
+
+            if tp == 0 and fn == 0:
+                recall = 0  # worst possible case
+            else:
+                recall = tp/(tp+fn)
+
+            # Hausdorff distance calculation here
+            # Extract boundary points of segmentation maps
+            ground_truth_boundary = np.argwhere(find_boundaries(gt_one_hot[:, 1:, ...].cpu().numpy().squeeze().astype(int), mode="outer"))
+            prediction_boundary = np.argwhere(find_boundaries(torch_one_hot[:, 1:, ...].cpu().numpy().squeeze().astype(int), mode="outer"))
+
+            # Compute distance - since it's directed, need to compute twice and take max
+            d1 = directed_hausdorff(ground_truth_boundary, prediction_boundary)[0]
+            d2 = directed_hausdorff(prediction_boundary, ground_truth_boundary)[0]
+            hausdorff_distance = max(d1, d2)
+
+            for metric, value in zip(metrics, [dice_score, dice_score_multi, tn, fp, fn, tp, precision, recall, hausdorff_distance]):
                 metrics_dict[metric][image_name].append(value)
 
             # direct model plotting
@@ -359,8 +381,8 @@ def segment_and_quantitate(models, model_names, input_folder, mask_folder, outpu
         pd_data.to_csv(os.path.join(output_folder, 'metrics', '%s.csv' % key), mode='w', header=True, index=True, index_label='Image')
 
 
-def segment_and_plot(models, model_names, input_folder, output_folder, minmax_norm=False, multi_augment=False,
-                     images_per_row=2, run_classical_techniques=False, nnunet_models_and_folders=None,
+def segment_and_plot(models, model_names, input_folder, output_folder, minmax_norm=False, percentile_norm=False,
+                     multi_augment=False, images_per_row=2, run_classical_techniques=False, nnunet_models_and_folders=None,
                      map_pixel_colour=(163, 106, 13)):
     """
     Segments images in input_folder using models and saves the output image and a quick comparison to the output folder.
@@ -369,6 +391,7 @@ def segment_and_plot(models, model_names, input_folder, output_folder, minmax_no
     :param input_folder: Input folder containing gel images
     :param output_folder: Output folder to save results
     :param minmax_norm: Set to true to min-max normalise images before segmentation
+    :param percentile_norm: Set to true to percentile normalise images before segmentation
     :param multi_augment: Set to true to perform test-time augmentation
     :param images_per_row: Number of images to plot per row in the output comparison figure
     :param run_classical_techniques: Set to true to also run watershed and multiotsu segmentation apart from selected models
@@ -377,7 +400,8 @@ def segment_and_plot(models, model_names, input_folder, output_folder, minmax_no
     :return: N/A (all outputs saved to file)
     """
 
-    dataset = ImageDataset(input_folder, 1, padding=False, individual_padding=True, minmax_norm=minmax_norm)
+    dataset = ImageDataset(input_folder, 1, padding=False, individual_padding=True, minmax_norm=minmax_norm,
+                           percentile_norm=percentile_norm)
     dataloader = DataLoader(dataset, shuffle=False, batch_size=1, num_workers=0, pin_memory=True)
 
     if run_classical_techniques:
