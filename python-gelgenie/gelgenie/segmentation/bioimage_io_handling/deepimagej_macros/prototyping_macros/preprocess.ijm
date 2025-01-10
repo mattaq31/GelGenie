@@ -43,28 +43,29 @@ function percentile_normalization(){
 imgID=getImageID();
 selectImage(imgID);
 
-run("Duplicate...", "title=Raw Image"); // Duplicates the original image to avoid modifying the original
+run("Duplicate...", "title=Raw"); // Duplicates the original image to avoid modifying the original
 selectWindow("Raw");
 
 // padding to multiple of 32 to satisfy U-Net conditions
-width = getWidth();
-height = getHeight();
+//width = getWidth();
+//height = getHeight();
+//
+//if (height % 32 == 0) {
+//	newHeight = height;
+//}else {
+//	newHeight = 32 * floor(height / 32 + 1);
+//}
+//
+//if (width % 32 == 0) {
+//	newWidth = width;
+//}else {
+//	newWidth = 32 * floor(width / 32 + 1);
+//}
+//
+//run("Canvas Size...", "width="+newWidth+" height="+newHeight+" position=Center zero");
 
-if (height % 32 == 0) {
-	newHeight = height;
-}else {
-	newHeight = 32 * floor(height / 32 + 1);
-}
+run("Duplicate...", "title=Normalized"); 
 
-if (width % 32 == 0) {
-	newWidth = width;
-}else {
-	newWidth = 32 * floor(width / 32 + 1);
-}
-
-run("Canvas Size...", "width="+newWidth+" height="+newHeight+" position=Center zero");
-
-run("Duplicate...", "title=Normalized Image"); 
 selectWindow("Normalized");
 getRawStatistics(count, mean, min, max, std);
 print("Min:", min, "Max:", max);
@@ -85,4 +86,5 @@ selectWindow("Log");
 run("Close");
 
 // ideally, the deep model would be scriptable at this point, but there's some bug preventing DIJ from finding the current image when scripting....
-//run("DeepImageJ Run", "modelPath=packaged_model_24122024_113534 inputPath=/Users/matt/Desktop/32.tif outputFolder=/Users/matt/Desktop/dij_output displayOutput=0")
+//run("DeepImageJ Run", "modelPath=packaged_model_09012025_231116 inputPath=null outputFolder=null displayOutput=all");
+run("DeepImageJ Run", "modelPath=gelgenie_universal_model_bioimageio_09012025_231116 inputPath=null outputFolder=null displayOutput=all");

@@ -31,14 +31,14 @@ from bioimageio.core import test_model
 from bioimageio.spec import save_bioimageio_package
 
 
-# this file prepares and packages the universal gelgenie model into bioimage.io format (also compaible with deepimagej).  You need to run the prepare_sample_data.py file first to be able to run this code.
-
+# this script prepares and packages the universal gelgenie model into bioimage.io format (also compaible with deepimagej).  You need to run the prepare_sample_data.py file first to be able to run this code.
 root = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models/bioimage_io_models/universal_model'
 model_folder = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models/December 2023/unet_dec_21'
 
 pytorch_version = Version(torch.__version__)
 
-# this reads in the model directly from the file and prepares the architecture - you also need to provide any keyword arguments here for it to work
+# this reads in the model directly from the file and prepares the architecture - you also need to provide any keyword arguments here for it to work.
+# This is not actually required to export the model - can just use the torchscript weights instead.
 pytorch_architecture = ArchitectureFromFileDescr(
     source="/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/main_code/python-gelgenie/gelgenie/segmentation/networks/UNets/model_gateway.py",
     callable=Identifier("smp_UNet"),
@@ -50,6 +50,7 @@ pytorch_architecture = ArchitectureFromFileDescr(
 )
 
 # prepares expected input formatting here - not sure of the syntax for this, mainly copied from tutorials
+# it seems that the ParameterizedSize class helps deepimagej automatically pad/unpad input images, which is great.
 input_descr = InputTensorDescr(
     id=TensorId("input"),
     axes=[BatchAxis(),
@@ -132,5 +133,5 @@ validation_summary = test_model(my_model_descr)
 validation_summary.display()
 
 # saves to file, ready for use or upload to bioimage.io
-save_bioimageio_package(my_model_descr, output_path= root + "/packaged_model.zip")
+save_bioimageio_package(my_model_descr, output_path= root + "/gelgenie_universal_model_bioimageio.zip")
 
