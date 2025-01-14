@@ -40,6 +40,9 @@ function percentile_normalization(){
 	
 }
 
+
+modelName = "gelgenie_universal_model_bioimageio_13012025_230613";
+
 // get input image
 imgID=getImageID();
 selectImage(imgID);
@@ -68,7 +71,7 @@ if (bitDepth() == 8) {
 print("Running model now...");
 
 // model runs here
-run("DeepImageJ Run", "modelPath=gelgenie_universal_model_bioimageio_09012025_231116 inputPath=null outputFolder=null displayOutput=all");
+run("DeepImageJ Run", "modelPath=" + modelName + " inputPath=null outputFolder=null displayOutput=all");
 
 // close log to reduce clutter
 selectWindow("Log");

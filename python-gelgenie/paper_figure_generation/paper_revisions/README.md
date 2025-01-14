@@ -6,4 +6,6 @@ Manuscript Revisions Code
   - Next, run `band_level_statistics_test_set_figure_3.py` to obtain band-level accuracy statistics.  You will need to run this twice, once for each normalization method.
   - Then, use `figure_3_graphs_and_tables.ipynb` to generate all the figures and table data for the model supplementary results.
   - `figure_3_full_metric_test_set_eval.py` is used to re-run the test set analysis for the original figure 3.  This now includes additional metrics: precision, recall and Hausdorff distance.
+  - `presenting_external_test_set_segmentation_maps.ipynb` is used to create the supplementary figures comparing the segmentation maps for the external test set.
+  - `dataset_summary.ipynb` is used to generate the figures comparing the intensities of the different datasets.
 

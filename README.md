@@ -61,6 +61,9 @@ GelGenie Feature Highlights:
 - For a comprehensive manual describing the installation and use of GelGenie, jump to the readme page [here](/qupath-gelgenie/README.md).
 - A quick-start video showing how to install the app and the main features is available here: [https://youtu.be/_HZyM8Shgc0](https://youtu.be/_HZyM8Shgc0).
 
+## Quick Access for Fiji/ImageJ Users (BioImage.IO)
+- We've also provided our core models in [BioImage.IO](https://bioimage.io/#/) format for those more familiar with ImageJ.  Check the instructions [here](/python-gelgenie/gelgenie/segmentation/bioimage_io_handling/deepimagej_macros/README.md) for installing our models within ImageJ, and for a macro to help run and analyze images directly.
+
 ##  GelGenie's Python Environment and Training New Models (for developers)
 
 Full documentation, Python installation instructions and more details are provided here [Python Quick Start](./python-gelgenie/README.md).
@@ -70,7 +73,7 @@ All pre-trained models are available on HuggingFace.  The main registry can be f
 
 ## Accessing Labelled Gel Datasets 
 
-All data can be downloaded in the original format used for training, validation and testing from our Zenodo upload with DOI [10.5281/zenodo.13218469](https://doi.org/10.5281/zenodo.13218469).
+All data can be downloaded in the original format used for training, validation and testing from our Zenodo upload with DOI [10.5281/zenodo.14641949](https://doi.org/10.5281/zenodo.14641949).
 
 ## Development & Support
 The principal GelGenie researcher and developer is [Matthew Aquilina](https://www.linkedin.com/in/matthewaq/), who built up the concept of gel electrophoresis segmentation and oversaw the project together with [Katherine Dunn](https://www.katherinedunnresearch.eng.ed.ac.uk) at the University of Edinburgh.  The other developers/scientists who contributed to the project are:
@@ -82,7 +85,7 @@ The principal GelGenie researcher and developer is [Matthew Aquilina](https://ww
 - [Peter Bankhead](https://github.com/petebankhead) - QuPath extension development, deep learning algorithms and java development guidance
 - [Alan O'Callaghan](https://github.com/alanocallaghan) - QuPath extension development and java development guiidance
 - [Laura Nicolás-Sáenz](https://github.com/lauranicolass) - Clustering algorithm development
-- We also received advice, gel data (thanks Arun and Stella!) and alpha testing feedback from other colleagues in both the University of Edinburgh and the Dana-Farber/Wyss Institute for which we are incredibly grateful! 
+- We also received advice, gel data (thanks Arun, Stella, Yichen, Huangchen, Thomas, Joana and Ricarda!) and alpha testing feedback from other colleagues in both the University of Edinburgh and the Dana-Farber/Wyss Institute for which we are incredibly grateful! 
 
 The project was directly supported by both the [School of Engineering](https://www.eng.ed.ac.uk) (who funded Kiros and Filip) and the [Precision Medicine Doctoral Training Programme](https://www.ed.ac.uk/usher/precision-medicine) at the University of Edinburgh (via Medical Research Council (MRC) grant number MR/N013166/1).  The EDDIE compute cluster (from the Edinburgh Compute and Data Facility ([ECDF](http://www.ecdf.ed.ac.uk/))) was used to train the baseline machine learning models.
 

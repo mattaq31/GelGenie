@@ -31,9 +31,32 @@ from bioimageio.core import test_model
 from bioimageio.spec import save_bioimageio_package
 
 
-# this script prepares and packages the universal gelgenie model into bioimage.io format (also compaible with deepimagej).  You need to run the prepare_sample_data.py file first to be able to run this code.
-root = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models/bioimage_io_models/universal_model'
-model_folder = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models/December 2023/unet_dec_21'
+# this script prepares and packages gelgenie models into bioimage.io format (also compaible with deepimagej).  You need to run the prepare_sample_data.py file first to be able to run this code.
+
+model_selected = 'universal'
+
+if model_selected == 'finetuned':
+    root = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models/bioimage_io_models/finetuned_model'
+    model_folder = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models/December 2023/unet_dec_21_finetune'
+    test_input = '/test_data/test_input.npy'
+    sample_input = '/test_data/input_134.tif'
+    test_output = '/test_data/test_output.npy'
+    sample_output = '/test_data/output_134.tif'
+    model_name = 'GelGenie-Finetuned-V1'
+    description = 'U-Net trained to segment and extract gel bands from gel electrophoresis images. This is the finetuned version (V1) of the model.'
+    model_weights = '/torchscript_checkpoints/unet_dec_21_finetune_epoch_590.pt'
+    output_filename = '/gelgenie_finetuned_model_bioimageio.zip'
+else:
+    root = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models/bioimage_io_models/universal_model'
+    model_folder = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models/December 2023/unet_dec_21'
+    test_input = '/test_data/test_input.npy'
+    sample_input = '/test_data/input_134.tif'
+    test_output = '/test_data/test_output.npy'
+    sample_output = '/test_data/output_134.png'
+    model_name = 'GelGenie-Universal-V1'
+    description = 'U-Net trained to segment and extract gel bands from gel electrophoresis images. This is the universal version (V1) of the model.'
+    model_weights = "/torchscript_checkpoints/unet_dec_21_epoch_579.pt"
+    output_filename = '/gelgenie_universal_model_bioimageio.zip'
 
 pytorch_version = Version(torch.__version__)
 
@@ -66,8 +89,8 @@ input_descr = InputTensorDescr(
               scale=1,
               concatenable=False),
     ],
-    test_tensor=FileDescr(source=root + "/test_data/test_input.npy"),
-    sample_tensor=FileDescr(source=root + "/test_data/input_134.tif"),
+    test_tensor=FileDescr(source=root + test_input),
+    sample_tensor=FileDescr(source=root + sample_input),
     data=IntervalOrRatioDataDescr(type="float32"),
 )
 
@@ -83,19 +106,16 @@ output_descr = OutputTensorDescr(
                           scale=1,
                           size=SizeReference(tensor_id=TensorId("input"), axis_id=AxisId("x"))),
     ],
-    test_tensor=FileDescr(source=root + "/test_data/test_output.npy"),
-    sample_tensor=FileDescr(source=root + "/test_data/output_134.png"),
+    test_tensor=FileDescr(source=root + test_output),
+    sample_tensor=FileDescr(source=root + sample_output),
     data=IntervalOrRatioDataDescr(type="float32"),
 )
 
 
 # puts all metadata together and generates model here
 my_model_descr = ModelDescr(
-  name="GelGenie-Universal-V1",
-  description=(
-  "U-Net trained to segment and extract gel bands from gel electrophoresis images.  "
-  "This is the universal version (V1) of the model."
-  ),
+  name=model_name,
+  description=description,
   covers=[root + "/cover_images/cover_1.png",
           root + "/cover_images/cover_2.png",
           root + "/cover_images/cover_3.png"],
@@ -121,7 +141,7 @@ my_model_descr = ModelDescr(
   outputs=[output_descr],
   weights=WeightsDescr(
       torchscript=TorchscriptWeightsDescr(
-          source=model_folder + "/torchscript_checkpoints/unet_dec_21_epoch_579.pt",
+          source=model_folder + model_weights,
           pytorch_version=pytorch_version,
       ),
   ),
@@ -133,5 +153,5 @@ validation_summary = test_model(my_model_descr)
 validation_summary.display()
 
 # saves to file, ready for use or upload to bioimage.io
-save_bioimageio_package(my_model_descr, output_path= root + "/gelgenie_universal_model_bioimageio.zip")
+save_bioimageio_package(my_model_descr, output_path= root + output_filename)
 

@@ -15,9 +15,20 @@ def get_individual_padding(img_array):
     right = new_horiz - img_array.shape[1] - left  # Get amount of pixels to pad at right of image
     return (top, bottom), (left, right)
 
-test_in = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models/bioimage_io_models/universal_model/test_data/input_134.tif'
-test_out = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models/bioimage_io_models/universal_model/test_data/output_134.png'
-output_folder = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models/bioimage_io_models/universal_model/test_data'
+model_selected = 'finetuned'
+
+if model_selected == 'universal':
+    test_in = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models/bioimage_io_models/universal_model/test_data/input_134.tif'
+    test_out = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models/bioimage_io_models/universal_model/test_data/output_134.png'
+    output_folder = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models/bioimage_io_models/universal_model/test_data'
+    exp_folder = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models/December 2023/unet_dec_21'
+    epoch = 579
+else:
+    test_in = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models/bioimage_io_models/finetuned_model/test_data/input_134.tif'
+    test_out = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models/bioimage_io_models/finetuned_model/test_data/output_134.tif'
+    output_folder = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models/bioimage_io_models/finetuned_model/test_data'
+    exp_folder = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models/December 2023/unet_dec_21_finetune'
+    epoch = 590
 
 image = imageio.v2.imread(test_in)
 
@@ -40,8 +51,7 @@ mask = np.pad(mask, pad_width=(vertical, horizontal), mode='constant')
 image = np.expand_dims(np.expand_dims(image, axis=0), axis=0)
 mask = np.expand_dims(mask, axis=0)
 
-exp_folder = '/Users/matt/Documents/PhD/research_output/Automatic_Gel_Analyzer/segmentation_models/December 2023/unet_dec_21'
-model = model_eval_load(exp_folder, 'best')
+model = model_eval_load(exp_folder, epoch)
 
 with torch.no_grad():
     model_raw_mask = model(torch.tensor(image))
