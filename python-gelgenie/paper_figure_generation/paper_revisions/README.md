@@ -9,3 +9,4 @@ Manuscript Revisions Code
   - `presenting_external_test_set_segmentation_maps.ipynb` is used to create the supplementary figures comparing the segmentation maps for the external test set.
   - `dataset_summary.ipynb` is used to generate the figures comparing the intensities of the different datasets.
 
+ImageStudio and GelAnalyzer data is available for download from our Zenodo deposition [here](https://doi.org/10.5281/zenodo.14827469).
