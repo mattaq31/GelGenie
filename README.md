@@ -112,4 +112,6 @@ Bibtex citation details available below:
 	pages = {2024.09.06.611479},
 }
 ```
+Tools for recreating our analyses in the above manuscript are provided [here](https://github.com/mattaq31/GelGenie/tree/main/python-gelgenie).  The manual analyses data generated using GelAnalyzer and ImageStudio can be accessed from our Zenodo deposition [here](https://doi.org/10.5281/zenodo.14827469).
+
 
