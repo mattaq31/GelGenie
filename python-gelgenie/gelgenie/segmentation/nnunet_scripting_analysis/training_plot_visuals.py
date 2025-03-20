@@ -77,3 +77,6 @@ ax2.legend(fontsize=legend_size, loc='center right')
 
 plt.savefig(os.path.join(out_folder, 'example_training_plot_nnunet.png'), bbox_inches='tight', dpi=300)
 plt.show()
+
+source_data_export_df = df[['Epoch', 'Train Loss', 'Pseudo-Dice Score']].copy()
+source_data_export_df.to_excel(os.path.join(out_folder, 'figure_2d_nnunet_source_data.xlsx'), index=False)
