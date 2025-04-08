@@ -128,9 +128,14 @@ def extract_image_names_from_folder(folder, sorted=True, recursive=False):
         else:
             glob_path = os.path.join(folder, extension)
         filenames.extend(glob.glob(glob_path, recursive=recursive))
+
+    # remove any duplicates
+    filenames = list(dict.fromkeys(filenames))
+
     if sorted:
         # Sort file names in Natural Order so that numbers starting with 1s don't take priority
         filenames.sort(key=lambda s: [int(t) if t.isdigit() else t.lower() for t in re.split(r'(\d+)', s)])
+
     return filenames
 
 
