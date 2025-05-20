@@ -95,7 +95,7 @@ Contributions from the open-source community are welcome!  In particular, we are
 
 ## Literature Citation
 
-Out main manuscript has been published in Nature Communications, with DOI: [https://doi.org/10.1038/s41467-025-59189-0](https://doi.org/10.1038/s41467-025-59189-0)
+Our main manuscript has been published in Nature Communications, with DOI: [https://doi.org/10.1038/s41467-025-59189-0](https://doi.org/10.1038/s41467-025-59189-0)
 
 Bibtex citation details available below:
 
