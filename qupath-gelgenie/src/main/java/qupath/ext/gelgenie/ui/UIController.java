@@ -763,7 +763,7 @@ public class UIController {
                             modelChoiceBox.getSelectionModel().getSelectedItem().getName(), useDJLCheckBox.isSelected(),
                             inferencePrefs.invertedImage(), useModelDataNormCheckBox.isSelected());
 
-                } catch (IOException | MalformedModelException | ModelNotFoundException | TranslateException e) {
+                } catch (IOException | MalformedModelException | ModelNotFoundException | TranslateException | RuntimeException e) {
                     pendingTask.set(null);
                     runButtonBinding.invalidate(); // fire an update to the binding, so the run button becomes available
                     throw new RuntimeException(e);

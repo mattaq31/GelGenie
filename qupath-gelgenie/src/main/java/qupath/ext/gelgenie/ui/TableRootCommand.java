@@ -20,7 +20,6 @@ import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import qupath.lib.gui.ExtensionClassLoader;
 import qupath.lib.gui.QuPathGUI;
 
 import java.util.ArrayList;
@@ -66,7 +65,7 @@ public class TableRootCommand implements Runnable {
         this.resizable = resizable;
         URL url = getClass().getResource(ui_name + ".fxml");
         this.rootFXML = new FXMLLoader(url, resources);
-        rootFXML.setClassLoader(ExtensionClassLoader.getInstance());
+        rootFXML.setClassLoader(QuPathGUI.getInstance().getExtensionCatalogManager().getExtensionClassLoader());
 
         // user defined settings
         this.globalCorrection = globalCorrection;

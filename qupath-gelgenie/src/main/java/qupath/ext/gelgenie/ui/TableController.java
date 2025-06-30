@@ -19,6 +19,7 @@ package qupath.ext.gelgenie.ui;
 import ij.ImagePlus;
 import ij.plugin.filter.BackgroundSubtracter;
 
+import ij.process.ImageProcessor;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.BooleanProperty;
@@ -36,6 +37,7 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.PointerScope;
 import org.bytedeco.opencv.opencv_core.Mat;
 import org.slf4j.Logger;
@@ -70,7 +72,6 @@ import qupath.opencv.tools.OpenCVTools;
 
 import static qupath.ext.gelgenie.graphics.EmbeddedBarChart.saveChart;
 import static qupath.ext.gelgenie.tools.ImageTools.extractLocalBackgroundPixels;
-import static qupath.imagej.images.servers.ImageJServer.convertToBufferedImage;
 import static qupath.lib.scripting.QP.*;
 import static qupath.lib.scripting.QP.getCurrentImageData;
 
@@ -442,16 +443,18 @@ public class TableController {
 
         RegionRequest request = RegionRequest.createInstance(server, 1.0); // generates full image request
 
-        ImagePlus imp = IJTools.convertToImagePlus(server, request).getImage(); // converts to ImageJ format
-
+        ImageProcessor ip = IJTools.convertToImageProcessor(server.readRegion(request), 0);
         BackgroundSubtracter bs = new BackgroundSubtracter(); // creates background subtracter
 
         // all default settings used except for rollingRadius, which can be user-defined
-        bs.rollingBallBackground(imp.getProcessor(), rollingRadius, false, invertImage, false, false, false);
+        bs.rollingBallBackground(ip, rollingRadius, false, invertImage, false, false, false);
 
-        // converts to OpenCV image for downstream processing
-        BufferedImage subtractedImage = convertToBufferedImage(imp, 0, 0, null);
-        return OpenCVTools.imageToMat(subtractedImage);
+        float[] pixels = (float[])ip.convertToFloatProcessor().getPixels();
+        FloatPointer fp = new FloatPointer(pixels);
+        Mat mat = new Mat(ip.getHeight(), ip.getWidth());
+        mat.put(fp);
+
+        return mat;
     }
 
     /**

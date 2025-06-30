@@ -21,7 +21,6 @@ import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import qupath.lib.gui.ExtensionClassLoader;
 import qupath.lib.gui.QuPathGUI;
 
 import java.util.Objects;
@@ -73,7 +72,7 @@ public class GUIRootCommand implements Runnable {
 
         var loader = new FXMLLoader(url, resources);
 
-        loader.setClassLoader(ExtensionClassLoader.getInstance()); // this won't work in QuPath v0.4
+        loader.setClassLoader(QuPathGUI.getExtensionCatalogManager().getExtensionClassLoader()); // this won't work in QuPath v0.4
 
         Pane root = loader.load();
 
