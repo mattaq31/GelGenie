@@ -1,6 +1,6 @@
 from extension_catalog_model.model import *
 
-version_range = VersionRange(min="v1.1.0")
+version_range = VersionRange(min="v0.6.0")
 
 release_new = Release(
    name="v1.1.0",
