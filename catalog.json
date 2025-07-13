@@ -1,0 +1,27 @@
+{
+  "name": "GelGenie catalog",
+  "description": "Extensions for the GelGenie automatic gel analysis platform.",
+  "extensions": [
+    {
+      "name": "QuPath GelGenie extension",
+      "description": "GelGenie extension that enables the automatic segmentation and analysis of gel images in QuPath.",
+      "author": "Matthew Aquilina",
+      "homepage": "https://github.com/mattaq31/GelGenie",
+      "starred": false,
+      "releases": [
+        {
+          "name": "v1.1.0",
+          "main_url": "https://github.com/mattaq31/GelGenie/releases/download/v1.1.0/qupath-gelgenie-1.1.0.jar",
+          "required_dependency_urls": null,
+          "optional_dependency_urls": null,
+          "javadoc_urls": null,
+          "version_range": {
+            "min": "v1.1.0",
+            "max": null,
+            "excludes": null
+          }
+        }
+      ]
+    }
+  ]
+}
