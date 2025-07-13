@@ -112,7 +112,7 @@ public class EmbeddedBarChart {
             for (int i = 0; i < bin_values.length; i++) {
                 double binStart = min_val + i * binWidth;
                 double binEnd = min_val + (i + 1) * binWidth;
-                list.add(new XYChart.Data(String.format("%.1f - %.1f", binStart, binEnd), bin_values[i]));
+                list.add(new XYChart.Data(String.format("%d - %d", Math.round(binStart), Math.round(binEnd)), bin_values[i]));
             }
             // create a series from the list
             XYChart.Series<String, Number> histoSeries = new XYChart.Series<>(list);

@@ -55,37 +55,32 @@ To run your first segmentation, follow these steps:
   - **`Light bands on dark background`** - Selecting this will assume that bands are lighter than the background (and vice-versa).  The extension will attempt to auto-assign the value of this checkbox but can sometimes make mistakes.  Make sure to fix this setting if it is incorrect for the current image.
 - Once a model is downloaded, it is always available for use and an internet connection is no longer required.
 - **For advanced users:** The default normalization method for images before being presented to a model is to normalise all pixels to the range 0-1 and cutoff the 0.1% max/min outliers (this normalisation is only used for band segmentation and does not affect quantitation).  However, we have observed that normalizing by the actual datatype max value (e.g. 65535 for 16-bit images) can sometimes have a beneficial effect in 16-bit (or more) images. To use this setting, switch to the `Advanced` tab and toggle between the two checkboxes under `Model Runtime Settings`.  8-bit grayscale images are always normalized by 255, regardless of the values of these checkboxes.
-### Direct CPU Inference (OpenCV Mode)
-- The easiest way to run models is in direct CPU inference mode using OpenCV, which is the default setting.  
-- This mode is fast, requires no preparation and will work well with all systems and models (except `nnUNet` models).
+### Direct CPU/GPU Inference (DJL Mode)
+- The easiest way to run models is in direct CPU inference mode using DJL, which is the default setting.  
+- This mode is fast and will work well with all systems and models.  However, you will need to install the DJL PyTorch engine first.  This is simple and only needs to be done once:
+- Simply open the DJL extension from the Extensions menu and select the `Manage DJL engines` option.
+  <p align="center">
+<img src="./screenshots/djl_setup.png" alt="How to open DJL extension" width="600">
+</p>
+
+- From the resulting menu, click on the `Check/Download` button to install the PyTorch engine.  Ensure the engine is downloaded properly (green traffic light) and that's it!
+<p align="center">
+<img src="./screenshots/djl_download_1.png" alt="Downloading PyTorch engine" width="300">
+<img src="./screenshots/djl_download_2.png" alt="PyTorch engine download successful" width="300">
+</p>
+
 - After clicking on the `Identify Bands` button, GelGenie will show a quick notification that inference has started.  Typically, the process should take just a few seconds on most normal gel images (expect a longer delay for very large .tif images).
 - When complete, the segmented bands will be shown directly on the image, as shown below.  Segmentation results can be adjusted and quantified following the guides in the next sections.
 <p align="center">
 <img src="./screenshots/example_seg.png" alt="Example segmentation result" width="600">
 </p>
 
-### Deep Java Library (DJL) GPU Inference
-- Using DJL requires more setup but allows you to make use of GPUs available on your system to accelerate inference.  Apple Silicon GPUs are also supported (using MPS).
-- Before using DJL, you will need to install QuPath's DJL Extension.  This can be done by following the instructions [here](https://github.com/qupath/qupath-extension-djl) (drag-and-drop the jar file in the same way as GelGenie).
-- Next, open the DJL extension from the usual extension menu, and select the `Manage DJL engines' option.
-<p align="center">
-<img src="./screenshots/djl_setup.png" alt="How to open DJL extension" width="600">
-</p>
-- From the resulting menu, click on the `Check/Download` button to install the PyTorch engine.  Ensure the engine is downloaded properly before moving on.  This step only needs to be done once, after which the engine is permanently available.
-<p align="center">
-<img src="./screenshots/djl_download_1.png" alt="Downloading PyTorch engine" width="300">
-<img src="./screenshots/djl_download_2.png" alt="PyTorch engine download successful" width="300">
-</p>
-
-- After the engine is installed, you are now ready to run models using DJL.  To configure GelGenie to use DJL, switch to the `Advanced` tab and check the `Run Models using DJL` checkbox.  To use an available GPU, select it from the dropdown list underneath the DJL checkbox.
-- Switching back to the `Band Search` tab will now allow you to use DJL to run inference with the usual `Identify Bands' button.  Keep in mind the following:
-  - The first time the GPU is used, there will be a short delay.  Subsequent runs will be much faster.  On an Apple Silicon GPU, typical images are segmented almost instantaneously.
-  - You should only run `nnUNet` models in GPU mode, as CPU mode will take a very long time (minutes).
-- On restarting GelGenie, make sure to re-enable the DJL checkbox if you wish to use it again.  
-<p align="center">
-<img src="./screenshots/djl_gelgenie_setup.png" alt="Configuring DJL in GelGenie" width="300">
-</p>
-
+- DJL will also allow to use a GPU if you have one available (including on Apple Silicon).  Simply update the 'Compute on Device' checkbox to select an available GPU. 
+- The first time the GPU is used, there will be a short delay.  Subsequent runs will be much faster.  On an Apple Silicon GPU, typical images are segmented almost instantaneously.
+- You should only run `nnUNet` models in GPU mode, as CPU mode will take a very long time (minutes).
+### OpenCV CPU Inference
+- You may alternatively use OpenCV to run models (CPU only), which requires no additional setup.  However, this mode is significantly slower and results may be inconsistent.  This is as OpenCV v4.7+ does not allow dynamic inputs and so to run inference on a large image, it needs to be broken up into patches, run separately and then re-stitched together.  Hopefully when OpenCV fixes this issue, this limitation will be removed.
+- You may turn on OpenCV mode by switching to the `Advanced` tab and unchecking the `Use DJL for inference` checkbox.  After this, return to the `Band Search` tab and click on the `Identify Bands` button as before. 
 ## Band Segmentation Maps
 
 When the selected model has completed the segmentation process, the extension will process its output and generate a single `annotation` for each individual band found.  Annotations are QuPath objects that can be selected, edited and manipulated using QuPath's normal editing tools.  Each annotation represents a single gel band.  When moving on to quantitation, a band's volume is measured by summing the intensity of all pixels within the annotation border.  While the segmentation models are highly accurate in most scenarios, there will be cases where adjusting the model's outputs is necessary.  The following subsections discuss different options for interacting with annotations.
@@ -218,7 +213,7 @@ For further tips, tricks and more info on what is achievable within QuPath (alon
 If interested in adding new features to the extension, the best way to have direct access to the source code and all of QuPath's features is to use [IntelliJ](https://www.jetbrains.com/idea/) as your main IDE.  To start developing, follow the steps outlined [here](https://github.com/qupath/qupath-extension-template#set-up-in-an-ide-optional) to A) download QuPath's source code and B) setup everything in IntelliJ.  Keep in mind the following details:
 - The GelGenie extension needs to be in the folder **beside** that of the main QuPath source code to be properly recognized.  To achieve this, first clone the GelGenie repository, and then clone the QuPath repository within the GelGenie folder.  A gitignore statement has already been added to prevent the QuPath repository from conflicting with the GelGenie repository.
 - When the above is complete, you can proceed to add the project to IntelliJ as described in the link above.
-- Finally, don't forget to add the statement `includeFlat qupath-gelgenie` to the `qupath/settings.gradle` file in the QuPath repository to enable the extension.
+- Finally, don't forget to add the `include-extra` file in the QuPath repository to enable the extension.
 - If everything has been setup correctly, you should be able to build QuPath from scratch, with the extension included within it.  You can also use IntelliJ's debug feature to investigate issues and help with development.  
 - Keep in mind that QuPath is constantly evolving, and the latest commit on GitHub might contain features not available in the current release.
 

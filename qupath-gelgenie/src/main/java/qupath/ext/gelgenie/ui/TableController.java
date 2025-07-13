@@ -16,7 +16,6 @@
 
 package qupath.ext.gelgenie.ui;
 
-import ij.ImagePlus;
 import ij.plugin.filter.BackgroundSubtracter;
 
 import ij.process.ImageProcessor;
@@ -39,6 +38,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.PointerScope;
+import org.bytedeco.opencv.global.opencv_core;
 import org.bytedeco.opencv.opencv_core.Mat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +68,6 @@ import qupath.fx.dialogs.FileChoosers;
 import qupath.lib.objects.hierarchy.PathObjectHierarchy;
 import qupath.lib.objects.hierarchy.events.PathObjectSelectionModel;
 import qupath.lib.regions.RegionRequest;
-import qupath.opencv.tools.OpenCVTools;
 
 import static qupath.ext.gelgenie.graphics.EmbeddedBarChart.saveChart;
 import static qupath.ext.gelgenie.tools.ImageTools.extractLocalBackgroundPixels;
@@ -230,8 +229,7 @@ public class TableController {
 
         // uses the implementation in qupath to extract a thumbnail from an annotation
         thumbnailCol.setCellFactory(column -> createTableCellByReflection(
-                viewer, imageData.getServer(), true, 5,
-                qupath.getThreadPoolManager().getSingleThreadExecutor(this)));
+                viewer, imageData.getServer(), true, 5));
 
         // Set fixed cell size for the thumbnail - this can avoid large numbers of non-visible cells being computed
         mainTable.fixedCellSizeProperty().bind(Bindings.createDoubleBinding(() -> {
@@ -450,11 +448,9 @@ public class TableController {
         bs.rollingBallBackground(ip, rollingRadius, false, invertImage, false, false, false);
 
         float[] pixels = (float[])ip.convertToFloatProcessor().getPixels();
-        FloatPointer fp = new FloatPointer(pixels);
-        Mat mat = new Mat(ip.getHeight(), ip.getWidth());
-        mat.put(fp);
 
-        return mat;
+        FloatPointer ptr = new FloatPointer(pixels);
+        return new Mat(ip.getHeight(), ip.getWidth(), opencv_core.CV_32F, ptr);
     }
 
     /**
@@ -1033,24 +1029,22 @@ public class TableController {
      * @param server:      Server corresponding to current image
      * @param paintObject: Set to true to paint out the annotation within the thumbnail
      * @param padding:     Padding to include around image
-     * @param pool:        Thread pool
      * @return Updated table cell with thumbnail
      */
-    public static <S extends PathObject, T extends PathObject> TableCell<S, T> createTableCellByReflection(
-            QuPathViewer viewer, ImageServer<BufferedImage> server, boolean paintObject, double padding, ExecutorService pool
+    public static <S extends PathObject, T extends PathObject> TableCell createTableCellByReflection(
+            QuPathViewer viewer, ImageServer<BufferedImage> server, boolean paintObject, double padding
     ) {
         Class<?> cls = null;
         try {
-            cls = Class.forName("qupath.lib.gui.commands.PathObjectImageManagers");
+            cls = Class.forName("qupath.lib.gui.tools.PathObjectImageViewers");
             var method = cls.getDeclaredMethod("createTableCell",
                     QuPathViewer.class,
                     ImageServer.class,
                     boolean.class,
-                    double.class,
-                    ExecutorService.class
+                    double.class
             );
             method.setAccessible(true);
-            return (TableCell) method.invoke(null, viewer, server, paintObject, padding, pool);
+            return (TableCell) method.invoke(null, viewer, server, paintObject, padding);
         } catch (ClassNotFoundException | InvocationTargetException | NoSuchMethodException |
                  IllegalAccessException e) {
             logger.warn("Exception creating table cell: {}", e.getMessage(), e);
