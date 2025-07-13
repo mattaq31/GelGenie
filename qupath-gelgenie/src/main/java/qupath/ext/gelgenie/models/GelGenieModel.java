@@ -51,7 +51,7 @@ public class GelGenieModel {
     @SerializedName("hf_revision")
     private String hfRevision;
 
-    @SerializedName("onnx_file")
+    @SerializedName("onnx_static_file")
     private String onnxModel;
 
     @SerializedName("torchscript_file")

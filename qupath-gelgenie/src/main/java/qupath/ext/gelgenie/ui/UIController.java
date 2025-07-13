@@ -277,7 +277,6 @@ public class UIController {
     This function enables the DJL buttons only if the PyTorch engine is available.
      */
     private void configureDevicesList() {
-        useDJLCheckBox.setSelected(false);
         deviceChoiceBox.setDisable(!useDJLCheckBox.isSelected());
         if (useDJLCheckBox.isSelected()) {
             addDevices();
@@ -285,27 +284,7 @@ public class UIController {
         useDJLCheckBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue) {
                 if (!PytorchManager.hasPyTorchEngine()) {
-
-                    // constructs an error message dialog which links to the QuPath DJL extension page
-                    // to allow users to download the PyTorch engine if this is not already available
-                    var linkDJL = new Hyperlink();
-                    linkDJL.setText(resources.getString("error.download-pytorch-link"));
-                    linkDJL.setOnAction(e -> QuPathGUI.openInBrowser(resources.getString("error.download-pytorch-link")));
-                    var dialogText = new TextFlow( // mix of strings and a hyperlink
-                            new Text(resources.getString("error.download-pytorch-1")),
-                            linkDJL,
-                            new Text(System.lineSeparator()),
-                            new Text(resources.getString("error.download-pytorch-2"))
-                    );
-                    dialogText.setPrefWidth(500); // to accommodate the length of the link
-                    dialogText.setTextAlignment(TextAlignment.CENTER);
-
-                    new Dialogs.Builder()
-                            .alertType(Alert.AlertType.ERROR)
-                            .title(resources.getString("title"))
-                            .content(dialogText)
-                            .show();
-
+                    Dialogs.showErrorMessage(resources.getString("title"), resources.getString("error.download-pytorch"));
                     useDJLCheckBox.setSelected(false);
                 }
             }
@@ -745,6 +724,11 @@ public class UIController {
      */
     public void runBandInference() {
 
+        if (!PytorchManager.hasPyTorchEngine()) {
+            Dialogs.showErrorMessage(resources.getString("title"), resources.getString("error.download-pytorch"));
+            return;
+        }
+
         ModelInferencePreferences inferencePrefs = new ModelInferencePreferences(runFullImage.isSelected(),
                 deletePreviousBands.isSelected(), !imageInversion.isSelected());
 
@@ -763,7 +747,7 @@ public class UIController {
                             modelChoiceBox.getSelectionModel().getSelectedItem().getName(), useDJLCheckBox.isSelected(),
                             inferencePrefs.invertedImage(), useModelDataNormCheckBox.isSelected());
 
-                } catch (IOException | MalformedModelException | ModelNotFoundException | TranslateException e) {
+                } catch (IOException | MalformedModelException | ModelNotFoundException | TranslateException | RuntimeException e) {
                     pendingTask.set(null);
                     runButtonBinding.invalidate(); // fire an update to the binding, so the run button becomes available
                     throw new RuntimeException(e);
@@ -790,7 +774,7 @@ public class UIController {
                     }
                 }
                 // TODO: add this to script too (or make it optional)
-                removeObjects(removables, false);
+                removeObjects(removables);
             }
             pendingTask.set(null);
 
@@ -1007,8 +991,7 @@ public class UIController {
             }
         }
 
-        ObservableList<XYChart.Series<String, Number>> allPlots = EmbeddedBarChart.plotHistogram(dataList,
-                40, annotNames);
+        ObservableList<XYChart.Series<String, Number>> allPlots = EmbeddedBarChart.plotHistogram(dataList,40, annotNames);
         bandChart.getData().addAll(allPlots); // adds new data
 
     }
